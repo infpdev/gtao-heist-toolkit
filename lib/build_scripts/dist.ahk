@@ -19,6 +19,10 @@ issScript := ".\inno_setup.iss"
 iconPath := ".\gta.ico"
 rarExe := "C:\Program Files\WinRAR\WinRAR.exe"
 
+; Check and extract build files if needed before validating paths
+ExtractBuildFilesIfNeeded()
+
+
 RequireExistingFile(baseExe, "AutoHotkey base executable")
 RequireExistingFile(AHK2EXEPath, "Ahk2Exe")
 RequireExistingFile(isccExe, "Inno Setup compiler")
@@ -237,7 +241,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         }
         sleep 1000
     } else {
-        MsgBox "WinRAR not found at: " rarExe, "Error"
+        MsgBox("WinRAR not found at: " rarExe, "Error")
     }
 }
 
@@ -365,6 +369,37 @@ CreateTempScriptWithReplacedClass(standaloneScript, originalScript, tempPath, pa
 }
 
 ; --- Helper functions for class extraction and temp file creation ---
+ExtractBuildFilesIfNeeded() {
+    requiredFolders := ["AHK_BASE", "AHK2EXE", "Inno Setup 6"]
+    buildFilesZip := A_ScriptDir "\build_files.zip"
+
+    ; Check if any folder is missing
+    folderMissing := false
+    for _, folder in requiredFolders {
+        if !DirExist(A_ScriptDir "\" folder) {
+            folderMissing := true
+            break
+        }
+    }
+
+    ; If missing and ZIP exists, extract it
+    if (folderMissing && FileExist(buildFilesZip)) {
+        ToolTip("Extracting build files...", A_ScreenWidth // 2 - 100, 0, 1)
+
+        psCmd := "Expand-Archive -Path '" buildFilesZip "' -DestinationPath '" A_ScriptDir "' -Force"
+        RunWait(A_ComSpec ' /C powershell -Command "' psCmd '"', , "Hide")
+
+        ShowCenteredToolTip "Build files extracted successfully!"
+        sleep 1500
+        ToolTip()  ; Clear tooltip
+    } else if (folderMissing && !FileExist(buildFilesZip)) {
+        MsgBox(
+            "Build files not found.`n`nPlease ensure one of the following:`n - All build folders (AHK_BASE, AHK2EXE, Inno Setup 6) are in: " A_ScriptDir "`n - OR build_files.zip is in: " A_ScriptDir,
+            "Error", 48)
+        ExitApp
+    }
+}
+
 ExtractClassFromScript(filePath) {
     ; Read the original script and extract everything from "; class start" marker onwards
     if !FileExist(filePath)

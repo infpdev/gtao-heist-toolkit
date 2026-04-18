@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 SetWorkingDir A_ScriptDir
-#Include .\AHK_BASE\_JXON.ahk
-#Include .\AHK_BASE\FileHash_SHA256.ahk
+#Include .\helpers\_JXON.ahk
+#Include .\helpers\FileHash_SHA256.ahk
 
 global apiKey := ""
 
