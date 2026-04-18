@@ -60,7 +60,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/f507fdbf0676935a1f51e2520a8ed3ccee7e16a2692aae8a4ae0bcf2664992a3
+> https://www.virustotal.com/gui/file/0ded439b6c0462848b8589d0c47c618a98ab5d03828a9c58ef0ccb17dfab4a5f
 
 
 <p align="center">
