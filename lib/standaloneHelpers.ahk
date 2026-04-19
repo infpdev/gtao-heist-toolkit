@@ -1,6 +1,5 @@
 #Include initHotkeys.ahk
 #Include updateCheck.ahk
-#Include commonFuncs.ahk
 #Include scripts\NoSave.ahk
 
 SendMode("Event")

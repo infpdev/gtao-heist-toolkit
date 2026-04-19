@@ -68,6 +68,7 @@ EnableNoSaveMode(*) {
         ShowCenteredToolTip("NoSave enabled [Works]", 17)
         SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
     }
+    IniWrite(enabled, iniFile, "Options", "NoSave")
     return enabled
 
 }
@@ -79,12 +80,17 @@ DisableNoSaveMode(*) {
         ShowCenteredToolTip("NoSave disabled", 17)
         SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
     }
+    IniWrite(!disabled, iniFile, "Options", "NoSave")
     return disabled
 
 }
 
+; Removes the firewall rule '123456' if it exists,
+; effectively disabling NoSave mode. This is called on script exit to
+; ensure the rule doesn't persist.
 AppExit(*) {
-    RunWait('netsh advfirewall firewall delete rule name="123456"', , "Hide")
+    DisableNoSaveMode()
+    ToolTip("", , , 17) ; Clear any existing tooltips
 }
 
 IsFirewallOnActiveProfile() {

@@ -455,8 +455,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                     "FIREWALL WARNING", 48
             }
         }
+        ; IniWrite(noSave, iniFile, "Options", "NoSave") moved to NoSave.ahk so that it owns the
+        ; state change and persistence of the NoSave setting, ensuring consistency even if the firewall rule changes outside of this toggle function.
 
-        IniWrite(noSave, iniFile, "Options", "NoSave")
     }
 
     ToggleHeistMode(*) {
@@ -593,7 +594,7 @@ Init() {
     topbarW := width, titleW := topbarW - btnW
 
     bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
-        "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(Unreleased)" : "(v" strippedVer ")"))
+        "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(Unreleased)" : "(v" trimmedVer ")"))
     xBtn := guiApp.AddPicture("x" ((width - btnW - 15 / scale) / scale) " y" 10 / scale " w" btnW " h" btnW " +0x4",
     staticFolder "\minimize.png")
     xBtn.OnEvent("Click", (*) => (guiApp.Minimize()))

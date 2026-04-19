@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include commonFuncs.ahk
 
 if !A_IsAdmin {
     try Run('*RunAs "' A_ScriptFullPath '"')
@@ -10,7 +11,7 @@ if !A_IsAdmin {
 }
 
 ver := "3.0.0"
-global strippedVer := ""
+global trimmedVer := ""
 global isUnreleased := false
 if !IsSet(vaultOps)
     global vaultOps := false
@@ -21,13 +22,14 @@ CheckForUpdate() {
 
     ShowCenteredToolTip("checking for updates", 17)
 
-    Url := "https://pastebin.com/raw/syS1Bk5d"
+    Url := "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/main/lib/version.txt?nocache=1"
     Http := ComObject("WinHttp.WinHttpRequest.5.1")
     try {
-        Http.SetTimeouts(updateHttpTimeoutMs, updateHttpTimeoutMs, updateHttpTimeoutMs, updateHttpTimeoutMs)
         Http.Open("GET", Url, false)
+        Http.SetTimeouts(updateHttpTimeoutMs, updateHttpTimeoutMs, updateHttpTimeoutMs, updateHttpTimeoutMs)
+        Http.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
         Http.Send()
-        if (Http.Status = 200) {
+        if (Http.Status >= 200 && Http.Status < 300) {
             result := Trim(Http.ResponseText)
             if (VersionCompare(result, ver) == 1) {
                 msg := ver " ➤ " result "`n`n"
@@ -43,9 +45,12 @@ CheckForUpdate() {
                 Sleep 1000
                 ToolTip("", , , 17)
             }
+        } else {
+            throw Error("HTTP " Http.Status)  ; Force error handling
         }
+
     } catch {
-        msg := "v" ver "`n`nNo Internet: You need an internet connection to play GTAO.`n`n"
+        msg := "v" ver "`n`nFailed to check for updates.`n`n"
             . "If you think this is an error, please download the latest version manually.`n`n"
             . "Do you want to open the GitHub page to download it?"
         res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
@@ -57,12 +62,12 @@ CheckForUpdate() {
 }
 
 VersionCompare(fetched, current) {
-    global isUnreleased, strippedVer
+    global isUnreleased, trimmedVer
     fetched := StrSplit(fetched, ".")
     current := StrSplit(current, ".")
     ; Set isUnreleased to true if patch (third) value is not 0
     isUnreleased := (current[1] == 0 || (current.Length >= 3 && current[3] != 0))
-    strippedVer := current[1] "." current[2]
+    trimmedVer := current[1] "." current[2]
 
     loop 2 {
         n1 := fetched[A_Index] ? fetched[A_Index] : 0

@@ -98,7 +98,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/0ded439b6c0462848b8589d0c47c618a98ab5d03828a9c58ef0ccb17dfab4a5f
+> https://www.virustotal.com/gui/file/d918e0ea0e02d2de2bad4b908293bf95fb6e6467bca89b53bec0f8906c0f5657
 
 
 <p align="center">
