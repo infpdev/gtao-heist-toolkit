@@ -2,8 +2,9 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
+*An upgraded version of the standalone script **"GTA Casino Solver v2"**.
 A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0. Runs entirely locally, no data is sent anywhere.
-An upgraded version of the standalone script **"GTA Casino Solver v2"**.
+
 
 <br>
 <p align="center"><b>Watch tutorial</b><p>
@@ -14,6 +15,26 @@ An upgraded version of the standalone script **"GTA Casino Solver v2"**.
 </p>
 
 
+## Contents
+- [VaultOps Toolkit](#vaultops-toolkit)
+  - [Contents](#contents)
+  - [Features](#features)
+  - [What This Script Is (and Isn’t)](#what-this-script-is-and-isnt)
+  - [Requirements](#requirements)
+  - [⚠️ Disclaimer](#️-disclaimer)
+  - [Quick Start](#quick-start)
+    - [Plug and Play (TL;DR)](#plug-and-play-tldr)
+  - [Detailed Toolkit Usage](#detailed-toolkit-usage)
+    - [NoSave](#nosave)
+    - [Fingerprint / Keypad solvers](#fingerprint--keypad-solvers)
+    - [Hotkeys \& Controls](#hotkeys--controls)
+    - [Options](#options)
+  - [Standalone Solvers](#standalone-solvers)
+  - [Building from Source](#building-from-source)
+  - [Architecture](#architecture)
+    - [Key Components](#key-components)
+  - [License \& Attribution](#license--attribution)
+
 ## Features
 
 - Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
@@ -23,19 +44,25 @@ An upgraded version of the standalone script **"GTA Casino Solver v2"**.
 - Manual and auto solving modes  
 - GUI app with labels (tooltips) and customizable hotkeys — designed for non-technical users  
 
-## How This Works
+## What This Script Is (and Isn’t)
 
-This is **not a mod** and does not modify the game in any way.
+**Is this a mod?**  
+No — it does not modify the game or its files. It's simply an AHK script with a GUI.
 
-VaultOps is an AutoHotkey-based application that:
-- Reads pixels from the screen (for puzzle detection)  
+**Does it inject or access game memory?**  
+No — it does not inject DLLs, modify memory, hook into the game process, or require disabling anti-cheat.
+
+**How does it work then?**  
+It runs externally using AutoHotkey:
+- Reads pixels from the screen (to detect puzzles)  
 - Sends keyboard and mouse inputs (to automate interactions)  
 
-It does **not**:
-- Inject DLLs  
-- Modify game memory  
-- Require disabling anti-cheat  
-- Hook into the game process  
+**Is this safe to use? Will I get banned?**  
+The solvers (fingerprint/keypad) function like input automation and are generally lower risk when used normally.  
+However, the **NoSave** feature involves exploiting game behavior — excessive or repeated use can increase the risk of account action.
+
+**So what should I keep in mind?**  
+Use responsibly, and avoid overexploiting the **(NoSave)** replay glitch.
 
 Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 
@@ -60,15 +87,11 @@ Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 
 ## ⚠️ Disclaimer
 
-This is a hobby project created while learning AutoHotkey, intended for educational and personal use.
+This is a hobby project built while learning AutoHotkey.
 
-- Use this tool responsibly.
-- It is not designed for unfair advantage or large-scale automation.
-- Make sure you understand and follow Rockstar Games' Terms of Service.
+Use responsibly, and keep in mind that some features may not align with Rockstar Games’ Terms of Service. You’re responsible for how you use it.
 
-This project is provided as-is, with no guarantees. The author is not responsible for any consequences resulting from its use.
-
-
+Provided as-is, with no guarantees.
 
 ## Quick Start
 No setup required — just run and use.
