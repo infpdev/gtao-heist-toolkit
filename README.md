@@ -2,7 +2,6 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
-
 A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0. Runs entirely locally, no data is sent anywhere.
 An upgraded version of the standalone script **"GTA Casino Solver v2"**.
 
@@ -14,19 +13,36 @@ An upgraded version of the standalone script **"GTA Casino Solver v2"**.
   </a>
 </p>
 
+
 ## Features
 
-- Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles
-- Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle
-- Manual and auto solving modes
-- NoSave — replay heist support
-- Cayo Perico PgUp bug fix
-- Customizable hotkeys
+- Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
+- Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
+- Cayo Perico **PgUp** bug fix  
+- **NoSave** — replay heist support  
+- Manual and auto solving modes  
+- GUI app with labels (tooltips) and customizable hotkeys — designed for non-technical users  
+
+## How This Works
+
+This is **not a mod** and does not modify the game in any way.
+
+VaultOps is an AutoHotkey-based application that:
+- Reads pixels from the screen (for puzzle detection)  
+- Sends keyboard and mouse inputs (to automate interactions)  
+
+It does **not**:
+- Inject DLLs  
+- Modify game memory  
+- Require disabling anti-cheat  
+- Hook into the game process  
+
+Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 
 ## Requirements
 
 - **Windows system** (tested on Windows 11) 
-**GTA Online** — tested on E&E, *may* work on Legacy
+- **GTA Online** — tested on E&E, *may* work on Legacy
 - **Supported screen resolution** (16:9)
   - The tool relies on fixed UI detection and will not work on unsupported resolutions  
   - **Currently supports:**
@@ -41,7 +57,6 @@ An upgraded version of the standalone script **"GTA Casino Solver v2"**.
   - Needed for NoSave functionality  
   - The app will attempt to enable it automatically if needed 
 
----
 
 ## ⚠️ Disclaimer
 
@@ -53,7 +68,7 @@ This is a hobby project created while learning AutoHotkey, intended for educatio
 
 This project is provided as-is, with no guarantees. The author is not responsible for any consequences resulting from its use.
 
----
+
 
 ## Quick Start
 No setup required — just run and use.
@@ -69,7 +84,7 @@ No setup required — just run and use.
 
 ### Plug and Play (TL;DR)
 
-1. Run the setup `vaultOps-Setup.exe` to extract the contents
+1. Downlaod and run the setup [vaultOps-Setup.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Setup.exe) to extract the contents
 2. Launch `vaultOps.exe`  
 3. Click **Enable Scripts**  
 4. Start a heist puzzle → the tool will detect it automatically  
@@ -78,7 +93,7 @@ No setup required — just run and use.
 - Press **Auto** `H` to solve instantly  
 - Or stay in **Manual** `M` to select prints yourself  
 
----
+
 
 ## Detailed Toolkit Usage
 ### NoSave
@@ -175,17 +190,17 @@ All hotkeys are customizable.
   - Higher = slower (more stable)  
   - Default: **40 ms** (Recommended)
 
----
+
 
 ## Standalone Solvers
 
 Don't want the full toolkit? Use any of these standalone SFX packages to run individual solvers:
 > Note: Each of these standalone solvers include the **NoSave** script, so you need not download the NoSave standalone script if you download any of the three solvers.
 
-- **[Casino Fingerprint Solver](https://placeholder-link-fingerprint)** — Standalone solver for the casino fingerprint scanner
-- **[Casino Keypad Solver](https://placeholder-link-keypad)** — Standalone solver for the casino keypad cracker
-- **[Cayo Perico El Rubio Solver](https://placeholder-link-elrubio)** — Standalone solver for cayo perico fingerprint puzzle
-- **[NoSave Standalone](https://placeholder-link-nosave)** — NoSave replay glitch tool only
+- **[Casino Fingerprint Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)** — Standalone solver for the casino fingerprint scanner
+- **[Casino Keypad Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)** — Standalone solver for the casino keypad cracker
+- **[Cayo Perico El Rubio Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)** — Standalone solver for cayo perico fingerprint puzzle
+- **[NoSave Standalone](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — NoSave replay glitch tool only
 
 **Installation:**
 1. Download any SFX package
@@ -194,13 +209,13 @@ Don't want the full toolkit? Use any of these standalone SFX packages to run ind
 
 Each standalone includes all necessary resources (UI templates, detection logic) and can be used without the main toolkit.
 
----
+
 
 ## Building from Source
 
 Want to verify the source code or build the executable yourself? See [BUILD.md](_src/lib/build_scripts/BUILD.md) for complete build instructions, prerequisites, and configuration options.
 
----
+
 
 ## Architecture
 
@@ -262,7 +277,6 @@ _src/
 
 Each solver operates independently with its own detection logic, state handling, and reset behavior. Solvers are instantiated on mode change and destroyed on exit to avoid conflicts.
 
----
 
 ## License & Attribution
 
