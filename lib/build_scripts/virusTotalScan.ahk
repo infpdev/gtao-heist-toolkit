@@ -5,7 +5,11 @@ SetWorkingDir A_ScriptDir
 
 global apiKey := ""
 
-; RunScan()
+; Run scan if script is executed directly (not imported)
+if (A_ScriptFullPath = A_LineFile) {
+    ShowCenteredToolTip ("Scanning vaultOps.exe", 17)
+    RunScan()
+}
 
 ; === Entry ===
 RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
@@ -161,7 +165,7 @@ ExtractFileHash(report) {
 ; === UpdateReadmeLink ===
 UpdateReadmeLink(fileHash) {
     readmeFile := "..\..\README.md"
-    
+
     if !FileExist(readmeFile) {
         MsgBox("README.md not found at: " readmeFile)
         return
@@ -170,17 +174,17 @@ UpdateReadmeLink(fileHash) {
     try {
         ; Read with UTF-8 encoding
         content := FileRead(readmeFile, "UTF-8")
-        
+
         ; Replace VirusTotal link with new one
         newLink := "https://www.virustotal.com/gui/file/" fileHash
         content := RegExReplace(content, "https://www\.virustotal\.com/gui/file/[A-Fa-f0-9]{64}", newLink)
-        
+
         ; Write back with UTF-8 encoding, preserving BOM
         FileDelete(readmeFile)
         f := FileOpen(readmeFile, "w", "UTF-8")
         f.Write(content)
         f.Close()
-        
+
         MsgBox("README.md updated with latest VirusTotal link!", "Success", 64)
     } catch as err {
         MsgBox("Failed to update README.md: " err.Message, "Error", 48)

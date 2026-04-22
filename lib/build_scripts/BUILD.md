@@ -34,13 +34,14 @@ The build script provides a GUI with the following options:
 
 - **Scan build with VirusTotal** (Yes / No, optional)
   - Optionally scans the generated setup file after building
-  - Requires a VirusTotal API key (free account available at [virustotal.com](https://www.virustotal.com))
+  - On selecting Yes, it will ask for your VirusTotal API key (free account available at [virustotal.com](https://www.virustotal.com))
   - API key is saved locally in `build_options.ini` for future scans
-  - Opens scan results in your browser automatically when complete
+  - Opens scan results in your browser automatically, and updates README.md, when complete
 
 - **Compile standalone scripts** (Yes / No)
   - Optionally compiles individual puzzle solvers as standalone executables
   - Standalone scripts can run independently without the main app
+
 - **Replace classes with originals** (Yes / No, conditional)
   - Only available if standalone scripts compilation is enabled
   - Creates temporary versions with original class definitions for compatibility

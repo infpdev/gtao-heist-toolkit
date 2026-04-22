@@ -10,7 +10,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.0.0"
+ver := "3.1.0"
 global trimmedVer := ""
 global isUnreleased := false
 if !IsSet(vaultOps)
@@ -46,7 +46,8 @@ CheckForUpdate() {
                 ToolTip("", , , 17)
             }
         } else {
-            throw Error("HTTP " Http.Status)  ; Force error handling
+            MsgBox("HTTP Error: " Http.Status, "Update Check Failed")
+            return
         }
 
     } catch {
