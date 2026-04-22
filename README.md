@@ -34,6 +34,7 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
   - [Architecture](#architecture)
     - [Key Components](#key-components)
   - [License \& Attribution](#license--attribution)
+  - [TODO](#todo)
 
 ## Features
 
@@ -115,7 +116,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/cdc1a4ac73d5cc87b0172ae80e7b8b7233719b99e5a6afb1e5e717409e3941ea
+> https://www.virustotal.com/gui/file/4f7769e30f866bdcfb14ea9b991b305aff367ebbb22f2448db7191c836f5e700
 
 
 <p align="center">
@@ -334,3 +335,6 @@ This project extends those implementations with:
 - Custom GUI and usability improvements  
 
 Shared for educational and personal use.
+
+## TODO
+- [ ] Add file-based caching for the solvers to improve performance and reduce redundant processing

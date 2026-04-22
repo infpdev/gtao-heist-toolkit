@@ -31,8 +31,13 @@ CheckForUpdate() {
         Http.Send()
         if (Http.Status >= 200 && Http.Status < 300) {
             result := Trim(Http.ResponseText)
-            if (VersionCompare(result, ver) == 1) {
-                msg := ver " ➤ " result "`n`n"
+            lines := StrSplit(result, "`n")
+            fetchedVersion := Trim(lines[1])
+            fetchedNews := lines.Length > 1 ? "What's new: " Trim(lines[2]) "`n`n" : ""
+
+            if (VersionCompare(fetchedVersion, ver) == 1) {
+                msg := ver " ➤ " fetchedVersion "`n`n"
+                    . fetchedNews
                     .
                     "Update available!`nA new version has been released.`n`nWould you like to open the GitHub page?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
