@@ -10,7 +10,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.0.0"
+ver := "3.1.0"
 global trimmedVer := ""
 global isUnreleased := false
 if !IsSet(vaultOps)
@@ -37,7 +37,7 @@ CheckForUpdate() {
                     "Update available!`nA new version has been released.`n`nWould you like to open the GitHub page?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
-                    Run "https://github.com/infpdev/gtao-heist-toolkit"
+                    Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
                 }
                 ExitApp
             } else {
@@ -46,16 +46,17 @@ CheckForUpdate() {
                 ToolTip("", , , 17)
             }
         } else {
-            throw Error("HTTP " Http.Status)  ; Force error handling
+            MsgBox("HTTP Error: " Http.Status, "Update Check Failed")
+            return
         }
 
     } catch {
         msg := "v" ver "`n`nFailed to check for updates.`n`n"
             . "If you think this is an error, please download the latest version manually.`n`n"
-            . "Do you want to open the GitHub page to download it?"
+            . "Do you want to see the update instructions?"
         res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
         if (res = "Yes") {
-            Run "https://github.com/infpdev/gtao-heist-toolkit"
+            Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
         }
         ExitApp
     }

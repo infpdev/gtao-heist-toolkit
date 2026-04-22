@@ -19,7 +19,7 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
 - [VaultOps Toolkit](#vaultops-toolkit)
   - [Contents](#contents)
   - [Features](#features)
-  - [What This Script Is (and Isn’t)](#what-this-script-is-and-isnt)
+  - [What This Script Is (and Isn't)](#what-this-script-is-and-isnt)
   - [Requirements](#requirements)
   - [⚠️ Disclaimer](#️-disclaimer)
   - [Quick Start](#quick-start)
@@ -44,34 +44,51 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
 - Manual and auto solving modes  
 - GUI app with labels (tooltips) and customizable hotkeys — designed for non-technical users  
 
-## What This Script Is (and Isn’t)
+## What This Script Is (and Isn't)
 
-**Is this a mod?**  
-No — it does not modify the game or its files. It's simply an AHK script with a GUI.
+<details>
+<summary>Is this a mod?</summary>
 
-**Does it inject or access game memory?**  
+No — it's not a mod, neither does it modify the game or its files. It's simply an AHK script with a GUI.
+</details>
+
+<details>
+<summary>Does it inject or access game memory?</summary>
+
 No — it does not inject DLLs, modify memory, hook into the game process, or require disabling anti-cheat.
+</details>
 
-**How does it work then?**  
+<details>
+<summary>How does it work then?</summary>
+
 It runs externally using AutoHotkey:
 - Reads pixels from the screen (to detect puzzles)  
 - Sends keyboard and mouse inputs (to automate interactions)  
+</details>
 
-**Is this safe to use? Will I get banned?**  
+<details>
+<summary>Is this safe to use? Will I get banned?</summary>
+
 The solvers (fingerprint/keypad) function like input automation and are generally lower risk when used normally.  
 However, the **NoSave** feature involves exploiting game behavior — excessive or repeated use can increase the risk of account action.
+</details>
 
-**So what should I keep in mind?**  
+<details>
+<summary>So what should I keep in mind?</summary>
+
 Use responsibly, and avoid overexploiting the **(NoSave)** replay glitch.
+</details>
 
 Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 
+
 ## Requirements
 
-- **Windows system** (tested on Windows 11) 
+- **Windows** (tested on Windows 11) 
 - **GTA Online** — tested on E&E, *may* work on Legacy
+- The game should be in **Borderless Fullscreen**, OR **Borderless Windowed** at maximum in-game resolution (matching your screen resolution).
 - **Supported screen resolution** (16:9)
-  - The tool relies on fixed UI detection and will not work on unsupported resolutions  
+  - The tool relies on fixed UI detection and only works when your screen resolution is one of the supported resolutions below.
   - **Currently supports:**
     - 1920×1080
     - 1600×900
@@ -98,7 +115,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/d918e0ea0e02d2de2bad4b908293bf95fb6e6467bca89b53bec0f8906c0f5657
+> https://www.virustotal.com/gui/file/cdc1a4ac73d5cc87b0172ae80e7b8b7233719b99e5a6afb1e5e717409e3941ea
 
 
 <p align="center">
@@ -110,7 +127,7 @@ No setup required — just run and use.
 1. Downlaod and run the setup [vaultOps-Setup.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Setup.exe) to extract the contents
 2. Launch `vaultOps.exe`  
 3. Click **Enable Scripts**  
-4. Start a heist puzzle → the tool will detect it automatically  
+4. Start a heist puzzle → the tool will detect it automatically → marks the prints for Casino hacks and auto-solves in case of  Cayo Perico fingerprints.
 
 (Optional)  
 - Press **Auto** `H` to solve instantly  
@@ -303,9 +320,17 @@ Each solver operates independently with its own detection logic, state handling,
 
 ## License & Attribution
 
-This project combines original code with extended functionality for automation and UI.
+This project builds upon existing ideas and implementations in the community:
 
-**Original Work:** Based on earlier fingerprint recognition implementations.  
-**Extensions:** Automatic solving algorithms, multi-heist support, and custom GUI.
+- **NoSave:** Based on the replay method described in  
+  https://www.reddit.com/r/gtaglitches/comments/okz5lg/exploit_pc_v1_nosavingsaveblock_method_ahk_replay/
+
+- **Fingerprint / Keypad detection:** Inspired by  
+  https://github.com/gbs0/gta_casino_solver
+
+This project extends those implementations with:
+- Automatic solving algorithms  
+- Multi-heist support  
+- Custom GUI and usability improvements  
 
 Shared for educational and personal use.

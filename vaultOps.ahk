@@ -875,5 +875,5 @@ Init() {
     }
 }
 
-SetTimer(() => (Init()), -1000)
-; Init()
+; SetTimer(() => (Init()), -1000)
+Init()
