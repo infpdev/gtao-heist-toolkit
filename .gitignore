@@ -1,5 +1,6 @@
 **/dist/
-settings.ini
+zSettings.ini
+zAnchorCache.ini
 VaultOps.exe
 temp_*.ahk
 build_options.ini

@@ -16,9 +16,7 @@ global vaultOps := true
 ; --- IMPORTS SECTION ---
 ; common imports
 #Include <updateCheck>
-#Include <sharedCanonicalHelpers>
 #Include <initHotkeys>
-
 
 ; vaultOps scripts
 #Include <scripts\CasinoFingerprint>
@@ -283,7 +281,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode, hackInProgress
         hackMode := "idle"
         hackInProgress := false
-        SetTimer(findAnchorsAndCreateInstance, 1000) ; Restart anchor detection timer
+        SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
         if (IsObject(heistInstance))
             if (heistInstance) {
                 try heistInstance.Destroy()
@@ -327,7 +325,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         UpdateGlobalStatus(false)
         if (scriptsEnabled) {
             SetTimer () => (
-                SetTimer(findAnchorsAndCreateInstance, 1000)
+                SetTimer(findAnchorsAndCreateInstance, 500)
             ), debug ? -5000 : -10000
         }
 
@@ -447,8 +445,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         scriptsEnabled := !scriptsEnabled
         clearAllToolTips(scriptsEnabled)
         if (scriptsEnabled) {
-            findAnchorsAndCreateInstance()
-            SetTimer(findAnchorsAndCreateInstance, 1000)
+            ; findAnchorsAndCreateInstance()
+            SetTimer(findAnchorsAndCreateInstance, 500)
         } else {
             SetTimer(findAnchorsAndCreateInstance, 0)
         }
@@ -874,6 +872,8 @@ Init() {
     SetHeistToggleBtnVisibility(scriptsEnabled)
     SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
 
+    LoadCache()
+
     if (noSave && !isFirewallEnabled())
         ToggleNoSaveStatus()
 
@@ -891,9 +891,15 @@ Init() {
         UpdateGlobalStatus(false)
     else {
         ; findAnchorsAndCreateInstance()
-        SetTimer(findAnchorsAndCreateInstance, 1000)
+        SetTimer(findAnchorsAndCreateInstance, 500)
         CreateHeistInstance()
     }
 }
 
 Init()
+
+OnExit(SaveCacheOnExit)
+
+SaveCacheOnExit(*) {
+    try SaveCache()
+}

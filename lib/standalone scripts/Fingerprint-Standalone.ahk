@@ -14,10 +14,10 @@ init() {
     standalone_switch_to_manual(*) {
         global hackMode := "manual"
         UpdateGlobalStatus(hackInProgress)
-        fingerPrint.ToggleManual()
+        fingerPrint.ManualMode()
     }
 
-    fingerPrint := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus, 0, folder)
+    fingerPrint := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedFingerprintAnchor, folder)
 
 }
 
@@ -111,28 +111,6 @@ class FingerprintSolver {
         this.Idle()
     }
 
-    Destroy() {
-        this.isShuttingDown := true
-        this.mode := "idle"
-        this.foundAnchor := false
-        this.isBusy := false
-        this.handoffPending := false
-        this.needStatusUpdate := true
-        this.counter := 0
-        this.lastSeenPrint := 0
-        this.lastFoundTick := 0
-        this.pArr := Map()
-        this.detected := []
-        this.anchorGroup := []
-
-        ; stop timer
-        try SetTimer this.fnMainLoop, 0
-        try SetTimer this.fnCheckFalsePositive, 0
-
-        ; clear ALL tooltips
-        this.clearAll()
-    }
-
     /**
      * @callback
      * Sets the key delay for input. Used by the main script to
@@ -162,25 +140,26 @@ class FingerprintSolver {
         updateGlobalStatus(false)
     }
 
-    /**
-     * Clears all tooltips (1 to 19)
-     */
-    clearAll() {
+    Destroy() {
+        this.isShuttingDown := true
+        this.mode := "idle"
+        this.foundAnchor := false
+        this.isBusy := false
+        this.handoffPending := false
+        this.needStatusUpdate := true
+        this.counter := 0
+        this.lastSeenPrint := 0
+        this.lastFoundTick := 0
+        this.pArr := Map()
+        this.detected := []
         this.anchorGroup := []
-        loop 19
-            ToolTip("", , , A_Index)
-    }
 
-    /**
-     * @template Toggles between manual and auto mode.
-     */
-    ToggleManual() {
-        this.mode := this.mode == "manual" ? "auto" : "manual"
-        if (this.mode == "manual") {
-            this.ManualMode()
-        } else
-            this.AutoHack()
+        ; stop timer
+        try SetTimer this.fnMainLoop, 0
+        try SetTimer this.fnCheckFalsePositive, 0
 
+        ; clear ALL tooltips
+        this.clearAll()
     }
 
     /**
@@ -347,30 +326,90 @@ class FingerprintSolver {
         }
     }
 
-    /**
-     * Initializes the detected array to all false. 
-     * Should be called at the start of each main loop iteration to reset the state for accurate detection and status updates.
-     */
-    InitDetected() {
-        this.detected := []
-        if this.pArr.Count > 4
-            this.pArr := Map()
-        loop 16
-            this.detected.Push(false)
+    checkTimeout() {
+        if (this.isShuttingDown || this.mode == "idle")
+            return
+
+        static timeoutMs := 10000
+        if (this.lastSeenPrint != 0 && !this.foundAnchor) {
+            timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
+            updateGlobalStatus(false, true, timeLeft)
+            this.needStatusUpdate := true
+            if (A_TickCount - this.lastFoundTick > timeoutMs) {
+                ResetHackMode()
+                this.Idle()
+            }
+        }
     }
 
     /**
-     * Counts the number of true values in the detected array and updates the counter property.
-     * Used to keep track of how many fingerprint pieces have been detected in the current loop iteration.
-     * @returns {number} The count of detected pieces
+     * Attempts to locate the anchor image on screen, using a cached pixel if available for faster search.
+     * Updates foundAnchor and prevFoundPixel state.
+     * @returns {Object|false} Anchor pixel coordinates if found, otherwise false.
      */
-    updateCounter() {
-        count := 0
-        for _, v in this.detected
-            if v
-                count++
-        this.counter := count
-        return count
+    findAnchor() {
+        global cachedFingerprintAnchor
+
+        static x1 := A_ScreenWidth * 0.74
+        static y1 := A_ScreenHeight * 0.22
+        static x2 := A_ScreenWidth * 0.8
+        static y2 := A_ScreenHeight * 0.25
+
+        if (this.isShuttingDown || this.mode == "idle") {
+            this.foundAnchor := false
+            return false
+        }
+
+        static lastFoundAnchor := 0
+        ToolTip "", , , 18
+
+        if (A_TickCount - lastFoundAnchor < 2000 && this.foundAnchor) {
+            return true
+        }
+        lastFoundAnchor := A_TickCount
+
+        localSearchSize := 20
+        fpFound := false
+        fpPx := 0, fpPy := 0
+
+        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
+        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
+            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+            sx1 := Max(cx - localSearchSize, 0)
+            sy1 := Max(cy - localSearchSize, 0)
+
+            fpFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+            )
+            if (fpFound && debug) {
+                ToolTip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
+            }
+        }
+
+        ; if not found, scan the full region (ImageSearch)
+        if (!fpFound) {
+            fpFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+            )
+            if (fpFound && debug) {
+                ToolTip "[class] Fingerprint anchor found!", fpPx + 10, fpPy, 18
+            }
+        }
+
+        if (fpFound) {
+            this.prevFoundPixel := { x: fpPx, y: fpPy }
+            cachedFingerprintAnchor := this.prevFoundPixel
+            this.foundAnchor := true
+            this.lastFoundTick := A_TickCount
+            return { x: fpPx, y: fpPy }
+        } else {
+            this.prevFoundPixel := 0
+            cachedFingerprintAnchor := 0
+            this.foundAnchor := 0
+            if (debug) {
+                ToolTip "No anchors found", 0, 0, 18
+                ; Sleep 500
+            }
+            return false
+        }
     }
 
     /**
@@ -431,86 +470,6 @@ class FingerprintSolver {
         return []
     }
 
-    checkTimeout() {
-        if (this.isShuttingDown || this.mode == "idle")
-            return
-
-        static timeoutMs := 10000
-        if (this.lastSeenPrint != 0 && !this.foundAnchor) {
-            timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft)
-            this.needStatusUpdate := true
-            if (A_TickCount - this.lastFoundTick > timeoutMs) {
-                ResetHackMode()
-                this.Idle()
-            }
-        }
-    }
-
-    /**
-     * Attempts to locate the anchor image on screen, using a cached pixel if available for faster search.
-     * Updates foundAnchor and prevFoundPixel state.
-     * @returns {Object|false} Anchor pixel coordinates if found, otherwise false.
-     */
-    findAnchor() {
-        if (this.isShuttingDown || this.mode == "idle") {
-            this.foundAnchor := false
-            return false
-        }
-
-        static lastFoundAnchor := 0
-        ToolTip "", , , 18
-
-        if (A_TickCount - lastFoundAnchor < 2000 && this.foundAnchor) {
-            return true
-        }
-        lastFoundAnchor := A_TickCount
-
-        x1 := this.scrW * 0.74, y1 := this.scrH * 0.22, x2 := this.scrW * 0.8, y2 := this.scrH * 0.25
-
-        localSearchSize := 20
-        fpFound := false
-        fpPx := 0, fpPy := 0
-        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
-        if (this.prevFoundPixel && this.prevFoundPixel.x && this.prevFoundPixel.y) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
-            sx2 := Min(cx + localSearchSize, this.scrW)
-            sy2 := Min(cy + localSearchSize, this.scrH)
-            fpFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (fpFound && debug) {
-                ToolTip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
-                ; Sleep 500
-            }
-        }
-        ; if not found, scan the full region (ImageSearch)
-        if (!fpFound) {
-            fpFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (fpFound && debug) {
-                ToolTip "[class] Fingerprint anchor found!", fpPx + 10, fpPy, 18
-                ; Sleep 500
-            }
-        }
-
-        if (fpFound) {
-            this.prevFoundPixel := { x: fpPx, y: fpPy }
-            this.foundAnchor := true
-            this.lastFoundTick := A_TickCount
-            return { x: fpPx, y: fpPy }
-        } else {
-            this.prevFoundPixel := false
-            this.foundAnchor := false
-            if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
-                ; Sleep 500
-            }
-            return false
-        }
-    }
-
     /**
      * Performs ImageSearch for a given fingerprint piece N in the specified region.
      * If found, increments counter and records the position.
@@ -534,12 +493,6 @@ class FingerprintSolver {
                 this.pArr.Delete(N)
             ToolTip("", , , N)
         }
-    }
-
-    ; Adjust a value by the scale factor.
-    ; Used to adjust offsets for smaller resolutions to avoid overlapping of tooltips over the prints.
-    Adjust(val, strength := 1) {
-        return val + (val * (this.scale - 1) * strength)
     }
 
     /**
@@ -664,6 +617,34 @@ class FingerprintSolver {
         }
     }
 
+    ; ===== HELPERS =====
+
+    /**
+     * Initializes the detected array to all false. 
+     * Should be called at the start of each main loop iteration to reset the state for accurate detection and status updates.
+     */
+    InitDetected() {
+        this.detected := []
+        if this.pArr.Count > 4
+            this.pArr := Map()
+        loop 16
+            this.detected.Push(false)
+    }
+
+    /**
+     * Counts the number of true values in the detected array and updates the counter property.
+     * Used to keep track of how many fingerprint pieces have been detected in the current loop iteration.
+     * @returns {number} The count of detected pieces
+     */
+    updateCounter() {
+        count := 0
+        for _, v in this.detected
+            if v
+                count++
+        this.counter := count
+        return count
+    }
+
     ; Sorts pArr based on the detected postions to determine the order of selection.
     SortArray(arr) {
         for i, _ in arr {
@@ -676,6 +657,21 @@ class FingerprintSolver {
             }
         }
 
+    }
+
+    ; Adjust a value by the scale factor.
+    ; Used to adjust offsets for smaller resolutions to avoid overlapping of tooltips over the prints.
+    Adjust(val, strength := 1) {
+        return val + (val * (this.scale - 1) * strength)
+    }
+
+    /**
+     * Clears all tooltips (1 to 19)
+     */
+    clearAll() {
+        this.anchorGroup := []
+        loop 19
+            ToolTip("", , , A_Index)
     }
 
 }
