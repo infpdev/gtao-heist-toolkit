@@ -19,6 +19,8 @@ global isUnreleased := false
 if !IsSet(vaultOps)
     global vaultOps := false
 
+CheckForUpdate()
+
 CheckForUpdate() {
     global ver
     updateHttpTimeoutMs := 5000
@@ -49,11 +51,14 @@ CheckForUpdate() {
 
             if (UPDATE_PRIORITY != NO_UPDATE_REQUIRED) {
                 msg := ver " ➤ " fetchedVersion "`n`n"
-                    . fetchedNews
                     . (UPDATE_PRIORITY == MAJOR_UPDATE_REQUIRED ?
-                        "Update available!`nA new version has been released.`n`nPlease update the app to continue using it.`n`nWould you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
+                        "Update available!`nA new version has been released.`n`nPlease update the app to continue using it.`n`n"
+                        . fetchedNews
+                        . "Would you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                             :
-                            "Update available!`nA new version has been released.`n`nPlease update the app to stop seeing this message.`n`nWould you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
+                            "Update available!`nA new version has been released.`n`nPlease update the app to stop seeing this message.`n`n"
+                            . fetchedNews
+                            . "Would you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                     )
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
@@ -109,5 +114,3 @@ VersionCompare(fetched, current) {
     }
     return 0
 }
-
-CheckForUpdate()

@@ -28,8 +28,8 @@ if !A_IsAdmin {
 UpdateTooltip() {
     global noSaveActive
     status := noSaveActive ? "NoSave: enabled" : "NoSave: disabled"
-    key := (noSaveActive ? "Press " noSaveKey " to disable" : "Press " noSaveKey " to enable") (
-        "`nExit: " terminateKey
+    key := (noSaveActive ? "Press " CanonicalToDisplay(noSaveKey) " to disable" : "Press " CanonicalToDisplay(noSaveKey) " to enable") (
+        "`nExit: " CanonicalToDisplay(terminateKey)
     )
     ToolTip(status "`n" key, A_ScreenWidth, 0, 20)
 }

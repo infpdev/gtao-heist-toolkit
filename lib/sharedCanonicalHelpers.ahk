@@ -38,57 +38,6 @@
         return false
     }
 
-    /**
-     * @description Converts canonical hotkey to readable UI label
-     * @param {string} canonical - Canonical hotkey format
-     * @returns {string} Display-friendly format (e.g., "Ctrl+Shift+A")
-     */
-    CanonicalToDisplay(canonical) {
-        canonical := Trim(canonical)
-        if (canonical = "")
-            return ""
-
-        mods := ""
-        idx := 1
-        while (idx <= StrLen(canonical)) {
-            ch := SubStr(canonical, idx, 1)
-            if (ch = "^") {
-                mods .= "Ctrl+"
-                idx++
-                continue
-            }
-            if (ch = "+") {
-                mods .= "Shift+"
-                idx++
-                continue
-            }
-            if (ch = "!") {
-                mods .= "Alt+"
-                idx++
-                continue
-            }
-            break
-        }
-
-        keyPart := SubStr(canonical, idx)
-        if (keyPart = "")
-            return mods != "" ? SubStr(mods, 1, -1) : ""
-
-        if RegExMatch(keyPart, "^vk([0-9A-Fa-f]{2})sc[0-9A-Fa-f]{3}", &match) {
-            vkStr := "vk" match[1]
-            keyName := GetKeyName(vkStr)
-            if (keyName != "")
-                return mods keyName
-        }
-
-        if RegExMatch(keyPart, "i)^(LButton|RButton|MButton|XButton1|XButton2|WheelUp|WheelDown|WheelLeft|WheelRight)$"
-        ) {
-            return mods keyPart
-        }
-
-        return mods keyPart
-    }
-
     ; Converts a user-friendly display string back to canonical format
     ; Examples: "Ctrl+Shift+A" → "^+vk41sc030", "Alt+LButton" → "!LButton"
     ; Returns empty string if input is invalid.

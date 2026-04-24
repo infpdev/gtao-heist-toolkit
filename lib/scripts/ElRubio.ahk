@@ -79,29 +79,6 @@ class ElRubioSolver {
     }
 
     /**
-     * Cleans up solver state, tooltips, and timers. Call before deleting instance or switching heist.
-     * @returns {void}
-     */
-    Destroy() {
-        this.isShuttingDown := true
-        this.mode := "idle"
-        this.traversed.Clear()
-        this.solved.Clear()
-        this.lastSeenPrint := 0
-        this.lastFoundTick := 0
-        this.foundAnchor := false
-        this.isBusy := false
-        this.isChangingPrint := false
-        try SetTimer this.fnMainLoop, 0
-        try SetTimer this.fnCheckFalsePositive, 0
-        if (debug)
-            ToolTip "El Rubio solver destroyed", 0, 0, 18
-        this.clearAll()
-        ResetHackMode()
-
-    }
-
-    /**
      * Sets the key delay for input. Used by the main script to configure the solver's input timing.
      * @param {number} delayMs - Delay in milliseconds
      * @returns {void}
@@ -128,12 +105,26 @@ class ElRubioSolver {
     }
 
     /**
-     * Clears all tooltips (1 to 19).
+     * Cleans up solver state, tooltips, and timers. Call before deleting instance or switching heist.
+     * @returns {void}
      */
-    clearAll() {
-        this.fpGroup := []
-        loop 19
-            ToolTip("", , , A_Index)
+    Destroy() {
+        this.isShuttingDown := true
+        this.mode := "idle"
+        this.traversed.Clear()
+        this.solved.Clear()
+        this.lastSeenPrint := 0
+        this.lastFoundTick := 0
+        this.foundAnchor := false
+        this.isBusy := false
+        this.isChangingPrint := false
+        try SetTimer this.fnMainLoop, 0
+        try SetTimer this.fnCheckFalsePositive, 0
+        if (debug)
+            ToolTip "El Rubio solver destroyed", 0, 0, 18
+        this.clearAll()
+        ResetHackMode()
+
     }
 
     /**
@@ -176,9 +167,8 @@ class ElRubioSolver {
         SetTimer this.fnMainLoop, 0
         this.findAnchor()
         this.getFingerprintGroup()
-        this.MainLoop()
         SetTimer this.fnMainLoop, 500
-        updateGlobalStatus(hackInProgress)
+        updateGlobalStatus(false)
     }
 
     /**
@@ -195,20 +185,6 @@ class ElRubioSolver {
         updateGlobalStatus(this.foundAnchor)
         this.findAnchor()
         SetTimer this.fnMainLoop, 200
-    }
-
-    /**
-     * Resets solver state, tooltips, and caches. Called when all rows are solved or anchor is lost.
-     * @returns {void}
-     */
-    ResetState() {
-        this.clearAll()
-        if (debug)
-            ToolTip "All rows solved / lost anchor", 0, 0, 18
-        this.traversed.Clear()
-        this.solved.Clear()
-        this.foundAnchor := false
-        this.needStatusUpdate := true
     }
 
     /**
@@ -240,6 +216,7 @@ class ElRubioSolver {
 
             fpGroupID := this.getFingerprintGroup()
             if (!this.foundAnchor || !fpGroupID || this.isChangingPrint) {
+                this.isBusy := false
                 return
             }
 
@@ -248,8 +225,10 @@ class ElRubioSolver {
                 return
             }
             row := this.FindElRing()
-            if (row = -1)
+            if (row = -1) {
+                this.isBusy := false
                 return
+            }
 
             ; STEP 1: TRAVERSE (only if needed)
             if !this.traversed.Has(row) {
@@ -264,6 +243,7 @@ class ElRubioSolver {
                     }
                 } else {
                     ; couldn't align yet → try next tick
+                    this.isBusy := false
                     return
                 }
 
@@ -279,6 +259,7 @@ class ElRubioSolver {
                     this.solved[row] := true
                 } else {
                     ToolTip "Solve failed row " row, 0, 200, 19
+                    this.isBusy := false
                     return
                 }
             } else {
@@ -305,7 +286,208 @@ class ElRubioSolver {
         }
     }
 
-    ; Moves cursor to the given row index (1-8) using the shortest path (circular). Only sends input if needed.
+    checkTimeout() {
+        if (!this.foundAnchor && this.lastFoundTick != 0 && this.mode == "auto") {
+            timeLeft := Integer((10000 - (A_TickCount - this.lastFoundTick)) / 1000) + 1
+            updateGlobalStatus(false, true, timeLeft)
+            if (A_TickCount - this.lastFoundTick > 10000) {
+                ResetHackMode()
+                this.Idle()
+            }
+        }
+
+    }
+
+    /**
+     * Searches for the El Rubio anchor image on screen. Updates state and returns anchor position if found.
+     * @returns {object|boolean} {x, y} if found, false otherwise.
+     */
+    findAnchor() {
+        global cachedRubioAnchor
+
+        static timeoutMs := 10000
+        static lastCalled := 0
+
+        static localSearchSize := 5
+
+        static x1 := A_ScreenWidth * 0.48
+        static y1 := A_ScreenHeight * 0.1
+        static x2 := A_ScreenWidth * 0.59
+        static y2 := A_ScreenHeight * 0.11
+
+        now := A_TickCount
+        if (now - lastCalled < 1000 && this.prevFoundPixel && !this.isChangingPrint) {
+            return this.prevFoundPixel
+        }
+
+        lastCalled := now
+
+        elFound := false
+        fpPx := 0, fpPy := 0
+
+        ; Always try prevFoundPixel region first if available
+        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x != 0 && this.prevFoundPixel.y != 0) {
+            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+            sx1 := Max(cx - localSearchSize, 0)
+            sy1 := Max(cy - localSearchSize, 0)
+
+            elFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
+            )
+        }
+
+        ; If not found, fall back to full region
+        if (!elFound) {
+            elFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
+            )
+        }
+
+        if (elFound) {
+            if (debug) {
+                ToolTip("EL RUBIO ANCHOR", fpPx + 2, fpPy, 18)
+            }
+
+            if (this.needStatusUpdate) {
+                updateGlobalStatus(true)
+                this.needStatusUpdate := false
+            }
+
+            this.prevFoundPixel := { x: fpPx, y: fpPy }
+            cachedRubioAnchor := { x: fpPx, y: fpPy }
+            this.foundAnchor := true
+            this.lastFoundTick := A_TickCount
+            this.isChangingPrint := false
+
+            return { x: fpPx, y: fpPy }
+        } else {
+            this.prevFoundPixel := 0
+            this.foundAnchor := 0
+            if (debug) {
+                ToolTip "EL RUBIO anchor not found", 0, 0, 18
+            }
+
+            if (this.lastSeenPrint != 0 && this.lastFoundTick != 0) {
+                if (debug)
+                    ToolTip "EL RUBIO anchor lost! Last seen print group: " this.lastSeenPrint, 0, 0, 18
+                if (!this.isChangingPrint)
+                    this.ResetState()
+                this.isChangingPrint := true
+                this.needStatusUpdate := true
+
+            }
+
+            return false
+        }
+    }
+
+    /**
+     * Detects which fingerprint group is currently visible (internal helper).
+     * @returns {number|boolean} Group index if found, false otherwise.
+     */
+    getFingerprintGroup() {
+        static lastCalled := 0
+
+        static x1 := 0.57 * A_ScreenWidth
+        static y1 := 0.324 * A_ScreenHeight
+        static x2 := 0.715 * A_ScreenWidth
+        static y2 := 0.42 * A_ScreenHeight
+
+        if (!this.foundAnchor)
+            return false
+
+        now := A_TickCount
+        if (now - lastCalled < 2000 && this.lastSeenPrint) {
+            return this.lastSeenPrint
+        }
+
+        this.fpGroup := []
+        lastCalled := now
+        foundPrint := 0
+        Px := 0, Py := 0
+
+        if (debug) {
+            ToolTip "⇲", x1, y1 - 20, 1
+            ToolTip "⇱", x2, y2 + 20, 1
+        }
+
+        loop 7 {
+            idx := A_Index
+            file := this.folder "rPrint" idx ".png"
+            try {
+                if ImageSearch(&Px, &Py, x1, y1, x2, y2, "*" this.printTolerance " " file) {
+                    foundPrint := idx
+                    this.lastSeenPrint := idx
+
+                    this.shouldAbort := false
+
+                    ToolTip("Found Fingerprint print " idx, (x1 + x2) / 2 - 20, this.scrH // 2, 16)
+
+                    this.fpGroup := idx
+                    this.isChangingPrint := false
+                    return idx
+                }
+            } catch {
+            }
+        }
+        this.shouldAbort := true
+        return false
+    }
+
+    /**
+     * Attempts to solve the given row by sending the correct number of right/left key presses to align, then sends down to move to the next row.
+     * @param {number} row - Row index (1-8)
+     * @param {number} fpGroupID - Fingerprint group ID
+     * @returns {boolean} True if solved, false otherwise.
+     */
+    Solve(row, fpGroupID, withRespectToAlt := false) {
+        SetKeyDelay(this.delay, this.delay)
+
+        if (this.obviousReturn())
+            return false
+
+        if (!this.traversed.Has(row)) {
+            ToolTip "Cannot solve row " row " without traversing first!", 0, 0, 19
+            sleep 1000
+            return false
+        }
+
+        ; Step 1: Move to correct segment using smart clicks (circular)
+        base := withRespectToAlt ? 5 : 1
+        offset := Mod(row - base + 8, 8)
+
+        if (offset <= 4) {
+            if (offset > 0)
+                Send "{Right " offset "}"
+        } else {
+            Send "{Left " (8 - offset) "}"
+        }
+
+        Sleep 10
+        Send "{Down}"
+        sleep 10
+
+        return true
+    }
+
+    ; ===== HELPERS =====
+
+    /**
+     * Searches for the El Rubio ring on screen and returns the detected row index (1-8), or -1 if not found.
+     * @returns {number} Integer row index (1-8) or -1.
+     */
+    FindElRing() {
+        static x1 := A_ScreenWidth * 0.199
+        static y1 := A_ScreenHeight * 0.323
+        static x2 := A_ScreenWidth * 0.202
+        static y2 := A_ScreenHeight * 0.891
+
+        fx := 0, fy := 0
+        if !ImageSearch(&fx, &fy, x1, y1, x2, y2, "*50 " this.folder "elRing.png")
+            return -1
+        row := this.Pos(fx, fy, -1)
+        this.cachedCursorRow := row
+        return row
+    }
+
     /**
      * Moves cursor to the given row index (1-8) using the shortest path (circular). Only sends input if needed.
      * @param {number} targetRow - Target row index (1-8)
@@ -404,32 +586,6 @@ class ElRubioSolver {
         file2 := this.folder "r" fpGroupID "a.png"
         altFileExists := FileExist(file2)
 
-        ; Try cached position first (same row + print), up to 8 misses before full fallback
-        ; if (IsObject(cachedPrint)
-        ; && cachedPrint.row = row
-        ; && cachedPrint.fp = fpGroupID
-        ; && failCount < 8) {
-        ;     localRadius := 5
-        ;     sx1 := Max(Round(cachedPrint.x - localRadius), Round(x1))
-        ;     sy1 := Max(Round(cachedPrint.y - localRadius), Round(y1))
-        ;     sx2 := Min(Round(cachedPrint.x + localRadius), Round(x2))
-        ;     sy2 := Min(Round(cachedPrint.y + localRadius), Round(y2))
-
-        ;     try {
-        ;         if ImageSearch(&Px, &Py, sx1, sy1, sx2, sy2, "*" this.printTolerance " " file) {
-        ;             if (debug) {
-        ;                 ToolTip "Found print (cached) " fpGroupID " in row " row, Px + 20, Py - 50, 18
-        ;                 sleep 100
-        ;             }
-        ;             cachedPrint := { x: Px, y: Py, row: row, fp: fpGroupID }
-        ;             failCount := 0
-        ;             return true
-        ;         } else {
-        ;             failCount += 1
-        ;         }
-        ;     }
-        ; }
-
         ; Fallback to full region
         if (debug) {
             ToolTip "row " row "⇲", x1, y1 - 20, 11
@@ -456,212 +612,6 @@ class ElRubioSolver {
                 failCount := 0
         }
         return false
-    }
-
-    /**
-     * Returns true if the solver should exit early due to state (anchor lost, changing print, not auto, or shutting down).
-     * @returns {boolean}
-     */
-    obviousReturn() {
-        return (!this.foundAnchor || this.isChangingPrint || this.mode != "auto" || this.isShuttingDown)
-    }
-
-    /**
-     * Attempts to solve the given row by sending the correct number of right/left key presses to align, then sends down to move to the next row.
-     * @param {number} row - Row index (1-8)
-     * @param {number} fpGroupID - Fingerprint group ID
-     * @returns {boolean} True if solved, false otherwise.
-     */
-    Solve(row, fpGroupID, withRespectToAlt := false) {
-        SetKeyDelay(this.delay, this.delay)
-
-        if (this.obviousReturn())
-            return false
-
-        if (!this.traversed.Has(row)) {
-            ToolTip "Cannot solve row " row " without traversing first!", 0, 0, 19
-            sleep 1000
-            return false
-        }
-
-        ; Step 1: Move to correct segment using smart clicks (circular)
-        base := withRespectToAlt ? 5 : 1
-        offset := Mod(row - base + 8, 8)
-
-        if (offset <= 4) {
-            if (offset > 0)
-                Send "{Right " offset "}"
-        } else {
-            Send "{Left " (8 - offset) "}"
-        }
-
-        Sleep 10
-        Send "{Down}"
-        sleep 10
-
-        return true
-    }
-
-    ; Detects which fingerprint group is currently visible (internal helper).
-    /**
-     * Detects which fingerprint group is currently visible (internal helper).
-     * @returns {number|boolean} Group index if found, false otherwise.
-     */
-    getFingerprintGroup() {
-        static lastCalled := 0
-
-        static x1 := 0.57 * A_ScreenWidth
-        static y1 := 0.324 * A_ScreenHeight
-        static x2 := 0.715 * A_ScreenWidth
-        static y2 := 0.42 * A_ScreenHeight
-
-        if (!this.foundAnchor)
-            return false
-
-        now := A_TickCount
-        if (now - lastCalled < 2000 && this.lastSeenPrint) {
-            return this.lastSeenPrint
-        }
-
-        this.fpGroup := []
-        lastCalled := now
-        foundPrint := 0
-        Px := 0, Py := 0
-
-        if (debug) {
-            ToolTip "⇲", x1, y1 - 20, 1
-            ToolTip "⇱", x2, y2 + 20, 1
-        }
-
-        loop 7 {
-            idx := A_Index
-            file := this.folder "rPrint" idx ".png"
-            try {
-                if ImageSearch(&Px, &Py, x1, y1, x2, y2, "*" this.printTolerance " " file) {
-                    foundPrint := idx
-                    this.lastSeenPrint := idx
-
-                    this.shouldAbort := false
-
-                    ToolTip("Found Fingerprint print " idx, (x1 + x2) / 2 - 20, this.scrH // 2, 16)
-
-                    this.fpGroup := idx
-                    this.isChangingPrint := false
-                    return idx
-                }
-            } catch {
-            }
-        }
-        this.shouldAbort := true
-        return false
-    }
-
-    /**
-     * Searches for the El Rubio anchor image on screen. Updates state and returns anchor position if found.
-     * @returns {object|boolean} {x, y} if found, false otherwise.
-     */
-    findAnchor() {
-        static timeoutMs := 10000
-        static lastCalled := 0
-
-        static x1 := A_ScreenWidth * 0.48
-        static y1 := A_ScreenHeight * 0.1
-        static x2 := A_ScreenWidth * 0.59
-        static y2 := A_ScreenHeight * 0.11
-        static localSearchSize := 5
-
-        now := A_TickCount
-        if (now - lastCalled < 1000 && this.prevFoundPixel && !this.isChangingPrint) {
-            return this.prevFoundPixel
-        }
-
-        lastCalled := now
-
-        elFound := false
-        fpPx := 0, fpPy := 0
-
-        ; Always try prevFoundPixel region first if available
-        if (this.prevFoundPixel && this.prevFoundPixel.x != 0 && this.prevFoundPixel.y != 0) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
-            sx2 := Min(cx + localSearchSize, this.scrW)
-            sy2 := Min(cy + localSearchSize, this.scrH)
-            elFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
-            )
-        }
-
-        ; If not found, fall back to full region
-        if (!elFound) {
-            elFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
-            )
-        }
-        ; ToolTip ".", x1, y1 - 20, 11
-        ; ToolTip ".", x2, y2 + 20, 12
-        if (elFound) {
-            if (debug) {
-                ToolTip("EL RUBIO ANCHOR", fpPx + 2, fpPy, 18)
-            }
-
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
-                this.needStatusUpdate := false
-            }
-            this.prevFoundPixel := { x: fpPx, y: fpPy }
-            this.foundAnchor := true
-            this.lastFoundTick := A_TickCount
-            this.isChangingPrint := false
-
-            return { x: fpPx, y: fpPy }
-        } else {
-            this.prevFoundPixel := false
-            this.foundAnchor := false
-            if (debug) {
-                ToolTip "EL RUBIO anchor not found", 0, 0, 18
-            }
-
-            if (this.lastSeenPrint != 0 && this.lastFoundTick != 0) {
-                if (debug)
-                    ToolTip "EL RUBIO anchor lost! Last seen print group: " this.lastSeenPrint, 0, 0, 18
-                if (!this.isChangingPrint)
-                    this.ResetState()
-                this.isChangingPrint := true
-                this.needStatusUpdate := true
-
-            }
-
-            return false
-        }
-    }
-
-    checkTimeout() {
-        if (!this.foundAnchor && this.lastFoundTick != 0 && this.mode == "auto") {
-            timeLeft := Integer((10000 - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft)
-            if (A_TickCount - this.lastFoundTick > 10000) {
-                ResetHackMode()
-                this.Idle()
-            }
-        }
-
-    }
-
-    /**
-     * Searches for the El Rubio ring on screen and returns the detected row index (1-8), or -1 if not found.
-     * @returns {number} Integer row index (1-8) or -1.
-     */
-    FindElRing() {
-        static x1 := A_ScreenWidth * 0.199
-        static y1 := A_ScreenHeight * 0.323
-        static x2 := A_ScreenWidth * 0.202
-        static y2 := A_ScreenHeight * 0.891
-
-        fx := 0, fy := 0
-        if !ImageSearch(&fx, &fy, x1, y1, x2, y2, "*50 " this.folder "elRing.png")
-            return -1
-        row := this.Pos(fx, fy, -1)
-        this.cachedCursorRow := row
-        return row
     }
 
     /**
@@ -702,4 +652,34 @@ class ElRubioSolver {
         return idx
     }
 
+    /**
+     * Returns true if the solver should exit early due to state (anchor lost, changing print, not auto, or shutting down).
+     * @returns {boolean}
+     */
+    obviousReturn() {
+        return (!this.foundAnchor || this.isChangingPrint || this.mode != "auto" || this.isShuttingDown)
+    }
+
+    /**
+     * Resets solver state, tooltips, and caches. Called when all rows are solved or anchor is lost.
+     * @returns {void}
+     */
+    ResetState() {
+        this.clearAll()
+        if (debug)
+            ToolTip "All rows solved / lost anchor", 0, 0, 18
+        this.traversed.Clear()
+        this.solved.Clear()
+        this.foundAnchor := false
+        this.needStatusUpdate := true
+    }
+
+    /**
+     * Clears all tooltips (1 to 19).
+     */
+    clearAll() {
+        this.fpGroup := []
+        loop 19
+            ToolTip("", , , A_Index)
+    }
 }

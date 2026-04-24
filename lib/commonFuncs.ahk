@@ -53,3 +53,143 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
         DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
     }
 }
+
+/**
+ * @description Converts canonical hotkey to readable UI label
+ * @param {string} canonical - Canonical hotkey format
+ * @returns {string} Display-friendly format (e.g., "Ctrl+Shift+A")
+ */
+CanonicalToDisplay(canonical) {
+    canonical := Trim(canonical)
+    if (canonical = "")
+        return ""
+
+    mods := ""
+    idx := 1
+    while (idx <= StrLen(canonical)) {
+        ch := SubStr(canonical, idx, 1)
+        if (ch = "^") {
+            mods .= "Ctrl+"
+            idx++
+            continue
+        }
+        if (ch = "+") {
+            mods .= "Shift+"
+            idx++
+            continue
+        }
+        if (ch = "!") {
+            mods .= "Alt+"
+            idx++
+            continue
+        }
+        break
+    }
+
+    keyPart := SubStr(canonical, idx)
+    if (keyPart = "")
+        return mods != "" ? SubStr(mods, 1, -1) : ""
+
+    if RegExMatch(keyPart, "^vk([0-9A-Fa-f]{2})sc[0-9A-Fa-f]{3}", &match) {
+        vkStr := "vk" match[1]
+        keyName := GetKeyName(vkStr)
+        if (keyName != "")
+            return mods keyName
+    }
+
+    if RegExMatch(keyPart, "i)^(LButton|RButton|MButton|XButton1|XButton2|WheelUp|WheelDown|WheelLeft|WheelRight)$"
+    ) {
+        return mods keyPart
+    }
+
+    return mods keyPart
+}
+
+global cacheFile := A_ScriptDir "\zAnchorCache.ini" ; Global variable for cache file path, used in LoadCache and SaveCache functions
+
+/**
+ * @description Loads cached anchor coordinates from anchorCache.ini into global cache variables.
+ * Creates the cache file with zero defaults when it does not exist.
+ * @returns {boolean} True when load flow completes.
+ */
+LoadCache() {
+    global cachedFingerprintAnchor, cachedKeypadAnchor, cachedRubioAnchor
+
+    ; cacheFile := A_ScriptDir "\zAnchorCache.ini"
+    if !FileExist(cacheFile) {
+        FileAppend(
+            "[fingerprint]`nx=0`ny=0`n`n"
+            . "[keypad]`nx=0`ny=0`n`n"
+            . "[rubio]`nx=0`ny=0`n",
+            cacheFile,
+            "UTF-8-RAW"
+        )
+    }
+
+    cachedFingerprintAnchor := ReadCachedAnchor(cacheFile, "fingerprint")
+    cachedKeypadAnchor := ReadCachedAnchor(cacheFile, "keypad")
+    cachedRubioAnchor := ReadCachedAnchor(cacheFile, "rubio")
+    return true
+}
+
+/**
+ * @description Persists current cached anchor objects to anchorCache.ini.
+ * @returns {boolean} False when required globals are not initialized or cache file is missing; otherwise true.
+ */
+SaveCache() {
+    global cachedFingerprintAnchor, cachedKeypadAnchor, cachedRubioAnchor
+
+    ; cacheFile := A_ScriptDir "\zAnchorCache.ini"
+    if !FileExist(cacheFile) || !IsSet(cachedFingerprintAnchor) || !IsSet(cachedKeypadAnchor) || !IsSet(
+        cachedRubioAnchor)
+        return false
+
+    WriteCachedAnchor(cacheFile, "fingerprint", cachedFingerprintAnchor)
+    WriteCachedAnchor(cacheFile, "keypad", cachedKeypadAnchor)
+    WriteCachedAnchor(cacheFile, "rubio", cachedRubioAnchor)
+    return true
+}
+
+/**
+ * @description Reads one anchor section from cache and returns either coordinates object or 0 sentinel.
+ * @param {string} cacheFile - Full path to cache ini file.
+ * @param {string} section - INI section name (fingerprint/keypad/rubio).
+ * @returns {object|number} Object {x, y} for valid values, otherwise 0.
+ */
+ReadCachedAnchor(cacheFile, section) {
+    try {
+        x := Trim(IniRead(cacheFile, section, "x", 0))
+        y := Trim(IniRead(cacheFile, section, "y", 0))
+        if (x = "" || y = "")
+            return 0
+
+        xVal := Integer(x)
+        yVal := Integer(y)
+        if (xVal <= 0 || yVal <= 0)
+            return 0
+
+        return { x: xVal, y: yVal }
+    } catch {
+        return 0
+    }
+}
+
+/**
+ * @description Writes one anchor cache entry as x/y values, or zeros when anchor is invalid.
+ * @param {string} cacheFile - Full path to cache ini file.
+ * @param {string} section - INI section name (fingerprint/keypad/rubio).
+ * @param {object|number} anchor - Anchor object with x/y or falsy/0 to reset values.
+ * @returns {void}
+ */
+WriteCachedAnchor(cacheFile, section, anchor) {
+    try {
+        if (IsObject(anchor) && anchor.HasOwnProp("x") && anchor.HasOwnProp("y") && anchor.x && anchor.y) {
+            IniWrite(anchor.x, cacheFile, section, "x")
+            IniWrite(anchor.y, cacheFile, section, "y")
+        } else {
+            IniWrite(0, cacheFile, section, "x")
+            IniWrite(0, cacheFile, section, "y")
+        }
+    } catch {
+    }
+}

@@ -116,7 +116,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/4f7769e30f866bdcfb14ea9b991b305aff367ebbb22f2448db7191c836f5e700
+> https://www.virustotal.com/gui/file/c60561df4f09f015dd46f6065b20ba5526bdbb7eda25d7b26c566bc9103696d5
 
 
 <p align="center">
@@ -265,7 +265,8 @@ _src/
 │
 ├─ 1920x1080/, 1600x900/, 1366x768/   # Resolution-specific images for the solver 
 ├─ vaultOps.ahk                       # Entry point (main GUI + mode control)
-├─ settings.ini                       # User configuration (hotkeys, delay, etc.)
+├─ zSettings.ini                      # User configuration (hotkeys, delay, etc.)
+├─ zAnchorCache.ini                   # Cached anchor coordinates for solvers
 │
 ├─ lib/
 │  ├─ build_scripts/
@@ -337,4 +338,4 @@ This project extends those implementations with:
 Shared for educational and personal use.
 
 ## TODO
-- [ ] Add file-based caching for the solvers to improve performance and reduce redundant processing
+- [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)

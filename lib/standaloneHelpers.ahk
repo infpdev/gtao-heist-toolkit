@@ -21,6 +21,8 @@ global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
 global pgUpSent := false
 
+global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
+
 global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
 global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
 global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
@@ -45,6 +47,8 @@ try {
     MsgBox "Failed to register Terminate hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
 
+LoadCache()
+
 SetTimer(() => (isFirewallEnabled()), -100)
 
 ; --- Common Functions ---
@@ -55,6 +59,12 @@ ReloadScript(*) {
 
 ExitScript(*) {
     ExitApp
+}
+
+OnExit(OnExitSaveCache)
+
+OnExitSaveCache(*) {
+    try SaveCache()
 }
 
 ResetHackMode() {

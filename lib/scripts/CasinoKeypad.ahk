@@ -7,7 +7,7 @@
  * 
  * ### FLOW:
  * ```text
- * switchToAuto()/switchToManual() → findAnchor() → start MainLoop(timer)
+ * switchToAuto()/switchToManual() → findAnchor() → start MainLoop(timer) 
  * 
  * MainLoop():
  *   validateAnchor()         ; ensure UI valid (loss → Idle/reset)
@@ -98,23 +98,15 @@ class KeypadSolver {
         this.Idle()
     }
 
-    Destroy() {
-        ;  reset internal state
-        this.cols := Map()
-        this.mode := "idle"
-        this.stabilized := false
-        this.gridFilledOnce := false
-        this.handoffPending := false
-        this.foundAnchor := false
-        this.anchorLastSeen := 0
-        this.isShuttingDown := true
-
-        ;  stop timer (critical)
-        try SetTimer this.fnMainLoop, 0
-        try SetTimer this.fnCheckFalsePositive, 0
-
-        loop 19
-            ToolTip("", , , A_Index)
+    /**
+     * @callback
+     * Sets the key delay for input. Used by the main script to
+     * configure the solver's input timing on changes to the delay input in the GUI.
+     * 
+     * @param {number} delayMs - Delay in milliseconds
+     */
+    setKeyDelay(delayMs) {
+        this.delay := delayMs
     }
 
     /**
@@ -135,15 +127,36 @@ class KeypadSolver {
         this.cols := Map()
     }
 
+    Destroy() {
+        ;  reset internal state
+        this.cols := Map()
+        this.mode := "idle"
+        this.stabilized := false
+        this.gridFilledOnce := false
+        this.handoffPending := false
+        this.foundAnchor := false
+        this.anchorLastSeen := 0
+        this.isShuttingDown := true
+
+        ;  stop timer (critical)
+        try SetTimer this.fnMainLoop, 0
+        try SetTimer this.fnCheckFalsePositive, 0
+
+        loop 19
+            ToolTip("", , , A_Index)
+    }
+
     /**
-     * @callback
-     * Sets the key delay for input. Used by the main script to
-     * configure the solver's input timing on changes to the delay input in the GUI.
-     * 
-     * @param {number} delayMs - Delay in milliseconds
+     * Checks for false positives and resets if anchor is lost during auto-start.
      */
-    setKeyDelay(delayMs) {
-        this.delay := delayMs
+    CheckFalsePositive() {
+        if (this.isShuttingDown || this.mode != "manual")
+            return
+
+        if (!this.foundAnchor) {
+            ResetHackMode()
+            this.Idle()
+        }
     }
 
     /**
@@ -158,19 +171,6 @@ class KeypadSolver {
 
         SetTimer this.fnCheckFalsePositive, 0
         SetTimer this.fnCheckFalsePositive, -5000
-    }
-
-    /**
-     * Checks for false positives and resets if anchor is lost during auto-start.
-     */
-    CheckFalsePositive() {
-        if (this.isShuttingDown || this.mode != "manual")
-            return
-
-        if (!this.foundAnchor) {
-            ResetHackMode()
-            this.Idle()
-        }
     }
 
     /**
@@ -262,17 +262,6 @@ class KeypadSolver {
         }
     }
 
-    showMapIfStabilized() {
-        ; Show initial ring map on stabilization before any selection
-        if (!this.cols.Has(6))
-            return
-
-        if (this.mode == "auto")
-            this.ShowRingMap(this.prevRingRow)
-        else
-            this.ShowRingMap("", true)
-    }
-
     /**
      * Validates the presence of the anchor and updates the global status accordingly.
      * If the anchor is lost for 10s, resets the hack mode and returns to idle.
@@ -323,70 +312,101 @@ class KeypadSolver {
     }
 
     /**
-     * Checks if the key in the current column is selected and updates the guidance tooltip for manual mode if so.
+     * Checks if all columns are detected and stable for 2 seconds.
+     * If so, marks the grid as stabilized and triggers auto-hack or manual selection loop.
      */
-    isCurrentColSelected() {
-        if !(this.mode == "manual") {
+    StabilizationCheck() {
+        if this.stabilized
             return
-        }
 
-        for col in this.cols {
-            if (this.isColSelected(col))
-                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
-            break
-        }
-    }
-
-    /**
-     * Checks if a column is selected and handles state update.
-     * Used by both auto and manual modes.
-     * @param {number} col - Column index
-     * @returns {boolean}
-     */
-    isColSelected(col) {
-        if !this.cols.Has(col)
-            return false
-        c := this.cols[col]
-        found := false
-        detected := this.ScanColumnImage(col)
-        if detected {
-            found := true
-            if (debug)
-                sleep 100
-        }
-
-        if found {
-            ToolTip "", , , col
-            if (this.cols.Has(col))
-                this.cols.Delete(col)
-            if (this.cols.Count = 0 || col == 6) {
-                this.ResetState()
+        allDetected := true
+        loop this.colsCount {
+            col := A_Index
+            if !this.cols.Has(col) || !this.cols[col].HasOwnProp("row") {
+                allDetected := false
+                break
             }
-            return true
         }
-        return false
+        if !allDetected
+            return
+        if (A_TickCount - this.lastDetectionTime > 2000) {
+
+            this.showMapIfStabilized()
+
+            if this.ringDetected_AutoSelect() {
+                this.stabilized := true
+                this.handoffPending := true
+                this.showKeys()
+            }
+            if (debug)
+                ToolTip "Stabilized? " this.stabilized, this.scrW / 2, 10, 19
+
+        }
     }
 
     /**
-     * Uses image search to detect if a column is selected.
-     * @param {number} col - Column index
-     * @returns {object|boolean} Detection result with x, y, row, and type if found; false otherwise
+     * Finds the keypad anchor using image search, with fallback to cached pixel.
+     * Found anchor coordinates are stored in this.prevFoundPixel for future quick searches.
+     * Uses a two-pass search strategy: first checks a small area around the last known anchor position,
+     * then falls back to searching the entire expected region if not found.
+     * @returns {object|boolean} Anchor coordinates if found, false otherwise
      */
-    ScanColumnImage(col) {
-        base_x1 := this.baseXImg
-        center_x := base_x1 + (col - 1) * this.spacing + (this.spacing // 2)
-        x1 := center_x - Round(this.spacing / 2)
-        x2 := center_x + Round(this.spacing / 2)
-        base_y1 := this.baseYImg
-        y1 := base_y1
-        y2 := base_y1 + (this.rowsCount * this.spacing)
-        foundImg := ImageSearch(&fx, &fy, x1, y1, x2, y2, "*" this.gridTolerance " " this.keyImgPath)
-        if foundImg {
-            row := Round((fy - this.baseY) / this.spacing) + 1
-            row := Min(this.rowsCount, Max(1, row))
-            return { x: fx, y: fy, row: row, type: "key" }
+    findAnchor() {
+        global cachedKeypadAnchor
+
+        ToolTip "", , , 18
+        static lastCalled := 0
+        if (A_TickCount - lastCalled < 1000 && this.foundAnchor) {
+            return this.prevFoundPixel
         }
-        return false
+
+        lastCalled := A_TickCount
+
+        static x1 := A_ScreenWidth * 0.5
+        static y1 := A_ScreenHeight * 0.1
+        static x2 := A_ScreenWidth * 0.73
+        static y2 := A_ScreenHeight * 0.17
+
+        localSearchSize := 20
+        kpFound := false
+        kpPx := 0, kpPy := 0
+
+        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
+        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
+            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+            sx1 := Max(cx - localSearchSize, 0)
+            sy1 := Max(cy - localSearchSize, 0)
+
+            kpFound := ImageSearch(&kpPx, &kpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+            )
+            if (kpFound && debug) {
+                ToolTip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
+            }
+        }
+
+        ; if not found, scan the full region (ImageSearch)
+        if (!kpFound) {
+            kpFound := ImageSearch(&kpPx, &kpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+            )
+            if (kpFound && debug) {
+                ToolTip "[class] Keypad anchor found!", kpPx + 10, kpPy, 18
+            }
+        }
+
+        if (kpFound) {
+            this.prevFoundPixel := { x: kpPx, y: kpPy }
+            cachedKeypadAnchor := { x: kpPx, y: kpPy }
+            this.foundAnchor := true
+            return { x: kpPx, y: kpPy }
+        } else {
+            this.prevFoundPixel := 0
+            this.foundAnchor := 0
+            if (debug) {
+                ToolTip "No anchors found", 0, 0, 18
+                ; Sleep 500
+            }
+            return false
+        }
     }
 
     /**
@@ -492,116 +512,25 @@ class KeypadSolver {
     }
 
     /**
-     * Shows arrows over the detected key positions. Mainly for the manual mode.
-     * 
-     * (DebugDisplay)
+     * Uses image search to detect if a column is selected.
+     * @param {number} col - Column index
+     * @returns {object|boolean} Detection result with x, y, row, and type if found; false otherwise
      */
-    showKeys() {
-        shown := false
-        for col, c in this.cols {
-            ; x := this.baseX + this.spacing * (col - 1)
-            ; y := this.baseY + this.spacing * (c.row - 1)
-            ; x := c.x
-            x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
-            y := this.baseYImg + (c.row - 1) * (this.spacing)
-            ToolTip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)), col
-            ; debug middot / arrow / selection indicator
-            shown := true
+    ScanColumnImage(col) {
+        base_x1 := this.baseXImg
+        center_x := base_x1 + (col - 1) * this.spacing + (this.spacing // 2)
+        x1 := center_x - Round(this.spacing / 2)
+        x2 := center_x + Round(this.spacing / 2)
+        base_y1 := this.baseYImg
+        y1 := base_y1
+        y2 := base_y1 + (this.rowsCount * this.spacing)
+        foundImg := ImageSearch(&fx, &fy, x1, y1, x2, y2, "*" this.gridTolerance " " this.keyImgPath)
+        if foundImg {
+            row := Round((fy - this.baseY) / this.spacing) + 1
+            row := Min(this.rowsCount, Max(1, row))
+            return { x: fx, y: fy, row: row, type: "key" }
         }
-    }
-
-    /**
-     * Checks if all columns are detected and stable for 2 seconds.
-     * If so, marks the grid as stabilized and triggers auto-hack or manual selection loop.
-     */
-    StabilizationCheck() {
-        if this.stabilized
-            return
-
-        allDetected := true
-        loop this.colsCount {
-            col := A_Index
-            if !this.cols.Has(col) || !this.cols[col].HasOwnProp("row") {
-                allDetected := false
-                break
-            }
-        }
-        if !allDetected
-            return
-        if (A_TickCount - this.lastDetectionTime > 2000) {
-
-            this.showMapIfStabilized()
-
-            if this.ringDetected_AutoSelect() {
-                this.stabilized := true
-                this.handoffPending := true
-                this.showKeys()
-            }
-            if (debug)
-                ToolTip "Stabilized? " this.stabilized, this.scrW / 2, 10, 19
-
-        }
-    }
-
-    /**
-     * Finds the keypad anchor using image search, with fallback to cached pixel.
-     * Found anchor coordinates are stored in this.prevFoundPixel for future quick searches.
-     * Uses a two-pass search strategy: first checks a small area around the last known anchor position,
-     * then falls back to searching the entire expected region if not found.
-     * @returns {object|boolean} Anchor coordinates if found, false otherwise
-     */
-    findAnchor() {
-        ToolTip "", , , 18
-        static lastCalled := 0
-        if (A_TickCount - lastCalled < 1000 && this.foundAnchor) {
-            return this.prevFoundPixel
-        }
-
-        lastCalled := A_TickCount
-
-        static x1 := A_ScreenWidth * 0.5
-        static y1 := A_ScreenHeight * 0.1
-        static x2 := A_ScreenWidth * 0.73
-        static y2 := A_ScreenHeight * 0.17
-
-        localSearchSize := 20
-        kpFound := false
-        kpPx := 0, kpPy := 0
-        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
-        if (this.prevFoundPixel && this.prevFoundPixel.x && this.prevFoundPixel.y) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
-            sx2 := Min(cx + localSearchSize, this.scrW)
-            sy2 := Min(cy + localSearchSize, this.scrH)
-            kpFound := ImageSearch(&kpPx, &kpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (kpFound && debug) {
-                ToolTip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
-            }
-        }
-        ; if not found, scan the full region (ImageSearch)
-        if (!kpFound) {
-            kpFound := ImageSearch(&kpPx, &kpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (kpFound && debug) {
-                ToolTip "[class] Keypad anchor found!", kpPx + 10, kpPy, 18
-            }
-        }
-
-        if (kpFound) {
-            this.prevFoundPixel := { x: kpPx, y: kpPy }
-            this.foundAnchor := true
-            return { x: kpPx, y: kpPy }
-        } else {
-            this.prevFoundPixel := false
-            this.foundAnchor := false
-            if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
-                ; Sleep 500
-            }
-            return false
-        }
+        return false
     }
 
     /**
@@ -771,6 +700,83 @@ class KeypadSolver {
 
     }
 
+    ; ===== HELPERS =====
+
+    /**
+     * Checks if the key in the current column is selected and updates the guidance tooltip for manual mode if so.
+     */
+    isCurrentColSelected() {
+        if !(this.mode == "manual") {
+            return
+        }
+
+        for col in this.cols {
+            if (this.isColSelected(col))
+                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
+            break
+        }
+    }
+
+    /**
+     * Checks if a column is selected and handles state update.
+     * Used by both auto and manual modes.
+     * @param {number} col - Column index
+     * @returns {boolean}
+     */
+    isColSelected(col) {
+        if !this.cols.Has(col)
+            return false
+        c := this.cols[col]
+        found := false
+        detected := this.ScanColumnImage(col)
+        if detected {
+            found := true
+            if (debug)
+                sleep 100
+        }
+
+        if found {
+            ToolTip "", , , col
+            if (this.cols.Has(col))
+                this.cols.Delete(col)
+            if (this.cols.Count = 0 || col == 6) {
+                this.ResetState()
+            }
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Shows arrows over the detected key positions. Mainly for the manual mode.
+     * 
+     * (DebugDisplay)
+     */
+    showKeys() {
+        shown := false
+        for col, c in this.cols {
+            ; x := this.baseX + this.spacing * (col - 1)
+            ; y := this.baseY + this.spacing * (c.row - 1)
+            ; x := c.x
+            x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
+            y := this.baseYImg + (c.row - 1) * (this.spacing)
+            ToolTip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)), col
+            ; debug middot / arrow / selection indicator
+            shown := true
+        }
+    }
+
+    showMapIfStabilized() {
+        ; Show initial ring map on stabilization before any selection
+        if (!this.cols.Has(6))
+            return
+
+        if (this.mode == "auto")
+            this.ShowRingMap(this.prevRingRow)
+        else
+            this.ShowRingMap("", true)
+    }
+
     /**
      * Shows the ring map tooltip based on the detected ring position for auto-mode and static row-col 
      * map for manual mode.
@@ -824,5 +830,4 @@ class KeypadSolver {
         Sleep 2500
         SetTimer this.fnMainLoop, 100
     }
-
 }

@@ -1,3 +1,5 @@
+#Include "sharedCanonicalHelpers.ahk"
+
 global folder := A_ScriptDir "\" A_ScreenWidth "x" A_ScreenHeight "\"
 if !FileExist(folder "1.bmp")
     global folder := A_ScriptDir "\..\..\" A_ScreenWidth "x" A_ScreenHeight "\"
@@ -10,7 +12,7 @@ if !FileExist(folder "1.bmp") {
     ExitApp
 }
 
-global iniFile := "settings.ini"
+global iniFile := "zSettings.ini"
 if !FileExist(iniFile) {
     FileAppend(
         "; ---------------------------`n"

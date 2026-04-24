@@ -12,4 +12,3 @@ clearToolTipsWorker() {
 }
 
 ; MakeAllToolTipsClickThrough(isIdle, opacity := 230) Moved to commonFuncs.ahk
-
