@@ -22,7 +22,6 @@ rarExe := "C:\Program Files\WinRAR\WinRAR.exe"
 ; Check and extract build files if needed before validating paths
 ExtractBuildFilesIfNeeded()
 
-
 RequireExistingFile(baseExe, "AutoHotkey base executable")
 RequireExistingFile(AHK2EXEPath, "Ahk2Exe")
 RequireExistingFile(isccExe, "Inno Setup compiler")
@@ -82,9 +81,9 @@ buildVaultOps() {
 
     if RequireExistingFile(vaultOpsInstaller, "Installer") {
         ShowCenteredToolTip "Distribution build and Inno Setup installer complete!"
-        sleep 1000
         ; Scan with VirusTotal if option selected
         if (scanVirusTotal) {
+            sleep 1000
             ShowCenteredToolTip "Scanning vaultOps.exe with VirusTotal..."
             RunScan(vaultOpsInstaller)
         }

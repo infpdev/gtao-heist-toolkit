@@ -10,7 +10,10 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.1.0"
+ver := "3.2.0"
+MAJOR_UPDATE_REQUIRED := 2
+PARTIAL_UPDATE_REQUIRED := 1
+NO_UPDATE_REQUIRED := 0
 global trimmedVer := ""
 global isUnreleased := false
 if !IsSet(vaultOps)
@@ -33,18 +36,32 @@ CheckForUpdate() {
             result := Trim(Http.ResponseText)
             lines := StrSplit(result, "`n")
             fetchedVersion := Trim(lines[1])
-            fetchedNews := lines.Length > 1 ? "What's new: " Trim(lines[2]) "`n`n" : ""
 
-            if (VersionCompare(fetchedVersion, ver) == 1) {
+            fetchedNews := ""
+            loop (lines.Length) {
+                if (A_Index > 1)
+                    fetchedNews .= Trim(lines[A_Index]) "`n"
+            }
+            if (fetchedNews != "")
+                fetchedNews := "What's new:`n" fetchedNews "`n"
+
+            UPDATE_PRIORITY := VersionCompare(fetchedVersion, ver)
+
+            if (UPDATE_PRIORITY != NO_UPDATE_REQUIRED) {
                 msg := ver " ➤ " fetchedVersion "`n`n"
                     . fetchedNews
-                    .
-                    "Update available!`nA new version has been released.`n`nWould you like to open the GitHub page?`n`ngithub.com/infpdev/gtao-heist-toolkit"
+                    . (UPDATE_PRIORITY == MAJOR_UPDATE_REQUIRED ?
+                        "Update available!`nA new version has been released.`n`nPlease update the app to continue using it.`n`nWould you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
+                            :
+                            "Update available!`nA new version has been released.`n`nPlease update the app to stop seeing this message.`n`nWould you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
+                    )
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
                     Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
                 }
-                ExitApp
+
+                if (UPDATE_PRIORITY = MAJOR_UPDATE_REQUIRED)
+                    ExitApp
             } else {
                 ShowCenteredToolTip("No updates found. Enjoy :)", 17)
                 Sleep 1000
@@ -78,10 +95,17 @@ VersionCompare(fetched, current) {
     loop 2 {
         n1 := fetched[A_Index] ? fetched[A_Index] : 0
         n2 := current[A_Index] ? current[A_Index] : 0
-        if (n1 > n2)
-            return 1
+        if (n1 > n2) {
+            if A_Index = 2 {
+                if (n1 - n2 > 1)
+                    return MAJOR_UPDATE_REQUIRED
+                else
+                    return PARTIAL_UPDATE_REQUIRED
+            }
+            return MAJOR_UPDATE_REQUIRED
+        }
         else if (n1 < n2)
-            return -1
+            return NO_UPDATE_REQUIRED
     }
     return 0
 }

@@ -16,14 +16,15 @@ global vaultOps := true
 ; --- IMPORTS SECTION ---
 ; common imports
 #Include <updateCheck>
+#Include <sharedCanonicalHelpers>
 #Include <initHotkeys>
+
 
 ; vaultOps scripts
 #Include <scripts\CasinoFingerprint>
 #Include <scripts\CasinoKeypad>
 #Include <scripts\ElRubio>
 #Include <scripts\NoSave>
-#Include <commonFuncs>
 
 ; GUI imports
 #Include <gui\hotkeyHelpers>
@@ -138,33 +139,65 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     }
 
     ; Registers hotkeys based on current settings. If scripts are disabled, only registers toggle hotkeys.
-    ; Also updates status tooltip to reflect changes
+    ; Also updates status tooltip to reflect changes.
     TryRegisterHotkeys() {
         global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, scriptsEnabled
         static regNoSaveKey := "", regToggleScriptsKey := "", regManualKey := "", regAutoHackKey := "",
             regResetKey := ""
 
-        if (regNoSaveKey && regNoSaveKey != noSaveKey)
-            Hotkey("~*" regNoSaveKey, fnToggleNoSave, "Off")
-        if (regToggleScriptsKey && regToggleScriptsKey != toggleScriptsKey)
-            Hotkey("~*" regToggleScriptsKey, fnToggleScripts, "Off")
+        ; Helper function to safely register a hotkey value as-is.
+        RegisterHotkeyWithFallback(hotkeyValue, hotkeyFunc, existingValue := "") {
+            if (hotkeyValue = "")
+                return true
+            finalFormat := CanonicalToRegistration(hotkeyValue)
 
+            ; Unregister old key if different
+            if (existingValue != "" && existingValue != hotkeyValue) {
+                try {
+                    Hotkey("~*" CanonicalToRegistration(existingValue), hotkeyFunc, "Off")
+                }
+            }
+
+            ; Try to register the hotkey
+            try {
+                Hotkey("~*" finalFormat, hotkeyFunc, "On")
+                return true
+            } catch as err {
+                MsgBox "Failed to register hotkey '" finalFormat "':`n" err.What "`n`nPlease check your hotkey settings.",
+                    "Hotkey Registration Failed", 48
+                return false
+            }
+        }
+
+        ; Unregister old NoSave/ToggleScripts keys if they changed
+        if (regNoSaveKey && regNoSaveKey != noSaveKey) {
+            try Hotkey("~*" CanonicalToRegistration(regNoSaveKey), fnToggleNoSave, "Off")
+        }
+        if (regToggleScriptsKey && regToggleScriptsKey != toggleScriptsKey) {
+            try Hotkey("~*" CanonicalToRegistration(regToggleScriptsKey), fnToggleScripts, "Off")
+        }
+
+        ; Register NoSave and ToggleScripts (always active)
         if (noSaveKey) {
-            Hotkey("~*" noSaveKey, fnToggleNoSave, "On")
-            regNoSaveKey := noSaveKey
+            if RegisterHotkeyWithFallback(noSaveKey, fnToggleNoSave, regNoSaveKey)
+                regNoSaveKey := noSaveKey
         }
         if (toggleScriptsKey) {
-            Hotkey("~*" toggleScriptsKey, fnToggleScripts, "On")
-            regToggleScriptsKey := toggleScriptsKey
+            if RegisterHotkeyWithFallback(toggleScriptsKey, fnToggleScripts, regToggleScriptsKey)
+                regToggleScriptsKey := toggleScriptsKey
         }
 
+        ; If scripts are disabled, unregister all manual/auto/reset hotkeys
         if (!scriptsEnabled) {
-            if (regManualKey)
-                Hotkey("~*" regManualKey, fnManualHotkey, "Off")
-            if (regAutoHackKey)
-                Hotkey("~*" regAutoHackKey, fnAutoHackHotkey, "Off")
-            if (regResetKey)
-                Hotkey("~*" regResetKey, fnResetHotkey, "Off")
+            if (regManualKey) {
+                try Hotkey("~*" CanonicalToRegistration(regManualKey), fnManualHotkey, "Off")
+            }
+            if (regAutoHackKey) {
+                try Hotkey("~*" CanonicalToRegistration(regAutoHackKey), fnAutoHackHotkey, "Off")
+            }
+            if (regResetKey) {
+                try Hotkey("~*" CanonicalToRegistration(regResetKey), fnResetHotkey, "Off")
+            }
             regManualKey := ""
             regAutoHackKey := ""
             regResetKey := ""
@@ -173,24 +206,29 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             return
         }
 
-        if (regManualKey && regManualKey != manualKey)
-            Hotkey("~*" regManualKey, fnManualHotkey, "Off")
-        if (regAutoHackKey && regAutoHackKey != autoHackKey)
-            Hotkey("~*" regAutoHackKey, fnAutoHackHotkey, "Off")
-        if (regResetKey && regResetKey != resetKey)
-            Hotkey("~*" regResetKey, fnResetHotkey, "Off")
+        ; Unregister old Manual/Auto/Reset keys if they changed
+        if (regManualKey && regManualKey != manualKey) {
+            try Hotkey("~*" CanonicalToRegistration(regManualKey), fnManualHotkey, "Off")
+        }
+        if (regAutoHackKey && regAutoHackKey != autoHackKey) {
+            try Hotkey("~*" CanonicalToRegistration(regAutoHackKey), fnAutoHackHotkey, "Off")
+        }
+        if (regResetKey && regResetKey != resetKey) {
+            try Hotkey("~*" CanonicalToRegistration(regResetKey), fnResetHotkey, "Off")
+        }
 
+        ; Register Manual/Auto/Reset hotkeys
         if (manualKey) {
-            Hotkey("~*" manualKey, fnManualHotkey, "On")
-            regManualKey := manualKey
+            if RegisterHotkeyWithFallback(manualKey, fnManualHotkey, regManualKey)
+                regManualKey := manualKey
         }
         if (autoHackKey) {
-            Hotkey("~*" autoHackKey, fnAutoHackHotkey, "On")
-            regAutoHackKey := autoHackKey
+            if RegisterHotkeyWithFallback(autoHackKey, fnAutoHackHotkey, regAutoHackKey)
+                regAutoHackKey := autoHackKey
         }
         if (resetKey) {
-            Hotkey("~*" resetKey, fnResetHotkey, "On")
-            regResetKey := resetKey
+            if RegisterHotkeyWithFallback(resetKey, fnResetHotkey, regResetKey)
+                regResetKey := resetKey
         }
 
         if (heist == CAYO_PERICO)
@@ -311,12 +349,12 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
             heist, sendPgUpKey, pgUpSent
 
-        readableNoSaveKey := StrLen(noSaveKey) > 1 ? AHKToDisplayHotkey(noSaveKey) : noSaveKey
-        readableScriptsKey := StrLen(toggleScriptsKey) > 1 ? AHKToDisplayHotkey(toggleScriptsKey) : toggleScriptsKey
-        readableSendPgUpKey := StrLen(sendPgUpKey) > 1 ? AHKToDisplayHotkey(sendPgUpKey) : sendPgUpKey
-        readableManualKey := StrLen(manualKey) > 1 ? AHKToDisplayHotkey(manualKey) : manualKey
-        readableAutoHackKey := StrLen(autoHackKey) > 1 ? AHKToDisplayHotkey(autoHackKey) : autoHackKey
-        readableResetKey := StrLen(resetKey) > 1 ? AHKToDisplayHotkey(resetKey) : resetKey
+        readableNoSaveKey := CanonicalToDisplay(noSaveKey)
+        readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
+        readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
+        readableManualKey := CanonicalToDisplay(manualKey)
+        readableAutoHackKey := CanonicalToDisplay(autoHackKey)
+        readableResetKey := CanonicalToDisplay(resetKey)
 
         if (pgUpSent)
             return ; Don't update status while PgUp is being sent to avoid tooltip interference
@@ -427,36 +465,19 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     ToggleNoSaveStatus(*) {
         global noSave, picNoSave, iniFile, scriptsEnabled
         noSave := !noSave
-        if (noSave && !isFirewallEnabled()) {
-            noSave := false
+        if (!isFirewallEnabled()) {
+            MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
+                . "Please check your firewall settings and try again.",
+                "Firewall Access Error", 48
         }
         UpdateGlobalStatus(hackInProgress)
 
         picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
         noSave ? EnableNoSaveMode() : DisableNoSaveMode()
 
-        if (noSave) {
-            if (!EnableNoSaveMode()) {
-                noSave := false
-                UpdateGlobalStatus(hackInProgress)
-                picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
-
-                MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
-                    "FIREWALL WARNING", 48
-
-            }
-        } else {
-            if (!DisableNoSaveMode()) {
-                noSave := true
-                UpdateGlobalStatus(hackInProgress)
-                picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
-
-                MsgBox "Failed to disable NoSave mode. Please check your firewall settings and try again.",
-                    "FIREWALL WARNING", 48
-            }
-        }
         ; IniWrite(noSave, iniFile, "Options", "NoSave") moved to NoSave.ahk so that it owns the
-        ; state change and persistence of the NoSave setting, ensuring consistency even if the firewall rule changes outside of this toggle function.
+        ; state change and persistence of the NoSave setting,
+        ; ensuring consistency even if the firewall rule changes outside of this toggle function.
 
     }
 
@@ -594,7 +615,7 @@ Init() {
     topbarW := width, titleW := topbarW - btnW
 
     bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
-        "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(Unreleased)" : "(v" trimmedVer ")"))
+        "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(v" ver " beta)" : "(v" trimmedVer ")"))
     xBtn := guiApp.AddPicture("x" ((width - btnW - 15 / scale) / scale) " y" 10 / scale " w" btnW " h" btnW " +0x4",
     staticFolder "\minimize.png")
     xBtn.OnEvent("Click", (*) => (guiApp.Minimize()))
@@ -639,7 +660,7 @@ Init() {
         noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
         ; Nosave hotkey field
         inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(noSaveKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
         ; Nosave instruction text
         txtNoSaveInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; Nosave event listeners
@@ -663,7 +684,7 @@ Init() {
         scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
         ; Scripts hotkey field
         inputToggleScripts := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(toggleScriptsKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(toggleScriptsKey))
         ; Scripts instruction text
         txtScriptsInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; Scripts event listeners
@@ -731,7 +752,7 @@ Init() {
         txtPgUpLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Send PgUp keybind:")
         ; hotkey field to send PgUp
         inputPgUp := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(sendPgUpKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(sendPgUpKey))
         ; instruction text
         txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
 
@@ -752,7 +773,7 @@ Init() {
         guiApp.AddText("x" xLabel " y" y " w" labelW, "Manual keybind:")
         ; Manual keybind field
         inputManual := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(manualKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(manualKey))
         ; Manual keybind instruction text
         txtManualInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; Manual keybind event listeners
@@ -770,7 +791,7 @@ Init() {
         guiApp.AddText("x" xLabel " y" y " w" labelW, "Auto hack keybind:")
         ; AutoHack keybind field
         inputAuto := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(autoHackKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(autoHackKey))
         ; AutoHack keybind instruction text
         txtAutoInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; AutoHack keybind event listeners
@@ -788,7 +809,7 @@ Init() {
         guiApp.AddText("x" xLabel " y" y " w" labelW, "Reset script keybind:")
         ; Reset keybind field
         inputReset := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", AHKToDisplayHotkey(resetKey))
+        " Center Background222222 cWhite", CanonicalToDisplay(resetKey))
         ; Reset keybind instruction text
         txtResetInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; Reset keybind event listeners
@@ -875,5 +896,4 @@ Init() {
     }
 }
 
-; SetTimer(() => (Init()), -1000)
 Init()

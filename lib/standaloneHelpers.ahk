@@ -1,6 +1,7 @@
-#Include initHotkeys.ahk
 #Include updateCheck.ahk
 #Include scripts\NoSave.ahk
+#Include sharedCanonicalHelpers.ahk
+#Include initHotkeys.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir
@@ -16,24 +17,35 @@ SetBatchLines := -1
 
 global scrW := A_ScreenWidth, scrH := A_ScreenHeight
 global hackMode := "idle", hackInProgress := false
-global fingerprintMode := true, debug := false
+global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
 global pgUpSent := false
 
-global readableNoSaveKey := StrLen(noSaveKey) > 1 ? AHKToDisplayHotkey(noSaveKey) : noSaveKey
-global readableScriptsKey := StrLen(toggleScriptsKey) > 1 ? AHKToDisplayHotkey(toggleScriptsKey) : toggleScriptsKey
-global readableSendPgUpKey := StrLen(sendPgUpKey) > 1 ? AHKToDisplayHotkey(sendPgUpKey) : sendPgUpKey
-global readableManualKey := StrLen(manualKey) > 1 ? AHKToDisplayHotkey(manualKey) : manualKey
-global readableAutoHackKey := StrLen(autoHackKey) > 1 ? AHKToDisplayHotkey(autoHackKey) : autoHackKey
-global readableResetKey := StrLen(resetKey) > 1 ? AHKToDisplayHotkey(resetKey) : resetKey
+global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
+global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
+global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
+global readableManualKey := CanonicalToDisplay(manualKey)
+global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
+global readableResetKey := CanonicalToDisplay(resetKey)
 
-Hotkey "~*" noSaveKey, ToggleNoSaveStatus
-Hotkey "~*" resetKey, ReloadScript
-Hotkey "~*" terminateKey, ExitScript
+; Register hotkeys with error handling.
+try {
+    Hotkey "~*" CanonicalToRegistration(noSaveKey), ToggleNoSaveStatus
+} catch {
+    MsgBox "Failed to register NoSave hotkey. Please check your settings.", "Hotkey Registration Failed", 48
+}
+try {
+    Hotkey "~*" CanonicalToRegistration(resetKey), ReloadScript
+} catch {
+    MsgBox "Failed to register Reset hotkey. Please check your settings.", "Hotkey Registration Failed", 48
+}
+try {
+    Hotkey "~*" CanonicalToRegistration(terminateKey), ExitScript
+} catch {
+    MsgBox "Failed to register Terminate hotkey. Please check your settings.", "Hotkey Registration Failed", 48
+}
 
-SetTimer(() => (isFirewallEnabled()), -3000)
-
-F2:: Reload
+SetTimer(() => (isFirewallEnabled()), -100)
 
 ; --- Common Functions ---
 

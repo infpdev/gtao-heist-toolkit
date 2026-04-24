@@ -1,1 +1,4 @@
-3.1.0
+3.2.0
+NoSave toggle is now 3x faster.
+Keybinds now work on all keyboard layouts.
+Added caching to solvers to improve performance.

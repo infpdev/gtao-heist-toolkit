@@ -1,7 +1,7 @@
 #Requires AutoHotkey v2.0
 
 ; Initialized here for static analysis across includes; real control assignment happens in Init().
-global inputPgUp := ""
+global inputPgUp := "", txtPgUpLabel := ""
 
 ; ⏐==========================================================================================================⏐
 ; ⏐====================================== UI Input Management Functions =====================================⏐
@@ -39,7 +39,6 @@ global inputPgUp := ""
             mods := GetActiveModifiersDisplay()
             if (mods != "") {
                 hotkeyCaptureField.Text := mods
-                ; SetEditCaretToEnd(hotkeyCaptureField)
             }
         }
         AutoSaveKeybind(hotkeyCaptureField, hotkeyCaptureKeyName)
@@ -114,13 +113,13 @@ global inputPgUp := ""
 
     BeginCustomHotkeyEdit(field, keyName, currentAHKValue) {
         global hotkeyCaptureField, hotkeyCaptureKeyName
-        display := AHKToDisplayHotkey(currentAHKValue)
+        ; Convert canonical to display format for UI editing
+        display := CanonicalToDisplay(currentAHKValue)
         hotkeyCaptureField := field
         hotkeyCaptureKeyName := keyName
         field.Text := display
         AttachUnfocusHandlers(field, display, 0)
         field.Focus()
-        ; SetEditCaretToEnd(field)
     }
 
     HandleCustomHotkeyKeyDown(wParam, lParam, msg, hwnd) {
@@ -142,7 +141,6 @@ global inputPgUp := ""
 
         if IsModifierVK(vk) {
             hotkeyCaptureField.Text := GetActiveModifiersDisplay()
-            ; SetEditCaretToEnd(hotkeyCaptureField)
             AutoSaveKeybind(hotkeyCaptureField, hotkeyCaptureKeyName)
             return true
         }
@@ -153,7 +151,7 @@ global inputPgUp := ""
 
         display := GetActiveModifiersDisplay() keyName
         hotkeyCaptureField.Text := display
-        ; SetEditCaretToEnd(hotkeyCaptureField)
+
         AutoSaveKeybind(hotkeyCaptureField, hotkeyCaptureKeyName)
         return true
     }
@@ -217,14 +215,14 @@ global inputPgUp := ""
                 prevKey := sendPgUpKey
         }
 
-        val := DisplayToAHKHotkey(field.Text)
+        ; Convert display value to canonical format for saving
+        val := DisplayToCanonical(field.Text)
 
         if (val = "") {
             ; Revert when user input is empty or modifier-only.
             val := prevKey
-            field.Text := AHKToDisplayHotkey(prevKey)
+            field.Text := CanonicalToDisplay(prevKey)
             field.Focus()
-            ; SetEditCaretToEnd(field)
         }
 
         switch keyName {
@@ -295,7 +293,6 @@ global inputPgUp := ""
                 val := 200
             field.Text := val
             field.Focus()
-            ; SetEditCaretToEnd(field)
         }
         IniWrite(val, iniFile, "Options", "Delay")
         delay := val
@@ -340,53 +337,6 @@ global inputPgUp := ""
 
     ; ============== Hotkey / visual format functions ===============
 
-    ; AHKToDisplayHotkey() moved to commonFuncs for use in multiple places.
-
-    ; Converts a user-friendly hotkey string (e.g. "Ctrl+Shift+A") back to AHK format (e.g. "^+a"). Returns an empty string if the input is invalid.
-    DisplayToAHKHotkey(displayValue) {
-        value := Trim(displayValue)
-        if (value = "")
-            return ""
-
-        if (SubStr(value, -1) = "+")
-            return "" ; Partial modifier input only.
-
-        tokens := StrSplit(value, "+")
-        if (tokens.Length = 0)
-            return ""
-
-        key := Trim(tokens[tokens.Length])
-        if (key = "")
-            return ""
-
-        if RegExMatch(key, "i)^(ctrl|control|shift|alt)$")
-            return "" ; Modifier-only input is invalid.
-
-        mods := ""
-        loop (tokens.Length - 1) {
-            t := Trim(tokens[A_Index])
-            if (t = "")
-                continue
-            if RegExMatch(t, "i)^(ctrl|control)$") {
-                if !InStr(mods, "^")
-                    mods .= "^"
-                continue
-            }
-            if RegExMatch(t, "i)^shift$") {
-                if !InStr(mods, "+")
-                    mods .= "+"
-                continue
-            }
-            if RegExMatch(t, "i)^alt$") {
-                if !InStr(mods, "!")
-                    mods .= "!"
-                continue
-            }
-            return ""
-        }
-        return mods key
-    }
-
     ; Gets a display string of currently active modifiers
     ; (e.g. "Ctrl+Shift+"), used for showing the user what
     ; modifiers they are currently holding while they enter a hotkey.
@@ -419,8 +369,13 @@ TryRegisterPgUpHotkey(oldKey := "") {
     txtPgUpLabel.Opt("cWhite")
     UnregisterPgUpHotkey(oldKey)
     if (heist == CAYO_PERICO && sendPgUpKey && scriptsEnabled) {
-        Hotkey("~" sendPgUpKey, PgUpDown, "On")
-        Hotkey("~" sendPgUpKey " up", PgUpUp, "On")
+        finalFormat := CanonicalToRegistration(sendPgUpKey)
+        try {
+            Hotkey("~" finalFormat, PgUpDown, "On")
+            Hotkey("~" finalFormat " up", PgUpUp, "On")
+        } catch as err {
+            MsgBox "Failed to register PgUp hotkey: " err.What, "PgUp Hotkey Registration Failed", 48
+        }
     }
 }
 
@@ -473,8 +428,12 @@ UnregisterPgUpHotkey(keyToRemove := "") {
     global sendPgUpKey
     key := (keyToRemove != "") ? keyToRemove : sendPgUpKey
     if key {
-        Hotkey("~" key, PgUpDown, "Off")
-        Hotkey("~" key " up", PgUpUp, "Off")
+        finalFormat := CanonicalToRegistration(key)
+        try {
+            Hotkey("~" finalFormat, PgUpDown, "Off")
+            Hotkey("~" finalFormat " up", PgUpUp, "Off")
+        }
     }
 }
+
 ; ⏐==========================================================================================================⏐

@@ -15,7 +15,6 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
     hfont := DllCall("GetStockObject", "int", 0)  ; DEFAULT_GUI_FONT
     DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
 
-    ; Measure text using Buffer (AHK v2.0)
     size := Buffer(8)
     DllCall("GetTextExtentPoint32", "ptr", hdc, "str", text, "int", StrLen(text), "ptr", size)
     width := NumGet(size, 0, "int")
@@ -46,52 +45,11 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
     if (isIdle)
         alpha := 180
 
-    ; Apply style/opacity to every tooltip window currently owned by the process.
     hwnd := 0
     while (hwnd := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "tooltips_class32", "ptr", 0, "ptr")) {
         exStyle := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr")
-        exStyle |= 0x20 | 0x80000 ; WS_EX_TRANSPARENT | WS_EX_LAYERED
+        exStyle |= 0x20 | 0x80000
         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr", exStyle)
-        DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2) ; LWA_ALPHA
-        ; DllCall("SetWindowPos", "ptr", hwnd, "ptr", -1, "int", 0, "int", 0, "int", 0, "int", 0, "uint", 0x13) ; broken
+        DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
     }
-}
-
-; Converts an AHK hotkey string (e.g. "^+a") to a more user-friendly display format (e.g. "Ctrl+Shift+A")
-/**
- * @description Convert AutoHotkey hotkey notation to human-readable display format
- * @param {string} ahkValue - AHK hotkey string (e.g. "^+a", "!LMB", "#+e")
- * @returns {string} Display-friendly hotkey (e.g. "Ctrl+Shift+A")
- * @note Modifiers: ^ = Ctrl, + = Shift, ! = Alt. Returns empty string for invalid input.
- * @example
- * display := AHKToDisplayHotkey("^+a")  ; Returns "Ctrl+Shift+A"
- * display := AHKToDisplayHotkey("!LMB") ; Returns "Alt+LMB"
- */
-AHKToDisplayHotkey(ahkValue) {
-    value := Trim(ahkValue)
-    if (value = "")
-        return ""
-
-    mods := ""
-    idx := 1
-    while (idx <= StrLen(value)) {
-        ch := SubStr(value, idx, 1)
-        if (ch = "^") {
-            mods .= "Ctrl+"
-            idx++
-            continue
-        }
-        if (ch = "+") {
-            mods .= "Shift+"
-            idx++
-            continue
-        }
-        if (ch = "!") {
-            mods .= "Alt+"
-            idx++
-            continue
-        }
-        break
-    }
-    return mods SubStr(value, idx)
 }

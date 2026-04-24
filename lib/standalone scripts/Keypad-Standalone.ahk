@@ -3,8 +3,8 @@
 global fingerprintMode := 0
 
 init() {
-    Hotkey "~*" autoHackKey, standalone_switch_to_auto
-    Hotkey "~*" manualKey, standalone_switch_to_manual
+    try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
+    try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
 
     standalone_switch_to_auto(*) {
         global hackMode := "auto"

@@ -7,21 +7,21 @@
 
     UpdatePgUpInstrText() {
         global txtPgUpInstr, sendPgUpKey
-        hotKeyTextPgUp := " Hold " AHKToDisplayHotkey(sendPgUpKey) " to test PgUp."
+        hotKeyTextPgUp := " Hold " CanonicalToDisplay(sendPgUpKey) " to test PgUp."
         if IsSet(txtPgUpInstr)
             txtPgUpInstr.Text := "Lets you use the plasma cutters during the heist." hotKeyTextPgUp
     }
 
     UpdateNoSaveInstrText() {
         global instrNoSave, noSaveKey, txtNoSaveInstr
-        hotKeyTextNoSave := " Press " AHKToDisplayHotkey(noSaveKey) " to toggle."
+        hotKeyTextNoSave := " Press " CanonicalToDisplay(noSaveKey) " to toggle."
         if IsSet(txtNoSaveInstr)
             txtNoSaveInstr.Text := instrNoSave hotKeyTextNoSave
     }
 
     UpdateScriptsInstrText() {
         global instrScripts, toggleScriptsKey, txtScriptsInstr
-        hotKeyTextScripts := " Press " AHKToDisplayHotkey(toggleScriptsKey) " to toggle."
+        hotKeyTextScripts := " Press " CanonicalToDisplay(toggleScriptsKey) " to toggle."
         if IsSet(txtScriptsInstr)
             txtScriptsInstr.Text := instrScripts hotKeyTextScripts
     }
@@ -33,21 +33,21 @@
     }
     UpdateManualInstrText() {
         global instrManual, manualKey, txtManualInstr
-        hotKeyTextManual := " Press " AHKToDisplayHotkey(manualKey) " to trigger."
+        hotKeyTextManual := " Press " CanonicalToDisplay(manualKey) " to trigger."
         if IsSet(txtManualInstr)
             txtManualInstr.Text := instrManual hotKeyTextManual
     }
 
     UpdateAutoInstrText() {
         global instrAuto, autoHackKey, txtAutoInstr
-        hotKeyTextAuto := " Press " AHKToDisplayHotkey(autoHackKey) " to trigger."
+        hotKeyTextAuto := " Press " CanonicalToDisplay(autoHackKey) " to trigger."
         if IsSet(txtAutoInstr)
             txtAutoInstr.Text := instrAuto hotKeyTextAuto
     }
 
     UpdateResetInstrText() {
         global instrReset, resetKey, txtResetInstr
-        hotKeyTextReset := " Press " AHKToDisplayHotkey(resetKey) " to trigger."
+        hotKeyTextReset := " Press " CanonicalToDisplay(resetKey) " to trigger."
         if IsSet(txtResetInstr)
             txtResetInstr.Text := instrReset hotKeyTextReset
     }

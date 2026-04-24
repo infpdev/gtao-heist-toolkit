@@ -1,9 +1,5 @@
 #Requires AutoHotkey v2.0
-
-#Include "../initHotkeys.ahk"
-#Include "../commonFuncs.ahk"
-
-#SingleInstance Ignore
+#SingleInstance Force
 SendMode "Input"
 SetWorkingDir A_ScriptDir
 SetKeyDelay 0
@@ -11,6 +7,14 @@ SetWinDelay 0
 SetBatchLines := -1
 SetControlDelay 0
 SetTitleMatchMode 2
+
+#Include "../initHotkeys.ahk"
+#Include "../commonFuncs.ahk"
+global noSaveActive := false
+
+global firstFirewallCheckDone := false
+global NOSAVE_RULE_NAME := "123456"
+global NOSAVE_REMOTE_IP := "192.81.241.171"
 
 if !A_IsAdmin {
     Run('*RunAs "' A_ScriptFullPath '"')
@@ -21,8 +25,6 @@ if !A_IsAdmin {
     ExitApp
 }
 
-global firstFirewallCheckDone := false, noSaveActive := false
-
 UpdateTooltip() {
     global noSaveActive
     status := noSaveActive ? "NoSave: enabled" : "NoSave: disabled"
@@ -31,15 +33,6 @@ UpdateTooltip() {
     )
     ToolTip(status "`n" key, A_ScreenWidth, 0, 20)
 }
-
-init() {
-    isFirewallEnabled()
-    UpdateTooltip()
-    Hotkey("~*" noSaveKey, ToggleNoSaveMode, "On")
-    Hotkey("~*" terminateKey, (*) => ExitApp(), "On")
-}
-
-init()
 
 ToggleNoSaveMode(*) {
     global noSaveActive
@@ -56,106 +49,181 @@ ToggleNoSaveMode(*) {
     UpdateTooltip()
 }
 
-OnExit(AppExit)
+init()
 
-; ========== Shared functions start here =========
+init() {
+    isFirewallEnabled()
+    UpdateTooltip()
 
-EnableNoSaveMode(*) {
-    RunWait('netsh advfirewall firewall add rule name="123456" dir=out action=block remoteip="192.81.241.171"', ,
-        "Hide")
-    enabled := IsNoSaveRuleActive()
-    if (enabled) {
-        ShowCenteredToolTip("NoSave enabled [Works]", 17)
-        SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
+    try Hotkey("~*" CanonicalToRegistration(noSaveKey), ToggleNoSaveMode, "On")
+    try Hotkey("~*" CanonicalToRegistration(terminateKey), (*) => ExitApp(), "On")
+}
+
+; =================================================================================================⏐
+; ================================== Shared functions start here ==================================⏐
+; =================================================================================================⏐
+{
+    global forMode := ""
+
+    OnExit(AppExit)
+
+    ; Returns the Windows Firewall policy COM object, or empty string on failure.
+    GetFirewallPolicy() {
+        try {
+            return ComObject("HNetCfg.FwPolicy2")
+        } catch {
+            return ""
+        }
     }
-    IniWrite(enabled, iniFile, "Options", "NoSave")
-    return enabled
 
-}
-
-DisableNoSaveMode(*) {
-    RunWait('netsh advfirewall firewall delete rule name="123456"', , "Hide")
-    disabled := !IsNoSaveRuleActive()
-    if (disabled) {
-        ShowCenteredToolTip("NoSave disabled", 17)
-        SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
-    }
-    IniWrite(!disabled, iniFile, "Options", "NoSave")
-    return disabled
-
-}
-
-; Removes the firewall rule '123456' if it exists,
-; effectively disabling NoSave mode. This is called on script exit to
-; ensure the rule doesn't persist.
-AppExit(*) {
-    DisableNoSaveMode()
-    ToolTip("", , , 17) ; Clear any existing tooltips
-}
-
-IsFirewallOnActiveProfile() {
-    ; Returns true if Windows Firewall is ON for the active profile only
-    result := ''
-    try {
-        outFile := A_Temp "\fwstatus.txt"
-        cmd := '"' A_ComSpec '" /c netsh advfirewall show currentprofile > "' outFile '"'
-        RunWait(cmd, , "Hide")
-        if !FileExist(outFile) {
-            MsgBox "Output file not created."
+    EnableNoSaveMode(*) {
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP, forMode
+        fwPolicy := GetFirewallPolicy()
+        if !fwPolicy {
+            IniWrite(false, iniFile, "Options", "NoSave")
             return false
         }
-        result := FileRead(outFile)
-    } catch {
-        MsgBox "Exception: " A_LastError
+
+        try fwPolicy.Rules.Remove(NOSAVE_RULE_NAME)
+
+        try {
+            rule := ComObject("HNetCfg.FWRule")
+            rule.Name := NOSAVE_RULE_NAME
+            rule.Description := "VaultOps NoSave outbound block rule"
+            rule.Direction := 2
+            rule.Action := 0
+            rule.Enabled := true
+            rule.Protocol := 256
+            rule.RemoteAddresses := NOSAVE_REMOTE_IP
+            fwPolicy.Rules.Add(rule)
+        } catch {
+            IniWrite(false, iniFile, "Options", "NoSave")
+            return false
+        }
+
+        enabled := IsNoSaveRuleActive()
+        if (enabled) {
+            ShowCenteredToolTip("NoSave enabled [Works]", 17)
+            SetTimer () => clearNoSaveToolTip("enabled"), -2000
+            forMode := "enabled"
+        }
+        IniWrite(enabled, iniFile, "Options", "NoSave")
+        return enabled
+
+    }
+
+    ; Removes the NoSave firewall rule and returns true when it is gone.
+    DisableNoSaveMode(*) {
+        global NOSAVE_RULE_NAME, forMode
+        fwPolicy := GetFirewallPolicy()
+        if !fwPolicy {
+            IniWrite(true, iniFile, "Options", "NoSave")
+            return false
+        }
+
+        try fwPolicy.Rules.Remove(NOSAVE_RULE_NAME)
+
+        disabled := !IsNoSaveRuleActive()
+        if (disabled) {
+            ShowCenteredToolTip("NoSave disabled", 17)
+            SetTimer () => clearNoSaveToolTip("disabled"), -2000
+            forMode := "disabled"
+        }
+
+        if FileExist(iniFile)
+            IniWrite(!disabled, iniFile, "Options", "NoSave")
+        return disabled
+
+    }
+
+    ; Returns true when every active Windows Firewall profile is enabled.
+    IsFirewallOnActiveProfile() {
+        fwPolicy := GetFirewallPolicy()
+        if !fwPolicy
+            return false
+
+        try {
+            activeMask := fwPolicy.CurrentProfileTypes
+            for profileType in [1, 2, 4] {
+                if (activeMask & profileType) {
+                    if !fwPolicy.FirewallEnabled(profileType)
+                        return false
+                }
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    ; Ensures the firewall is enabled for the active profile(s).
+    isFirewallEnabled() {
+        global firstFirewallCheckDone
+        if IsFirewallOnActiveProfile() {
+            if (!firstFirewallCheckDone) {
+                ShowCenteredToolTip("Firewall check passed :]", 17)
+                SetTimer () => ToolTip("", , , 17), -2000
+            }
+            firstFirewallCheckDone := true
+            return true ; Already on, do nothing
+        }
+
+        fwPolicy := GetFirewallPolicy()
+        if fwPolicy {
+            try {
+                activeMask := fwPolicy.CurrentProfileTypes
+                for profileType in [1, 2, 4] {
+                    if (activeMask & profileType)
+                        fwPolicy.FirewallEnabled[profileType] := true
+                }
+            }
+        }
+
+        Sleep 300
+        if IsFirewallOnActiveProfile() {
+            if (!firstFirewallCheckDone)
+                ShowCenteredToolTip("Firewall check passed :]", 17)
+            SetTimer () => ToolTip("", , , 17), -2000
+            firstFirewallCheckDone := true
+            return true
+
+        }
+        firstFirewallCheckDone := false
+        MsgBox "Windows Firewall appears to be inactive!`nPlease enable it for proper operation.", "FIREWALL WARNING",
+            48
         return false
     }
-    ; MsgBox result ; Uncomment to debug output
-    ; MsgBox result
-    ; Try a more robust regex: match 'State' followed by any non-newline, then 'ON' (handles tabs, colons, spaces)
-    found := RegExMatch(result, "State\s*[:]?\s*ON")
-    ; Debug: show what was matched
-    ; MsgBox "RegExMatch found: " found
-    return found ? true : false
-}
 
-; --- Firewall check at startup ---
-; First check if firewall is already on, if not, try to enable it. If it still isn't on, show a warning message.
-isFirewallEnabled() {
-    global firstFirewallCheckDone
-    if IsFirewallOnActiveProfile() {
-        if (!firstFirewallCheckDone)
-            ShowCenteredToolTip("Firewall check passed :]", 17)
-        SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
-        firstFirewallCheckDone := true
-        return true ; Already on, do nothing
-    }
-    ; Try to enable firewall for active profile
-    RunWait 'netsh advfirewall set currentprofile state on', , "Hide"
-    Sleep 500
-    if IsFirewallOnActiveProfile() {
-        if (!firstFirewallCheckDone)
-            ShowCenteredToolTip("Firewall check passed :]", 17)
-        SetTimer () => ToolTip("", , , 17), -2000 ; Clear tooltip after 2 second
-        firstFirewallCheckDone := true
-        return true
+    ; Returns true when the NoSave rule exists.
+    IsNoSaveRuleActive() {
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP
+        fwPolicy := GetFirewallPolicy()
+        if !fwPolicy
+            return false
 
-    }
-    firstFirewallCheckDone := false
-    MsgBox "Windows Firewall appears to be inactive!`nPlease enable it for proper operation.", "FIREWALL WARNING",
-        48
-    return false
-}
-
-; Checks if the firewall rule '123456' exists. Returns true if it exists, false otherwise. Shows a debug tooltip with the result.
-IsNoSaveRuleActive() {
-    ruleName := "123456"
-    outFile := A_Temp "\fw_rule_status.txt"
-    cmd := '"' A_ComSpec '" /c netsh advfirewall firewall show rule name="' ruleName '" > "' outFile '"'
-    RunWait(cmd, , "Hide")
-    if !FileExist(outFile) {
+        try {
+            rule := fwPolicy.Rules.Item(NOSAVE_RULE_NAME)
+            if (rule.Direction != 2 || rule.Action != 0 || !rule.Enabled)
+                return false
+            if !InStr(rule.RemoteAddresses, NOSAVE_REMOTE_IP)
+                return false
+            return true
+        }
         return false
     }
-    result := FileRead(outFile)
-    found := InStr(result, ruleName)
-    return found ? true : false
+
+    clearNoSaveToolTip(localMode) {
+        if (forMode == localMode)
+            ToolTip("", , , 17)
+    }
+
+    ; Cleans up the NoSave rule on exit.
+    AppExit(*) {
+        if FileExist(iniFile) {
+            DisableNoSaveMode()
+            IniWrite(0, iniFile, "Options", "scriptsEnabled")
+        }
+        ToolTip("", , , 17)
+    }
+
 }

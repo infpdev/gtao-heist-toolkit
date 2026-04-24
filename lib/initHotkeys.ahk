@@ -28,22 +28,34 @@ if !FileExist(iniFile) {
         . "heist=1`n"
         . "FingerprintMode=1`n"
         . "Delay=40`n`n"
-        . "; === Below are the vaultOps hotkeys.. Ignore if your script is standalone === `n"
-        . "[ToolHotkeys]`n"
-        . "NoSave=]`n"
-        . "ToggleScripts=[`n"
+        . "; ---------------------------`n"
+        . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
+        . "; Please use the vaultOps GUI to change these hotkeys,`n"
+        . "; or refer to the documentation for how to customize them in the INI file. `n"
+        . "; The default hotkeys are mentioned above each setting for reference. `n"
+        . "; ---------------------------`n`n"
+        . "; Below are the vaultOps hotkeys.. Ignore if your script is standalone `n"
+        . "[ToolHotkeys]`n`n"
+        . "; (vkDDsc01B) Physical key: ] (Right Bracket)`n"
+        . "NoSave=vkDDsc01B`n`n"
+        . "; (vkDBsc01A) Physical key: [ (Left Bracket)`n"
+        . "ToggleScripts=vkDBsc01A`n`n"
         . "; Send the PgUp key, used for the Cayo Perico heist.`n"
         . "; Can be set to any key or mouse button based on the notation reference above.`n"
         . "SendPgUp=LButton`n`n"
-        . "[Hotkeys]`n"
+        . "[Hotkeys]`n`n"
         . "; Enter manual mode for fingerprint/keypad.`n"
-        . "Manual=m`n"
+        . "; (vk4Dsc032) Physical key: M`n"
+        . "Manual=vk4Dsc032`n`n"
         . "; Instantly solve fingerprint/keypad (auto mode).`n"
-        . "AutoHack=h`n"
+        . "; (vk48sc023) Physical key: H`n"
+        . "AutoHack=vk48sc023`n`n"
         . "; Reset the script's progress and state.`n"
-        . "Reset=r`n"
+        . "; (vk52sc013) Physical key: R`n"
+        . "Reset=vk52sc013`n`n"
         . "; Terminate the script completely (For standalone scripts only).`n"
-        . "Terminate=t`n",
+        . "; (vk54sc014) Physical key: T`n"
+        . "Terminate=vk54sc014`n",
         iniFile
     )
 }
@@ -79,19 +91,25 @@ global fingerprintMode := IniRead(iniFile, "Options", "FingerprintMode", 1)
 
 /** @vaultOps
  * Hotkey to toggle noSave mode which prevents the script from saving progress, useful during heists
- * to trigger the replay glitch.
+ * to trigger the replay glitch.<br>
+ * (vkDDsc01B - physical key is Right Bracket "]")
  */
-global noSaveKey := IniRead(iniFile, "ToolHotkeys", "NoSave", "]")
+global noSaveKey := NormalizeHotkeyValue(IniRead(iniFile, "ToolHotkeys", "NoSave", "vkDDsc01B"), "NoSave",
+"ToolHotkeys")
 
 /** @vaultOps
- *  Hotkey to toggle the main scripts on/off
+ *  Hotkey to toggle the main scripts on/off <br>
+ * (vkDBsc01A - physical key is Left Bracket "[")
  */
-global toggleScriptsKey := IniRead(iniFile, "ToolHotkeys", "ToggleScripts", "[")
+global toggleScriptsKey := NormalizeHotkeyValue(IniRead(iniFile, "ToolHotkeys", "ToggleScripts", "vkDBsc01A"),
+"ToggleScripts",
+"ToolHotkeys")
 
 /** @vaultOps
  *  Hotkey to send the PgUp key (Cayo Perico only)
  */
-global sendPgUpKey := IniRead(iniFile, "ToolHotkeys", "SendPgUp", "LButton")
+global sendPgUpKey := NormalizeHotkeyValue(IniRead(iniFile, "ToolHotkeys", "SendPgUp", "LButton"), "SendPgUp",
+"ToolHotkeys")
 
 ; Delay (in ms) between key-presses, can be adjusted in the GUI (if using vaultOps)
 ; or directly in the INI file. Lower values will speed up the hack but may cause it
@@ -99,15 +117,20 @@ global sendPgUpKey := IniRead(iniFile, "ToolHotkeys", "SendPgUp", "LButton")
 global delay := IniRead(iniFile, "Options", "Delay", 40)
 
 ; Hotkey to trigger manual mode for either of the modes.
-global manualKey := IniRead(iniFile, "Hotkeys", "Manual", "m")
+; (vk4Dsc032 - physical M key)
+global manualKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Manual", "vk4Dsc032"), "Manual", "Hotkeys")
 
 ; Hotkey to trigger auto mode for either of the modes, to instantly solve the puzzle.
-global autoHackKey := IniRead(iniFile, "Hotkeys", "AutoHack", "h")
+; (vk48sc023 - physical H key)
+global autoHackKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "AutoHack", "vk48sc023"), "AutoHack", "Hotkeys")
 
 ; Hotkey to reset the script's state and progress, useful if something gets stuck or goes wrong.
-global resetKey := IniRead(iniFile, "Hotkeys", "Reset", "r")
+; (vk52sc013 - physical R key)
+global resetKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Reset", "vk52sc013"), "Reset", "Hotkeys")
 
 ; Hotkey to terminate the script completely (For standalone scripts only).
-global terminateKey := IniRead(iniFile, "Hotkeys", "Terminate", "t")
+; (vk54sc014 - physical T key)
+global terminateKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Terminate", "vk54sc014"), "Terminate",
+"Hotkeys")
 
 global debug := !A_IsCompiled
