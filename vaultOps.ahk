@@ -857,7 +857,7 @@ Init() {
         ; scale " cA9A9A9")
         linkText := guiApp.Add("Link", "xp y" (height / scale - (height / scale - (groupY + groupH)) /
         (1.5 / scale) " w" groupW " c8484db center"),
-        'For bugs / suggestions: <a href="https://github.com/infpdev/gtao-heist-toolkit">github.com/infpdev</a>')
+        'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
         linkText.SetFont("s" 10 / scale " bold")
         ; linkText.Opt("BackgroundTrans")
         ; linkText.OnEvent("Click", (*) => Run("https://github.com/infpdev/gtao-heist-toolkit"))

@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.3.0"
+ver := "3.4.0"
 MAJOR_UPDATE_REQUIRED := 2
 PARTIAL_UPDATE_REQUIRED := 1
 NO_UPDATE_REQUIRED := 0
@@ -63,7 +63,7 @@ CheckForUpdate() {
                     )
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
-                    Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
+                    Run "https://infpdev.netlify.app?vaultOps=2"
                     ExitApp
                 }
 
@@ -85,7 +85,7 @@ CheckForUpdate() {
             . "Do you want to see the update instructions?"
         res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
         if (res = "Yes") {
-            Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
+            Run "https://infpdev.netlify.app?vaultOps=2"
         }
         ExitApp
     }
