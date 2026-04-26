@@ -185,6 +185,7 @@ UpdateReadmeLink(fileHash) {
         f.Write(content)
         f.Close()
 
+        ShowCenteredToolTip "vaultOps.exe scan completed"
         MsgBox("README.md updated with latest VirusTotal link!", "Success", 64)
     } catch as err {
         MsgBox("Failed to update README.md: " err.Message, "Error", 48)

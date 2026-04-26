@@ -40,14 +40,19 @@ foundAnchor() {
         ToolTip "⇱", fp_x2, fp_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
-    if (IsObject(cachedFingerprintAnchor) && cachedFingerprintAnchor.x && cachedFingerprintAnchor.y) {
-        cx := cachedFingerprintAnchor.x, cy := cachedFingerprintAnchor.y
-        x1 := Max(cx - localSearchSize, 0)
-        y1 := Max(cy - localSearchSize, 0)
-        x2 := Min(cx + localSearchSize, scrW)
-        y2 := Min(cy + localSearchSize, scrH)
-        fpFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, tolerance folder "anchor.png")
+    try {
+        if (IsObject(cachedFingerprintAnchor) && cachedFingerprintAnchor.x && cachedFingerprintAnchor.y) {
+            cx := cachedFingerprintAnchor.x, cy := cachedFingerprintAnchor.y
+            x1 := Max(cx - localSearchSize, 0)
+            y1 := Max(cy - localSearchSize, 0)
+            x2 := Min(cx + localSearchSize, scrW)
+            y2 := Min(cy + localSearchSize, scrH)
+            fpFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, tolerance folder "anchor.png")
+        }
+    } catch {
+        cachedFingerprintAnchor := 0 ; Reset cache on error to prevent repeated failures
     }
+
     if (!fpFound)
         fpFound := ImageSearch(&fpPx, &fpPy, fp_x1, fp_y1, fp_x2, fp_y2, tolerance folder "anchor.png")
 
@@ -58,14 +63,19 @@ foundAnchor() {
         ToolTip "⇱", kp_x2, kp_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
-    if (IsObject(cachedKeypadAnchor) && cachedKeypadAnchor.x && cachedKeypadAnchor.y) {
-        cx := cachedKeypadAnchor.x, cy := cachedKeypadAnchor.y
-        x1 := Max(cx - localSearchSize, 0)
-        y1 := Max(cy - localSearchSize, 0)
-        x2 := Min(cx + localSearchSize, scrW)
-        y2 := Min(cy + localSearchSize, scrH)
-        kpFound := ImageSearch(&kpPx, &kpPy, x1, y1, x2, y2, tolerance folder "anchor.png")
+    try {
+        if (IsObject(cachedKeypadAnchor) && cachedKeypadAnchor.x && cachedKeypadAnchor.y) {
+            cx := cachedKeypadAnchor.x, cy := cachedKeypadAnchor.y
+            x1 := Max(cx - localSearchSize, 0)
+            y1 := Max(cy - localSearchSize, 0)
+            x2 := Min(cx + localSearchSize, scrW)
+            y2 := Min(cy + localSearchSize, scrH)
+            kpFound := ImageSearch(&kpPx, &kpPy, x1, y1, x2, y2, tolerance folder "anchor.png")
+        }
+    } catch {
+        cachedKeypadAnchor := 0 ; Reset cache on error to prevent repeated failures
     }
+
     if (!kpFound)
         kpFound := ImageSearch(&kpPx, &kpPy, kp_x1, kp_y1, kp_x2, kp_y2, tolerance folder "anchor.png")
 
@@ -77,14 +87,19 @@ foundAnchor() {
         ; Sleep 300
     }
 
-    if (IsObject(cachedRubioAnchor) && cachedRubioAnchor.x && cachedRubioAnchor.y) {
-        cx := cachedRubioAnchor.x, cy := cachedRubioAnchor.y
-        x1 := Max(cx - localSearchSize, 0)
-        y1 := Max(cy - localSearchSize, 0)
-        x2 := Min(cx + localSearchSize, scrW)
-        y2 := Min(cy + localSearchSize, scrH)
-        elFound := ImageSearch(&elPx, &elPy, x1, y1, x2, y2, rubioAnchorTolerance folder "elAnchor.png")
+    try {
+        if (IsObject(cachedRubioAnchor) && cachedRubioAnchor.x && cachedRubioAnchor.y) {
+            cx := cachedRubioAnchor.x, cy := cachedRubioAnchor.y
+            x1 := Max(cx - localSearchSize, 0)
+            y1 := Max(cy - localSearchSize, 0)
+            x2 := Min(cx + localSearchSize, scrW)
+            y2 := Min(cy + localSearchSize, scrH)
+            elFound := ImageSearch(&elPx, &elPy, x1, y1, x2, y2, rubioAnchorTolerance folder "elAnchor.png")
+        }
+    } catch {
+        cachedRubioAnchor := 0 ; Reset cache on error to prevent repeated failures
     }
+
     if (!elFound)
         elFound := ImageSearch(&elPx, &elPy, rb_x1, rb_y1, rb_x2, rb_y2, rubioAnchorTolerance folder "elAnchor.png"
         )

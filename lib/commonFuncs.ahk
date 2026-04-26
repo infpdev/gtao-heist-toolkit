@@ -193,3 +193,11 @@ WriteCachedAnchor(cacheFile, section, anchor) {
     } catch {
     }
 }
+
+; Delete cache in case of errors
+DeleteCache() {
+    global cacheFile
+    if FileExist(cacheFile) {
+        FileDelete(cacheFile)
+    }
+}

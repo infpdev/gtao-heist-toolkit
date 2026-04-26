@@ -68,7 +68,7 @@ class ElRubioSolver {
 
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
-        this.folder := folderPath != "" ? folderPath : this.folder
+        this.folder := folderPath != "" ? folderPath : folder
 
         SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
@@ -309,7 +309,7 @@ class ElRubioSolver {
         static timeoutMs := 10000
         static lastCalled := 0
 
-        static localSearchSize := 5
+        static localSearchSize := 20
 
         static x1 := A_ScreenWidth * 0.48
         static y1 := A_ScreenHeight * 0.1
@@ -326,14 +326,22 @@ class ElRubioSolver {
         elFound := false
         fpPx := 0, fpPy := 0
 
-        ; Always try prevFoundPixel region first if available
-        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x != 0 && this.prevFoundPixel.y != 0) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
+        try {
+            ; Always try prevFoundPixel region first if available
+            if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x != 0 && this.prevFoundPixel.y != 0) {
+                cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+                sx1 := Max(cx - localSearchSize, 0)
+                sy1 := Max(cy - localSearchSize, 0)
+                sx2 := Min(cx + localSearchSize, x2)
+                sy2 := Min(cy + localSearchSize, y2)
 
-            elFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
-            )
+                if (sx1 <= sx2 && sy1 <= sy2) {
+                    elFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "elAnchor.png"
+                    )
+                }
+            }
+        } catch {
+            cachedRubioAnchor := 0 ; Reset cache on error to prevent repeated failures
         }
 
         ; If not found, fall back to full region
@@ -360,6 +368,7 @@ class ElRubioSolver {
 
             return { x: fpPx, y: fpPy }
         } else {
+            cachedRubioAnchor := 0
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {

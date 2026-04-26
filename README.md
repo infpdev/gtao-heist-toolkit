@@ -113,11 +113,9 @@ Use responsibly, and keep in mind that some features may not align with Rockstar
 Provided as-is, with no guarantees.
 
 ## Quick Start
-No setup required — just run and use.
-
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/3bd4b26faf4eb49576ada504de772ebb10f27f796cebf5eb795f518d52aa7c84
+> https://www.virustotal.com/gui/file/31ed04a12d11eff0d69335a4d1a614394e6a03a47a03010111515fa5564b175a
 
 
 <p align="center">
