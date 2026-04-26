@@ -104,7 +104,7 @@ class KeypadSolver {
         global
 
         this.delay := delay
-        this.folder := folderPath != "" ? folderPath : this.folder
+        this.folder := folderPath != "" ? folderPath : folder
         this.prevFoundPixel := prevFoundPixel
 
         SetKeyDelay(delay, delay)
@@ -396,17 +396,25 @@ class KeypadSolver {
         kpFound := false
         kpPx := 0, kpPy := 0
 
-        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
-        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
+        try {
+            ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
+            if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
+                cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+                sx1 := Max(cx - localSearchSize, 0)
+                sy1 := Max(cy - localSearchSize, 0)
+                sx2 := Min(cx + localSearchSize, x2)
+                sy2 := Min(cy + localSearchSize, y2)
 
-            kpFound := ImageSearch(&kpPx, &kpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (kpFound && debug) {
-                ToolTip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
+                if (sx1 <= sx2 && sy1 <= sy2) {
+                    kpFound := ImageSearch(&kpPx, &kpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+                    )
+                }
+                if (kpFound && debug) {
+                    ToolTip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
+                }
             }
+        } catch {
+            cachedFingerprintAnchor := 0 ; Reset cache on error to prevent repeated failures
         }
 
         ; if not found, scan the full region (ImageSearch)
@@ -424,6 +432,7 @@ class KeypadSolver {
             this.foundAnchor := true
             return { x: kpPx, y: kpPy }
         } else {
+            cachedFingerprintAnchor := 0
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {

@@ -98,7 +98,7 @@ class FingerprintSolver {
 
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
-        this.folder := folderPath != "" ? folderPath : this.folder
+        this.folder := folderPath != "" ? folderPath : folder
 
         SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
@@ -373,17 +373,25 @@ class FingerprintSolver {
         fpFound := false
         fpPx := 0, fpPy := 0
 
-        ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
-        if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
-            cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
-            sx1 := Max(cx - localSearchSize, 0)
-            sy1 := Max(cy - localSearchSize, 0)
+        try {
+            ;  try cached pixel area first (ImageSearch in a small region around cached pixel)
+            if (IsObject(this.prevFoundPixel) && this.prevFoundPixel.x && this.prevFoundPixel.y) {
+                cx := this.prevFoundPixel.x, cy := this.prevFoundPixel.y
+                sx1 := Max(cx - localSearchSize, 0)
+                sy1 := Max(cy - localSearchSize, 0)
+                sx2 := Min(cx + localSearchSize, x2)
+                sy2 := Min(cy + localSearchSize, y2)
 
-            fpFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
-            )
-            if (fpFound && debug) {
-                ToolTip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
+                if (sx1 <= sx2 && sy1 <= sy2) {
+                    fpFound := ImageSearch(&fpPx, &fpPy, sx1, sy1, sx2, sy2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
+                    )
+                }
+                if (fpFound && debug) {
+                    ToolTip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
+                }
             }
+        } catch {
+            cachedFingerprintAnchor := 0 ; Reset cache on error to prevent repeated failures
         }
 
         ; if not found, scan the full region (ImageSearch)

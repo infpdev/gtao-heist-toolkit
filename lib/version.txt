@@ -1,3 +1,4 @@
 3.3.0
-App now runs on all resolutions (shows warning instead of exiting).
+Cached values won't cause errors anymore.
 Fixed a keybind auto-save bug.
+App now runs on all resolutions (shows warning instead of exiting).
