@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+#Include checkResolution.ahk
 #Include commonFuncs.ahk
 
 if !A_IsAdmin {
@@ -10,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.2.0"
+ver := "3.3.0"
 MAJOR_UPDATE_REQUIRED := 2
 PARTIAL_UPDATE_REQUIRED := 1
 NO_UPDATE_REQUIRED := 0
@@ -56,13 +57,14 @@ CheckForUpdate() {
                         . fetchedNews
                         . "Would you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                             :
-                            "Update available!`nA new version has been released.`n`nPlease update the app to stop seeing this message.`n`n"
+                            "Update available!`n`nWhile you can still use the app, update it to stop seeing this message.`n`n"
                             . fetchedNews
                             . "Would you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
                     )
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
                     Run "https://github.com/infpdev/gtao-heist-toolkit/blob/main/HOW-TO-UPDATE.md"
+                    ExitApp
                 }
 
                 if (UPDATE_PRIORITY = MAJOR_UPDATE_REQUIRED)

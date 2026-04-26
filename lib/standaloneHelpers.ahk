@@ -84,8 +84,10 @@ ResetHackMode() {
  * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
  */
 UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
+    static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
+
     global hackInProgress, readableNoSaveKey, readableScriptsKey, readableSendPgUpKey, readableManualKey,
-        readableAutoHackKey, readableResetKey, pgUpSent
+        readableAutoHackKey, readableResetKey, pgUpSent, unsupportedResolution
 
     if (pgUpSent)
         return ; Don't update status while PgUp is being sent to avoid tooltip interference
@@ -142,7 +144,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
     keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
         "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-    ToolTip(hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
+    ToolTip(unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
 
     MakeAllToolTipsClickThrough(hackMode == "idle")
 }

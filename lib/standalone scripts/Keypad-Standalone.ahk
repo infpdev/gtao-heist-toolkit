@@ -32,7 +32,7 @@ init()
  * 
  * ### FLOW:
  * ```text
- * switchToAuto()/switchToManual() → findAnchor() → start MainLoop(timer)
+ * switchToAuto()/switchToManual() → findAnchor() → start MainLoop(timer) 
  * 
  * MainLoop():
  *   validateAnchor()         ; ensure UI valid (loss → Idle/reset)
@@ -59,7 +59,6 @@ init()
 class KeypadSolver {
     needStatusUpdate := true
 
-    folder := A_ScriptDir "\" A_ScreenWidth "x" A_ScreenHeight "\"
     keyImgPath := ""
     mode := "idle"
     scrH := A_ScreenHeight
@@ -102,12 +101,13 @@ class KeypadSolver {
     base_y2_imgSearch := 0.769
 
     __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel, folderPath := "") {
+        global
+
         this.delay := delay
         this.folder := folderPath != "" ? folderPath : this.folder
         this.prevFoundPixel := prevFoundPixel
 
         SetKeyDelay(delay, delay)
-
         this.searchRadiusX := Round(this.scrW * 0.015) ; ~30px at 1920 width
         this.searchRadiusY := Round(this.scrH * 0.015) ; ~30px at 1080 height
         this.spacing := Round(this.scrW * (108 / 1920)) ; Scale spacing based on 1920 width

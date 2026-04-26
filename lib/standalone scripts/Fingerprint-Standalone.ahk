@@ -62,7 +62,6 @@ init()
  */
 class FingerprintSolver {
 
-    folder := A_ScriptDir "\" A_ScreenWidth "x" A_ScreenHeight "\"
     mode := "idle"
     scrW := A_ScreenWidth
     scrH := A_ScreenHeight
@@ -95,6 +94,8 @@ class FingerprintSolver {
     lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
 
     __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "") {
+        global folder
+
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
         this.folder := folderPath != "" ? folderPath : this.folder

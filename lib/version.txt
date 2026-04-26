@@ -1,4 +1,3 @@
-3.2.0
-NoSave toggle is now 3x faster.
-Keybinds now work on all keyboard layouts.
-Added caching to solvers to improve performance.
+3.3.0
+App now runs on all resolutions (shows warning instead of exiting).
+Fixed a keybind auto-save bug.

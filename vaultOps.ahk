@@ -344,8 +344,10 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
      */
     UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
+        static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
+
         global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
-            heist, sendPgUpKey, pgUpSent
+            heist, sendPgUpKey, pgUpSent, unsupportedResolution
 
         readableNoSaveKey := CanonicalToDisplay(noSaveKey)
         readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
@@ -364,7 +366,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (!scriptsEnabled) {
             status := "Scripts disabled`n" noSaveText
             earlyReturn := true
-            ToolTip(status, scrW, 0, 20)
+            ToolTip(unsupportedResolutionText . status, scrW, 0, 20)
         }
 
         if (isTimingOut) {
@@ -416,6 +418,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                 }
             }
         }
+
         indicator := "🟢 "
         keys := (heist == CAYO_PERICO && hackMode != "auto" ? "Send PgUp: " readableSendPgUpKey "`n" :
             "")
@@ -423,7 +426,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
             indicator : "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-        ToolTip(hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
+        ToolTip(unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
 
         MakeAllToolTipsClickThrough(hackMode == "idle")
     }
@@ -599,13 +602,13 @@ Init() {
     global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
 
     ; ======= Resource folder path (for images, etc.) ========
-    global folder := A_ScriptDir "\" scrW "x" scrH "\"
-    global staticFolder := A_ScriptDir "\lib\static\"
+    global folder, unsupportedResolution
+    global staticFolder := dir "\lib\static\"
 
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
     guiApp.BackColor := "222222"
-    overallFontSize := (scrW * 11 / 1920) / GetScreenScaling()
+    overallFontSize := Floor((11 * (scrW / 1920) ** 0.5) / GetScreenScaling())
     guiApp.SetFont("s" overallFontSize / GetScreenScaling() " cWhite")
 
     ; ======= Top bar =======
@@ -614,6 +617,11 @@ Init() {
 
     bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
         "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(v" ver " beta)" : "(v" trimmedVer ")"))
+
+    if (unsupportedResolution)
+        guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",
+            "*App running in unsupported resolution mode")
+
     xBtn := guiApp.AddPicture("x" ((width - btnW - 15 / scale) / scale) " y" 10 / scale " w" btnW " h" btnW " +0x4",
     staticFolder "\minimize.png")
     xBtn.OnEvent("Click", (*) => (guiApp.Minimize()))

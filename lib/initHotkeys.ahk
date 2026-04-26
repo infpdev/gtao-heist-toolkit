@@ -1,17 +1,5 @@
 #Include "sharedCanonicalHelpers.ahk"
 
-global folder := A_ScriptDir "\" A_ScreenWidth "x" A_ScreenHeight "\"
-if !FileExist(folder "1.bmp")
-    global folder := A_ScriptDir "\..\..\" A_ScreenWidth "x" A_ScreenHeight "\"
-
-if !FileExist(folder "1.bmp") {
-    ToolTip("Unsuported Resolution", A_ScreenWidth // 2 - 20, 0, 20)
-    Sleep 4000
-    ToolTip("Exiting script", A_ScreenWidth // 2 - 20, 0, 20)
-    Sleep 4000
-    ExitApp
-}
-
 global iniFile := "zSettings.ini"
 if !FileExist(iniFile) {
     FileAppend(

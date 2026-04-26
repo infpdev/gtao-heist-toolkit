@@ -30,7 +30,6 @@
  */
 class ElRubioSolver {
 
-    folder := A_ScriptDir "\" A_ScreenWidth "x" A_ScreenHeight "\"
     mode := "idle"
     scrW := A_ScreenWidth
     scrH := A_ScreenHeight
@@ -65,15 +64,17 @@ class ElRubioSolver {
     lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
 
     __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "") {
-        SetKeyDelay delay, delay
+        global folder
+
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
+        this.folder := folderPath != "" ? folderPath : this.folder
+
+        SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
         this.fnFindAnchor := ObjBindMethod(this, "findAnchor")
         this.fnCheckFalsePositive := ObjBindMethod(this, "CheckFalsePositive")
         this.scale := (this.baseW / this.scrW) ** 0.7
-
-        this.folder := folderPath != "" ? folderPath : this.folder
 
         this.Idle()
     }

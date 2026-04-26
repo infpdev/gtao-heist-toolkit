@@ -117,7 +117,7 @@ No setup required — just run and use.
 
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/c60561df4f09f015dd46f6065b20ba5526bdbb7eda25d7b26c566bc9103696d5
+> https://www.virustotal.com/gui/file/3bd4b26faf4eb49576ada504de772ebb10f27f796cebf5eb795f518d52aa7c84
 
 
 <p align="center">

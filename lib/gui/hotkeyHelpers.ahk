@@ -45,7 +45,7 @@ global inputPgUp := "", txtPgUpLabel := ""
     }
 
     EscUnfocusHandler(wParam, lParam, msg, hwnd) {
-        global unfocusField, unfocusPrevValue, settingsGroup, hotkeyCaptureField, hotkeyCaptureKeyName
+        global unfocusField, unfocusPrevValue, settingsGroup, hotkeyCaptureField, hotkeyCaptureKeyName, autoSaveTimers
         if !unfocusField
             return
 
@@ -54,6 +54,10 @@ global inputPgUp := "", txtPgUpLabel := ""
 
         vk := Format("{:X}", wParam)
         if (vk = "1B") {
+            if (hotkeyCaptureKeyName != "" && autoSaveTimers.Has(hotkeyCaptureKeyName)) {
+                SetTimer(autoSaveTimers[hotkeyCaptureKeyName], 0)
+                autoSaveTimers.Delete(hotkeyCaptureKeyName)
+            }
             if (unfocusField && unfocusPrevValue != "")
                 unfocusField.Text := unfocusPrevValue
             try bar.Focus()
@@ -168,7 +172,7 @@ global inputPgUp := "", txtPgUpLabel := ""
             return
 
         ; Cancel previous timer for this field
-        if autoSaveTimers.HasOwnProp(keyName) {
+        if autoSaveTimers.Has(keyName) {
             SetTimer(autoSaveTimers[keyName], 0)
         }
 
@@ -182,7 +186,7 @@ global inputPgUp := "", txtPgUpLabel := ""
         global autoSaveTimers
 
         if IsAnyModifierPressed() {
-            if autoSaveTimers.HasOwnProp(keyName)
+            if autoSaveTimers.Has(keyName)
                 SetTimer(autoSaveTimers[keyName], -100)
             return
         }
@@ -315,8 +319,21 @@ global inputPgUp := "", txtPgUpLabel := ""
     DelayedCleanup() {
         global settingsGroup, unfocusField, unfocusPrevValue, unfocusSaveBtn, hotkeyCaptureField,
             hotkeyCaptureKeyName, sendPgUpKey, pgUpDisabled
+        global autoSaveTimers
         if !unfocusField
             return
+
+        if (hotkeyCaptureKeyName != "" && autoSaveTimers.Has(hotkeyCaptureKeyName)) {
+            SetTimer(autoSaveTimers[hotkeyCaptureKeyName], 0)
+            autoSaveTimers.Delete(hotkeyCaptureKeyName)
+        }
+
+        if (hotkeyCaptureField && hotkeyCaptureKeyName != "" && hotkeyCaptureField = unfocusField
+            && hotkeyCaptureField.Text != unfocusPrevValue) {
+            SaveKeybind(hotkeyCaptureField, hotkeyCaptureKeyName, 0)
+            return
+        }
+
         unfocusField.Text := unfocusPrevValue
         try bar.Focus()
         unfocusField := ""
