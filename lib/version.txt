@@ -1,4 +1,3 @@
-3.3.0
-Cached values won't cause errors anymore.
-Fixed a keybind auto-save bug.
-App now runs on all resolutions (shows warning instead of exiting).
+3.4.0
+Fixed "Can't create control" errors in v3.3
+You can now easily report bugs or suggest new features.

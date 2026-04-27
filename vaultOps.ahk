@@ -603,7 +603,7 @@ Init() {
 
     ; ======= Resource folder path (for images, etc.) ========
     global folder, unsupportedResolution
-    global staticFolder := dir "\lib\static\"
+    global staticFolder := A_ScriptDir "\lib\static\"
 
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
@@ -853,14 +853,10 @@ Init() {
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
-        ; linkArea := guiApp.AddGroupBox("x" xLabel " y" (height / scale - 40 / scale) " w" (groupW - 2 * xLabel) " h" 30 /
-        ; scale " cA9A9A9")
         linkText := guiApp.Add("Link", "xp y" (height / scale - (height / scale - (groupY + groupH)) /
         (1.5 / scale) " w" groupW " c8484db center"),
         'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
         linkText.SetFont("s" 10 / scale " bold")
-        ; linkText.Opt("BackgroundTrans")
-        ; linkText.OnEvent("Click", (*) => Run("https://github.com/infpdev/gtao-heist-toolkit"))
 
         ; Tray menu setup
         A_TrayMenu.Delete()

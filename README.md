@@ -115,7 +115,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/31ed04a12d11eff0d69335a4d1a614394e6a03a47a03010111515fa5564b175a
+> https://www.virustotal.com/gui/file/bae5f30858656e0db46e25bda108a7d00c2cb6a9d6c640b242dfebd26adfbac7
 
 
 <p align="center">
