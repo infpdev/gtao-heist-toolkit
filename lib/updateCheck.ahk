@@ -21,6 +21,7 @@ if !IsSet(vaultOps)
     global vaultOps := false
 
 CheckForUpdate()
+checkResolution()
 
 CheckForUpdate() {
     global ver
