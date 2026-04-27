@@ -42,7 +42,7 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
 - Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
 - Cayo Perico **PgUp** bug fix  
-- **NoSave** — replay heist support  
+- Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit.
 - Manual and auto solving modes  
 - GUI app with labels (tooltips) and customizable hotkeys — designed for non-technical users  
 
@@ -91,6 +91,7 @@ Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 - The game should be in **Borderless Fullscreen**, OR **Borderless Windowed** at maximum in-game resolution (matching your screen resolution).
 - **Supported screen resolution** (16:9)
   - The tool relies on fixed UI detection and only works when your screen resolution is one of the supported resolutions below.
+  - If your resolution is unsupported, the app will show a warning, and the solvers may not work correctly. You can still use **NoSave** normally.
   - **Currently supports:**
     - 1920×1080
     - 1600×900
@@ -133,7 +134,7 @@ Provided as-is, with no guarantees.
 - Press **Auto** `H` to solve instantly  
 - Or stay in **Manual** `M` to select prints yourself  
 
-
+> vaultOps runs in the system tray. Left-click the tray icon or right-click → **Exit** to close / terminate it.
 
 ## Detailed Toolkit Usage
 ### NoSave
@@ -152,7 +153,8 @@ Provided as-is, with no guarantees.
 - Requires firewall to be enabled  
 
 **Notes:**
-- The app will attempt to enable the firewall automatically if needed  
+- The app will attempt to enable the firewall automatically if it's not enabled.
+- The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
 - To verify it’s active, press `Alt + F4`. If you see a **“save failed”** message, it’s working.
 
 
@@ -370,3 +372,5 @@ here's a car for reading this far **C:**
 
 ## TODO
 - [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)
+- [ ] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead
+- [ ] Compare executable hash for hotfix detection
