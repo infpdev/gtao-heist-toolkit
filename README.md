@@ -217,7 +217,7 @@ All hotkeys are customizable.
   - Sets solver to **(idle)** and re-enables auto detection  
   - Use if detection behaves incorrectly  
 
-- **Send PgUp** `[LMB]` (Cayo Perico only)
+- **Send PgUp** `LMB` (Cayo Perico only)
   - Allows plasma cutter usage  
   - Forwards another key as PgUp  
   - Default: **Left Mouse Button (LMB)**  
@@ -255,7 +255,7 @@ Each standalone includes all necessary resources (UI templates, detection logic)
 
 ## Building from Source
 
-Want to verify the source code or build the executable yourself? See [BUILD.md](_src/lib/build_scripts/BUILD.md) for complete build instructions, prerequisites, and configuration options.
+Want to verify the source code or build the executable yourself? See [BUILD.md](lib/build_scripts/BUILD.md) for complete build instructions, prerequisites, and configuration options.
 
 
 
@@ -265,9 +265,6 @@ Want to verify the source code or build the executable yourself? See [BUILD.md](
 _src/
 │
 ├─ 1920x1080/, 1600x900/, 1366x768/   # Resolution-specific images for the solver 
-├─ vaultOps.ahk                       # Entry point (main GUI + mode control)
-├─ zSettings.ini                      # User configuration (hotkeys, delay, etc.)
-├─ zAnchorCache.ini                   # Cached anchor coordinates for solvers
 │
 ├─ lib/
 │  ├─ build_scripts/
@@ -289,9 +286,17 @@ _src/
 │  │
 │  ├─ standalone scripts/             # Pre-built standalone solver executables
 │  │
+│  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
+│  ├─ checkResolution.ahk             # Resolution detection and fallback handling
+│  ├─ commonFuncs.ahk                 # Shared utilities for the Toolkit and Standalone scripts
 │  ├─ initHotkeys.ahk                 # Hotkey registration + event binding
-│  ├─ updateCheck.ahk                 # Version checking
-│  └─ commonFuncs.ahk                 # Shared utilities for the Toolkit and Standalone scripts
+│  ├─ sharedCanonicalHelpers.ahk      # Canonical hotkey conversion helpers
+│  ├─ standaloneHelpers.ahk           # Shared helpers for standalone builds
+│  └─ updateCheck.ahk                 # Version checking
+│
+├─ vaultOps.ahk                       # Entry point (main GUI + mode control)
+├─ zAnchorCache.ini                   # Cached anchor coordinates for solvers
+├─ zSettings.ini                      # User configuration (hotkeys, delay, etc.)
 │
 └─ README.md                          # Documentation (this file)
 ```
@@ -302,14 +307,20 @@ _src/
 - `vaultOps.ahk` — GUI initialization, mode selection, hotkey binding, solver lifecycle
 
 **Core Utilities:**
-- `initHotkeys.ahk` — Registers all hotkey bindings and attaches event handlers; runs on startup
-- `updateCheck.ahk` — Checks for newer releases; handles version comparison and user notifications
+- `autoUpdate.ahk` — Downloads and launches minor patch updates automatically
+- `checkResolution.ahk` — Resolves the correct asset folder and handles supported-resolution warnings
 - `commonFuncs.ahk` — Shared helpers: centered tooltips, click-through tooltip styling, hotkey display formatting
+- `initHotkeys.ahk` — Registers all hotkey bindings and attaches event handlers; runs on startup
+- `sharedCanonicalHelpers.ahk` — Converts and normalizes canonical hotkeys
+- `standaloneHelpers.ahk` — Shared logic used by standalone solver builds
+- `updateCheck.ahk` — Checks for newer releases; handles version comparison and user notifications
 
 **Solvers** (independent classes):
-- `CasinoFingerprint` — Pattern recognition with manual/auto modes
-- `CasinoKeypad` — Sequence detection and solving
-- `ElRubio` — Multi-stage fingerprint cloner puzzle (Cayo Perico)
+- `Fingerprint-Standalone.ahk` — Solver for the casino fingerprint puzzle
+- `Keypad-Standalone.ahk` — Solver for the casino keypad puzzle
+- `ElRubio-Standalone.ahk` — Solver for the Cayo Perico fingerprint cloner puzzle
+
+> `NoSave-Standalone.ahk` — Standalone script for the NoSave replay glitch, included in all builds
 
 **Build System:**
 - `dist.ahk` — Orchestrates compilation, packaging, and deployment
@@ -372,5 +383,5 @@ here's a car for reading this far **C:**
 
 ## TODO
 - [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)
-- [x] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5)
-- [x] Add automatic updates for minor patches - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5)
+- [x] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5.0)
+- [x] Add automatic updates for minor patches - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5.0)
