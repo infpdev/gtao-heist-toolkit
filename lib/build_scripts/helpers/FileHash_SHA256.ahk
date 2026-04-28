@@ -3,92 +3,136 @@
 ; Ported from Crypt.ahk v1
 
 GetFileHash_SHA256(filePath) {
-    ; Windows Crypto API constants
-    PROV_RSA_AES := 24
-    CRYPT_VERIFYCONTEXT := 0xF0000000
-    CALG_SHA_256 := 0x0000800C
-    HP_HASHVAL := 0x0002
-    HP_HASHSIZE := 0x0004
-
-    ; Acquire context
-    hCryptProv := 0
-    if !DllCall("Advapi32\CryptAcquireContextW", "Ptr*", hCryptProv, "Uint", 0, "Uint", 0, "Uint", PROV_RSA_AES, "UInt",
-        CRYPT_VERIFYCONTEXT) {
-        MsgBox("CryptAcquireContextW failed", "Error", 48)
-        return ""
-    }
-
-    ; Create hash object for SHA-256
-    hHash := 0
-    if !DllCall("Advapi32\CryptCreateHash", "Ptr", hCryptProv, "Uint", CALG_SHA_256, "Uint", 0, "Uint", 0, "Ptr*",
-        hHash) {
-        DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
-        MsgBox("CryptCreateHash failed", "Error", 48)
-        return ""
-    }
-
-    ; Open file
-    try {
-        f := FileOpen(filePath, "r", "CP0")
-    } catch as err {
-        DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
-        DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
+    if !FileExist(filePath) {
         MsgBox("Cannot open file: " filePath, "Error", 48)
         return ""
     }
 
-    ; Hash file in chunks
-    BUFF_SIZE := 1024 * 1024  ; 1 MB chunks
-    readBuf := Buffer(BUFF_SIZE, 0)
+    static bcryptLoaded := DllCall("LoadLibrary", "Str", "bcrypt.dll", "Ptr")
+    static hAlg := 0
+    static hashSize := 0
+    static objSize := 0
+
+    ; Init algorithm provider once
+    if (!hAlg) {
+        status := DllCall("bcrypt\BCryptOpenAlgorithmProvider"
+            , "Ptr*", &hAlg
+            , "WStr", "SHA256"
+            , "Ptr", 0
+            , "UInt", 0
+            , "UInt")
+
+        if (status != 0) {
+            MsgBox("BCryptOpenAlgorithmProvider failed`nStatus: " status, "Error", 48)
+            return ""
+        }
+
+        ; Get object length
+        objSizeBuf := Buffer(4, 0)
+        bytesOut := 0
+        status := DllCall("bcrypt\BCryptGetProperty"
+            , "Ptr", hAlg
+            , "WStr", "ObjectLength"
+            , "Ptr", objSizeBuf.Ptr
+            , "UInt", 4
+            , "UInt*", &bytesOut
+            , "UInt", 0
+            , "UInt")
+
+        if (status != 0) {
+            MsgBox("BCryptGetProperty(ObjectLength) failed`nStatus: " status, "Error", 48)
+            return ""
+        }
+        objSize := NumGet(objSizeBuf, 0, "UInt")
+
+        ; Get hash digest length
+        hashSizeBuf := Buffer(4, 0)
+        bytesOut := 0
+        status := DllCall("bcrypt\BCryptGetProperty"
+            , "Ptr", hAlg
+            , "WStr", "HashDigestLength"
+            , "Ptr", hashSizeBuf.Ptr
+            , "UInt", 4
+            , "UInt*", &bytesOut
+            , "UInt", 0
+            , "UInt")
+
+        if (status != 0) {
+            MsgBox("BCryptGetProperty(HashDigestLength) failed`nStatus: " status, "Error", 48)
+            return ""
+        }
+        hashSize := NumGet(hashSizeBuf, 0, "UInt")
+    }
+
+    ; Create fresh hash object per file
+    hashObject := Buffer(objSize, 0)
+    hHash := 0
+
+    status := DllCall("bcrypt\BCryptCreateHash"
+        , "Ptr", hAlg
+        , "Ptr*", &hHash
+        , "Ptr", hashObject.Ptr
+        , "UInt", hashObject.Size
+        , "Ptr", 0
+        , "UInt", 0
+        , "UInt", 0
+        , "UInt")
+
+    if (status != 0) {
+        MsgBox("BCryptCreateHash failed`nStatus: " status, "Error", 48)
+        return ""
+    }
+
+    try {
+        f := FileOpen(filePath, "r")
+    } catch {
+        MsgBox("Cannot open file: " filePath, "Error", 48)
+        return ""
+    }
+
+    BUFF_SIZE := 1024 * 1024
+    readBuf := Buffer(BUFF_SIZE)
 
     while (bytesRead := f.RawRead(readBuf, BUFF_SIZE)) > 0 {
-        if !DllCall("Advapi32\CryptHashData", "Ptr", hHash, "Ptr", readBuf, "Uint", bytesRead, "Uint", 0) {
+        status := DllCall("bcrypt\BCryptHashData"
+            , "Ptr", hHash
+            , "Ptr", readBuf.Ptr
+            , "UInt", bytesRead
+            , "UInt", 0
+            , "UInt")
+
+        if (status != 0) {
             f.Close()
-            DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
-            DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
-            MsgBox("CryptHashData failed", "Error", 48)
+            DllCall("bcrypt\BCryptDestroyHash", "Ptr", hHash)
+            MsgBox("BCryptHashData failed`nStatus: " status, "Error", 48)
             return ""
         }
     }
     f.Close()
 
-    ; Get hash size
-    hashLenBuf := Buffer(4, 0)
-    if !DllCall("Advapi32\CryptGetHashParam", "Ptr", hHash, "Uint", HP_HASHSIZE, "Ptr", hashLenBuf, "Uint*", dwHashLen :=
-        4, "UInt", 0) {
-        DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
-        DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
-        MsgBox("CryptGetHashParam (size) failed", "Error", 48)
+    hashBuffer := Buffer(hashSize, 0)
+
+    status := DllCall("bcrypt\BCryptFinishHash"
+        , "Ptr", hHash
+        , "Ptr", hashBuffer.Ptr
+        , "UInt", hashSize
+        , "UInt", 0
+        , "UInt")
+
+    DllCall("bcrypt\BCryptDestroyHash", "Ptr", hHash)
+
+    if (status != 0) {
+        MsgBox("BCryptFinishHash failed`nStatus: " status, "Error", 48)
         return ""
     }
 
-    hashLen := NumGet(hashLenBuf, 0, "UInt")
-
-    ; Get hash value
-    pbHash := Buffer(hashLen, 0)
-    if !DllCall("Advapi32\CryptGetHashParam", "Ptr", hHash, "Uint", HP_HASHVAL, "Ptr", pbHash, "Uint*", hashLen, "UInt",
-        0) {
-        DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
-        DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
-        MsgBox("CryptGetHashParam (value) failed", "Error", 48)
-        return ""
-    }
-
-    ; Convert to hex string
-    hashResult := BufferToHex(pbHash, hashLen)
-
-    ; Cleanup
-    DllCall("Advapi32\CryptDestroyHash", "Ptr", hHash)
-    DllCall("Advapi32\CryptReleaseContext", "Ptr", hCryptProv, "UInt", 0)
-
-    return hashResult
+    return BufferToHex(hashBuffer, hashSize)
 }
 
 BufferToHex(buf, len) {
     hex := ""
     loop len {
-        byte := NumGet(buf, A_Index - 1, "UChar")
-        hex .= Format("{:02x}", byte)
+        hex .= Format("{:02x}", NumGet(buf, A_Index - 1, "UChar"))
     }
     return hex
 }

@@ -53,6 +53,7 @@ The build script provides a GUI with the following options:
 
 After building completes:
 - **Main executable:** `_src/vaultOps.exe`
+- **Updater executable:** `_src/lib/vaultOpsUpdater.exe`
 - **Installer:** `_src/dist/vaultOps-Setup.exe`
 - **Standalone scripts:** `_src/dist/standalone/` (if enabled)
 

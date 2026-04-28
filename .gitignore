@@ -2,6 +2,7 @@
 zSettings.ini
 zAnchorCache.ini
 VaultOps.exe
+vaultOpsUpdater.exe
 temp_*.ahk
 build_options.ini
 **/AHK_BASE/

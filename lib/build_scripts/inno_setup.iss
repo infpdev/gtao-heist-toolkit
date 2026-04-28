@@ -1,7 +1,7 @@
 
 ; Inno Setup script for vaultOps
 #define MyAppName "vaultOps"
-#define MyAppVersion "3.4.0"
+#define MyAppVersion "3.5.0"
 #define MyAppPublisher "infpdev"
 #define MyAppURL "https://github.com/infpdev/gtao-heist-toolkit"
 #define MyAppExeName "vaultOps.exe"
@@ -26,9 +26,6 @@ DisableDirPage=yes
 OutputDir=..\..\dist
 OutputBaseFilename="vaultOps-Setup"
 SetupIconFile=gta.ico
-; SolidCompression=yes
-; Compression=lzma2
-
 WizardStyle=modern
 
 
@@ -53,6 +50,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\..\vaultOps.exe"; DestDir: "{app}"; Flags: ignoreversion 
+Source: "..\..\lib\vaultOpsUpdater.exe"; DestDir: "{app}\lib"; Flags: ignoreversion
 Source: "gta.ico"; DestDir: "{app}\lib\static"; Flags: ignoreversion
 Source: "..\..\1366x768\*"; DestDir: "{app}\1366x768"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\1600x900\*"; DestDir: "{app}\1600x900"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -69,3 +67,7 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilen
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
+
+[UninstallDelete]
+Type: files; Name: "{app}\zSettings.ini"
+Type: files; Name: "{app}\zAnchorCache.ini"
