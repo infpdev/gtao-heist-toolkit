@@ -59,15 +59,16 @@ buildVaultOps() {
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
     outFile := parentDir "\vaultOps.exe"
+    updaterInFile := parentDir "\lib\autoUpdate.ahk"
+    updaterOutFile := parentDir "\lib\vaultOpsUpdater.exe"
     vaultOpsInstaller := parentDir "\dist\vaultOps-Setup.exe"
 
     cmd := '"' AHK2EXEPath '" /in "' inFile '" /out "' outFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
+    updaterCmd := '"' AHK2EXEPath '" /in "' updaterInFile '" /out "' updaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     innoCmd := '"' isccExe '" "' issScript '"'
 
     ; delete old package if it exists
-    if DirExist(parentDir "\dist") {
-        try DirDelete(parentDir "\dist", true)
-    }
+    try DirDelete(parentDir "\dist", true)
 
     sleep 20
 
@@ -77,6 +78,7 @@ buildVaultOps() {
 
     ; === Compile and package the main vaultOps executable ===
     RunWait cmd, , "Hide"
+    RunWait updaterCmd, , "Hide"
     RunWait innoCmd, , "Hide"
 
     if RequireExistingFile(vaultOpsInstaller, "Installer") {

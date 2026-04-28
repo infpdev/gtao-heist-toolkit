@@ -116,7 +116,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/26f6abcce5da61a52b950ea077aeadccf38729068691fb2c5c1db30b6d5fc78f
+> https://www.virustotal.com/gui/file/1e65cdf649c78a0b1eb6ccdd74a71f5b497291c900afaecae79c50e9408c2b27
 
 
 <p align="center">
@@ -372,5 +372,5 @@ here's a car for reading this far **C:**
 
 ## TODO
 - [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)
-- [ ] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead
-- [ ] Compare executable hash for hotfix detection
+- [x] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5)
+- [x] Add automatic updates for minor patches - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5)

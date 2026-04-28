@@ -34,7 +34,7 @@ if !A_IsAdmin {
         global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP, forMode
         fwPolicy := GetFirewallPolicy()
         if !fwPolicy {
-            IniWrite(false, iniFile, "Options", "NoSave")
+            ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
             return false
         }
 
@@ -51,7 +51,7 @@ if !A_IsAdmin {
             rule.RemoteAddresses := NOSAVE_REMOTE_IP
             fwPolicy.Rules.Add(rule)
         } catch {
-            IniWrite(false, iniFile, "Options", "NoSave")
+            ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
             return false
         }
 
@@ -61,7 +61,7 @@ if !A_IsAdmin {
             SetTimer () => clearNoSaveToolTip("enabled"), -2000
             forMode := "enabled"
         }
-        IniWrite(enabled, iniFile, "Options", "NoSave")
+        ; IniWrite(enabled, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
         return enabled
 
     }
@@ -71,7 +71,7 @@ if !A_IsAdmin {
         global NOSAVE_RULE_NAME, forMode
         fwPolicy := GetFirewallPolicy()
         if !fwPolicy {
-            IniWrite(true, iniFile, "Options", "NoSave")
+            ; IniWrite(true, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
             return false
         }
 
@@ -84,8 +84,6 @@ if !A_IsAdmin {
             forMode := "disabled"
         }
 
-        if FileExist(iniFile)
-            IniWrite(!disabled, iniFile, "Options", "NoSave")
         return disabled
 
     }
@@ -175,7 +173,6 @@ if !A_IsAdmin {
     AppExit(*) {
         if FileExist(iniFile) {
             DisableNoSaveMode()
-            IniWrite(0, iniFile, "Options", "scriptsEnabled")
         }
         ToolTip("", , , 17)
     }

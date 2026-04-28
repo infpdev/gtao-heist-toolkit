@@ -1,3 +1,4 @@
-3.4.0
-Fixed "Can't create control" errors in v3.3
-You can now easily report bugs or suggest new features.
+3.5.0
+Added automatic updates for minor patches, along with internal improvements.
+Minor patches will now prompt for an automatic update instead of requiring a manual download.
+Probably the last time you'll have to manually update it :)

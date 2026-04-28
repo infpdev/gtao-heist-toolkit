@@ -457,7 +457,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
         TryRegisterHotkeys()
         picScriptsEnabled.Value := scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
-        IniWrite(scriptsEnabled, iniFile, "Options", "scriptsEnabled")
+        ; IniWrite(scriptsEnabled, iniFile, "Options", "scriptsEnabled") ; Not required anymore since it's reset on every launch.
         CreateHeistInstance()
         UpdateGlobalStatus(scriptsEnabled && hackInProgress)
 
@@ -475,11 +475,6 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
         noSave ? EnableNoSaveMode() : DisableNoSaveMode()
-
-        ; IniWrite(noSave, iniFile, "Options", "NoSave") moved to NoSave.ahk so that it owns the
-        ; state change and persistence of the NoSave setting,
-        ; ensuring consistency even if the firewall rule changes outside of this toggle function.
-
     }
 
     ToggleHeistMode(*) {
@@ -591,7 +586,7 @@ Init() {
 
     ; ======== Boolean flags and state variables ========
     global noSave, scriptsEnabled, fingerprintMode, hackMode, heist, delay, iniFile
-    global anchorFound := false, pgUpSent := false, hackInProgress := false, pgUpDisabled := false, isUnreleased,
+    global anchorFound := false, pgUpSent := false, hackInProgress := false, pgUpDisabled := false, isBeta,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
@@ -616,7 +611,7 @@ Init() {
     topbarW := width, titleW := topbarW - btnW
 
     bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
-        "vaultOps ● Heist toolkit by .dev17 " (isUnreleased ? "(v" ver " beta)" : "(v" trimmedVer ")"))
+        "vaultOps ● Heist toolkit by .dev17 " (isBeta ? "(v" ver " beta)" : "(v" ver ")"))
 
     if (unsupportedResolution)
         guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",

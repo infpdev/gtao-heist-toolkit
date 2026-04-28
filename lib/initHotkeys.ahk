@@ -11,10 +11,8 @@ if !FileExist(iniFile) {
         . "; # = Win    → e.g. #h means Win + H`n; `n"
         . "; LButton / RButton / MButton for mouse buttons`n"
         . "; ---------------------------`n`n"
-        . "; === vaultOps Options.. Ignore if your script is standalone === `n"
+        . "; === vaultOps options.. Ignore if your script is standalone === `n"
         . "[Options]`n"
-        . "NoSave=0`n"
-        . "scriptsEnabled=0`n"
         . "heist=1`n"
         . "FingerprintMode=1`n"
         . "Delay=40`n`n"
@@ -45,19 +43,21 @@ if !FileExist(iniFile) {
         . "Reset=vk52sc013`n`n"
         . "; Terminate the script completely (For standalone scripts only).`n"
         . "; (vk54sc014) Physical key: T`n"
-        . "Terminate=vk54sc014`n",
+        . "Terminate=vk54sc014",
         iniFile
     )
 }
 /** @vaultOps
- *  Boolean state for noSave mode, can be toggled with the assigned hotkey
+ *  Boolean state for noSave mode, can be toggled with the assigned hotkey.<br>
+ * Resets to false on exit.
  */
-global noSave := IniRead(iniFile, "Options", "NoSave", 0)
+global noSave := 0
 
 /** @vaultOps
- *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey
+ *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey.<br>
+ * Resets to false on exit.
  */
-global scriptsEnabled := IniRead(iniFile, "Options", "scriptsEnabled", 0)
+global scriptsEnabled := 0
 
 /** @vaultOps
  *  Boolean state for the casino mode, 1 for casino, 0 for Cayo Perico.
