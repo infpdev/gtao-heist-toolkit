@@ -470,6 +470,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
                 . "Please check your firewall settings and try again.",
                 "Firewall Access Error", 48
+            noSave := !noSave ; Revert the toggle since it can't be applied
+            return
         }
         UpdateGlobalStatus(hackInProgress)
 
