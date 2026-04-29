@@ -3,6 +3,7 @@
 #SingleInstance Force
 SetWorkingDir A_ScriptDir
 #Include .\virusTotalScan.ahk
+#Include ..\commonFuncs.ahk
 
 ; Development mode flag (set to false for release builds)
 global configFile := ".\build_options.ini"
@@ -236,9 +237,9 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
                     DirDelete(dest, true)
                 }
             }
-            ToolTip "Standalone SFX packaging complete.", A_ScreenWidth // 2 - 60, 0, 1
+            ShowCenteredToolTip "Standalone SFX packaging complete."
         } else {
-            ToolTip "Standalone compile complete (SFX packaging skipped).", A_ScreenWidth // 2 - 90, 0, 1
+            ShowCenteredToolTip "Standalone compile complete (SFX packaging skipped)."
         }
         sleep 1000
     } else {
@@ -385,7 +386,7 @@ ExtractBuildFilesIfNeeded() {
 
     ; If missing and ZIP exists, extract it
     if (folderMissing && FileExist(buildFilesZip)) {
-        ToolTip("Extracting build files...", A_ScreenWidth // 2 - 100, 0, 1)
+        ShowCenteredToolTip("Extracting build files...")
 
         psCmd := "Expand-Archive -Path '" buildFilesZip "' -DestinationPath '" A_ScriptDir "' -Force"
         RunWait(A_ComSpec ' /C powershell -Command "' psCmd '"', , "Hide")
@@ -452,26 +453,26 @@ OpenFolderAsUser(path) {
         "int", 1)
 }
 
-ShowCenteredToolTip(text, y := 0) {
-    ; Measure text width to center tooltip
-    hdc := DllCall("GetDC", "ptr", 0)
+; ShowCenteredToolTip(text, y := 0) {
+;     ; Measure text width to center tooltip
+;     hdc := DllCall("GetDC", "ptr", 0)
 
-    ; Create font (adjust if needed)
-    hfont := DllCall("GetStockObject", "int", 0)  ; DEFAULT_GUI_FONT
-    DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
+;     ; Create font (adjust if needed)
+;     hfont := DllCall("GetStockObject", "int", 0)  ; DEFAULT_GUI_FONT
+;     DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
 
-    ; Measure text using Buffer (AHK v2.0)
-    size := Buffer(8)
-    DllCall("GetTextExtentPoint32", "ptr", hdc, "str", text, "int", StrLen(text), "ptr", size)
-    width := NumGet(size, 0, "int")
+;     ; Measure text using Buffer (AHK v2.0)
+;     size := Buffer(8)
+;     DllCall("GetTextExtentPoint32", "ptr", hdc, "str", text, "int", StrLen(text), "ptr", size)
+;     width := NumGet(size, 0, "int")
 
-    DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
+;     DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
 
-    ; Center horizontally, position Y at parameter or top
-    centerX := (A_ScreenWidth // 2) - (width // 2)
-    centerY := y > 0 ? y : 0
+;     ; Center horizontally, position Y at parameter or top
+;     centerX := (A_ScreenWidth // 2) - (width // 2)
+;     centerY := y > 0 ? y : 0
 
-    ToolTip(text, centerX, centerY, 1)
-}
+;     ToolTip(text, centerX, centerY, 1)
+; }
 
 F2:: Reload

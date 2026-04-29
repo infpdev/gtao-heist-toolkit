@@ -465,18 +465,30 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ToggleNoSaveStatus(*) {
         global noSave, picNoSave, iniFile, scriptsEnabled
-        noSave := !noSave
         if (!isFirewallEnabled()) {
             MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
                 . "Please check your firewall settings and try again.",
                 "Firewall Access Error", 48
-            noSave := !noSave ; Revert the toggle since it can't be applied
             return
         }
-        UpdateGlobalStatus(hackInProgress)
 
+        isNoSaveEnabled := noSave
+        if (isNoSaveEnabled) {
+            if (DisableNoSaveMode())
+                noSave := false
+            else
+                MsgBox "Failed to disable NoSave mode. Please check your firewall settings and try again.",
+                    "FIREWALL WARNING", 48
+        } else {
+            if (EnableNoSaveMode())
+                noSave := true
+            else
+                MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
+                    "FIREWALL WARNING", 48
+        }
+
+        UpdateGlobalStatus(hackInProgress)
         picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
-        noSave ? EnableNoSaveMode() : DisableNoSaveMode()
     }
 
     ToggleHeistMode(*) {

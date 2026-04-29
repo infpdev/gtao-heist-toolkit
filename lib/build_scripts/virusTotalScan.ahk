@@ -2,12 +2,12 @@
 SetWorkingDir A_ScriptDir
 #Include .\helpers\_JXON.ahk
 #Include .\helpers\FileHash_SHA256.ahk
-
+#Include ..\commonFuncs.ahk
 global apiKey := ""
 
 ; Run scan if script is executed directly (not imported)
 if (A_ScriptFullPath = A_LineFile) {
-    ShowCenteredToolTip ("Scanning vaultOps.exe", 17)
+    ShowCenteredToolTip("Scanning vaultOps.exe directly", 17)
     RunScan()
 }
 
@@ -29,9 +29,9 @@ RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
 
     uploadResponse := UploadFile(filePath != "" ? filePath : "..\..\dist\vaultOps-Setup.exe", apiKey)
 
-    obj := Jxon_Load(&uploadResponse)
+    try obj := Jxon_Load(&uploadResponse)
 
-    if obj.Has("error") {
+    if obj.Has("error") && IsObject(obj) {
         if (obj["error"]["code"] = "AlreadySubmittedError") {
             return HandleAlreadySubmitted(filePath, apiKey)
         } else {
@@ -54,14 +54,23 @@ RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
 HandleAlreadySubmitted(filePath, apiKey) {
     fileHash := ComputeSHA256(filePath)
 
-    MsgBox("File already submitted. Fetching existing report...")
+    if (!fileHash || StrLen(fileHash) != 64) {
+        MsgBox("Failed to compute a valid SHA256 hash for this file.", "Error", 48)
+        return false
+    }
 
-    return PollFileReport(fileHash, apiKey)
+    MsgBox("File already submitted. Using hash to update readme: " fileHash, "Info", 64)
+
+    ; Keep README in sync with the latest scanned artifact hash.
+    UpdateReadmeLink(fileHash)
+
+    Run("https://www.virustotal.com/gui/file/" fileHash)
+
+    return fileHash
 }
 
 ComputeSHA256(filePath) {
     sha := GetFileHash_SHA256(filePath)
-    MsgBox("Computed SHA256: " sha)
     return sha
 }
 
@@ -100,7 +109,7 @@ UploadFile(filePath, apiKey) {
 
 ; === ExtractReportURL ===
 ExtractReportURL(response) {
-    obj := Jxon_Load(&response)
+    try obj := Jxon_Load(&response)
     try {
         return obj["data"]["links"]["self"]
     } catch {
@@ -118,9 +127,9 @@ PollForCompletion(reportURL, apiKey) {
         RunWait(A_ComSpec " /C " curlCmd " > " reportFile, , "Hide")
 
         report := FileRead(reportFile)
-        obj := Jxon_Load(&report)
+        try obj := Jxon_Load(&report)
 
-        if (obj["data"]["attributes"]["status"] = "completed")
+        if (IsObject(obj) && obj["data"]["attributes"]["status"] = "completed")
             break
 
         Sleep 3000
@@ -130,30 +139,9 @@ PollForCompletion(reportURL, apiKey) {
     return report
 }
 
-; === Find existing report by file hash ===
-PollFileReport(fileHash, apiKey) {
-    reportFile := A_Temp "\vt_file.json"
-
-    loop {
-        url := "https://www.virustotal.com/api/v3/files/" fileHash
-        curlCmd := "curl -s -H `"x-apikey: " apiKey "`" " url
-        RunWait(A_ComSpec " /C " curlCmd " > " reportFile, , "Hide")
-
-        report := FileRead(reportFile)
-        obj := Jxon_Load(&report)
-
-        if obj.Has("data") {
-            FileDelete(reportFile)
-            return report
-        }
-
-        Sleep 3000
-    }
-}
-
 ; === ExtractFileHash ===
 ExtractFileHash(report) {
-    obj := Jxon_Load(&report)
+    try obj := Jxon_Load(&report)
     try {
         return obj["meta"]["file_info"]["sha256"]
     } catch {
