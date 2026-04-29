@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.5.1"
+ver := "3.5.2"
 
 MAJOR_UPDATE_REQUIRED := 3
 PARTIAL_BUT_MANDATORY := 2
@@ -20,11 +20,13 @@ NO_UPDATE_REQUIRED := 0
 global trimmedVer := ""
 global isBeta := false
 global isStandaloneScript := isStandalone()
+isNoSaveStandalone := isStandaloneScript && InStr(A_ScriptName, "NoSave")
 if !IsSet(vaultOps)
     global vaultOps := false
 
 CheckForUpdate()
-checkResolution()
+if (!isNoSaveStandalone)
+    checkResolution()
 
 CheckForUpdate() {
     global ver

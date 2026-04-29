@@ -1,3 +1,5 @@
-3.5.1
-Improved NoSave handling; now detects toggle failures and shows a warning.
-(Auto-update available for 3.5.0 users)
+3.5.2
+App now encourages use of NoSave Standalone on unsupported resolutions.
+3.5.1: Improved NoSave handling; now detects toggle failures and shows a warning.
+3.5.0: Added auto-update functionality
+(Auto-update available for v3.5.0+ users)

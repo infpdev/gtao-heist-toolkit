@@ -15,8 +15,8 @@ global vaultOps := true
 
 ; --- IMPORTS SECTION ---
 ; common imports
-#Include <updateCheck>
 #Include <initHotkeys>
+#Include <updateCheck>
 
 ; vaultOps scripts
 #Include <scripts\CasinoFingerprint>

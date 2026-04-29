@@ -9,7 +9,7 @@ SetControlDelay 0
 SetTitleMatchMode 2
 
 #Include "../initHotkeys.ahk"
-#Include "../commonFuncs.ahk"
+#Include "../updateCheck.ahk"
 global noSaveActive := false
 
 global firstFirewallCheckDone := false

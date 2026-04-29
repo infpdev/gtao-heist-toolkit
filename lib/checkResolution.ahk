@@ -30,15 +30,21 @@ checkResolution() {
     global folder := dir "\" targetW "x" targetH "\"
 
     if (targetW != A_ScreenWidth || targetH != A_ScreenHeight) {
+        iniFile := dir "\zSettings.ini"
         global unsupportedResolution := true
-        MsgBox(
-            "Your current resolution is not officially supported.`n`n"
-            . "The solvers may not work correctly at this resolution.`n`n"
-            . "Using nearest supported templates: " targetW "x" targetH ".`n`n"
-            . "NoSave can still be used normally.",
-            "Unsupported Resolution",
-            "Icon!"
-        )
+        if (FileExist(iniFile)) {
+            disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
+            if (disableWarningFlag = "1") {
+                return
+            }
+        }
+        res := ShowResolutionWarning(targetW, targetH, iniFile)
+        if (res = 6) {
+            Run("https://github.com/infpdev/gtao-heist-toolkit#standalone-solvers")
+            ExitApp
+        } else
+            return
+
     } else {
         global unsupportedResolution := false
     }
@@ -72,4 +78,51 @@ HasVaultOpsMarkers(basePath) {
     has1600 := InStr(FileExist(basePath "\1600x900"), "D")
     has1366 := InStr(FileExist(basePath "\1366x768"), "D")
     return hasExe || has1920 || has1600 || has1366
+}
+
+ShowResolutionWarning(targetW, targetH, iniFile) {
+    warningGui := Gui("-DPIScale")
+    warningGui.SetFont("s10")
+    warningGui.Title := "Unsupported Resolution"
+
+    warningGui.AddText(, "Your current resolution is not officially supported.`n`n"
+        . "The solvers may not work correctly at this resolution.`n`n"
+        . "If you still wish to use the solvers:`n"
+        . "• Switch to a supported resolution`n"
+        . "• Set the game to Borderless Fullscreen`n"
+        . "• Use the toolkit normally`n`n"
+        . "For now, using nearest supported templates: " targetW "x" targetH ".`n`n"
+        . "NoSave can still be used normally.`n`n"
+        . "You may also prefer using the NoSave Standalone script if you do not plan to use the solvers.`n`n"
+        . "Do you want to open the download page for the NoSave Standalone script instead?`n")
+
+    chkDontShow := warningGui.AddCheckbox("-TabStop", "Do not show this again")
+    doNotShowWarning := 0, buttonResult := 7 ; Default to "No"
+    chkDontShow.OnEvent("Click", (*) => (
+        doNotShowWarning := chkDontShow.Value ? 1 : 0
+    ))
+
+    warningGui.AddButton("x200 w80", "Yes").OnEvent("Click", (*) => (
+        buttonResult := 6,
+        warningGui.Destroy()
+    ))
+    warningGui.AddButton("x290 yp w80 Default", "No").OnEvent("Click", (*) => (
+        buttonResult := 7,
+        warningGui.Destroy()
+    ))
+
+    warningGui.Show("W600 Center")
+
+    WinWaitClose("ahk_id " warningGui.Hwnd)
+
+    if (doNotShowWarning) {
+        disableWarning(iniFile)
+    }
+
+    return buttonResult
+}
+
+disableWarning(iniFile) {
+    if (FileExist(iniFile))
+        IniWrite(1, iniFile, "Options", "DisableResolutionWarning")
 }

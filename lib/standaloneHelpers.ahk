@@ -1,7 +1,7 @@
+#Include initHotkeys.ahk
 #Include updateCheck.ahk
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
-#Include initHotkeys.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir

@@ -91,7 +91,8 @@ Everything runs externally, similar to a macro tool, with a GUI for ease of use.
 - The game should be in **Borderless Fullscreen**, OR **Borderless Windowed** at maximum in-game resolution (matching your screen resolution).
 - **Supported screen resolution** (16:9)
   - The tool relies on fixed UI detection and only works when your screen resolution is one of the supported resolutions below.
-  - If your resolution is unsupported, the app will show a warning, and the solvers may not work correctly. You can still use **NoSave** normally.
+  - If your resolution is unsupported, the app will show a warning, and the solvers may not work correctly. You can still use **NoSave** normally. You may also prefer using the [NoSave Standalone](#standalone-solvers) script if you do not plan to use the solvers.
+  - If you still want to use the solvers, you can temporarily switch to a supported resolution, set the game to **Borderless Fullscreen**, and use the toolkit normally.
   - **Currently supports:**
     - 1920×1080
     - 1600×900
@@ -116,7 +117,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/dfe7fb6b94fcd44eedab93c9dd2e937001c89e6fc79312881bbe1a4b8d7837fa
+> https://www.virustotal.com/gui/file/e2f4a3136a01767fbe5f7ade70714233c12596e0f35d8d609a647f687291d4b6
 
 
 <p align="center">
@@ -236,18 +237,23 @@ All hotkeys are customizable.
 
 ## Standalone Solvers
 
-Don't want the full toolkit? Use any of these standalone SFX packages to run individual solvers:
-> Note: Each of these standalone solvers include the **NoSave** script, so you need not download the NoSave standalone script if you download any of the three solvers.
+Don't want the full toolkit? Use any of these standalone packages to run individual solvers.
+
+> Note: Each of these standalone solvers includes the **NoSave** script, so you do not need to download the **NoSave Standalone** script separately if you use any of the three solvers.
+>
+> If you're on an unsupported resolution, consider using the **NoSave Standalone** script to avoid repeated unsupported-resolution warnings.
 
 - **[Casino Fingerprint Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)** — Standalone solver for the casino fingerprint scanner
 - **[Casino Keypad Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)** — Standalone solver for the casino keypad cracker
 - **[Cayo Perico El Rubio Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)** — Standalone solver for cayo perico fingerprint puzzle
-- **[NoSave Standalone](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — NoSave replay glitch tool only
+- **[NoSave Standalone](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — NoSave replay script only
 
 **Installation:**
 1. Download any SFX package
 2. Run the `.exe` — it will auto-extract to the current directory
 3. Launch the extracted `.exe` to use that solver independently
+
+> Note: **NoSave Standalone** is not an SFX package; just download and run to use it.
 
 Each standalone includes all necessary resources (UI templates, detection logic) and can be used without the main toolkit.
 
