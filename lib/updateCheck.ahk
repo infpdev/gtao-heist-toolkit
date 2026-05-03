@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.5.2"
+ver := "3.5.3"
 
 MAJOR_UPDATE_REQUIRED := 3
 PARTIAL_BUT_MANDATORY := 2
@@ -62,7 +62,8 @@ CheckForUpdate() {
             if (UPDATE_PRIORITY != NO_UPDATE_REQUIRED) {
                 mjrMsg :=
                     "Update available!`nA new version has been released.`n`nPlease update the app to continue using it.`n`n"
-                patchMsg := "Patch " fetchedPatch " released!`n`nYou can skip it, but updating will fix existing bugs.`n`n"
+                patchVer := "Patch " fetchedPatch " released!`n`n"
+                patchMsg := patchVer . "You can skip it, but updating will fix existing bugs.`n`n"
                 updInstrMsg :=
                     "Would you like to see the update instructions?`n`ngithub.com/infpdev/gtao-heist-toolkit"
 
@@ -74,7 +75,7 @@ CheckForUpdate() {
                     msg .= patchMsg . fetchedNews
                         . (!isStandaloneScript ? "Would you like to auto-update now?" : updInstrMsg)
                 else if (UPDATE_PRIORITY = PARTIAL_BUT_MANDATORY)
-                    msg .= "This update is required to continue using the app.`n`n" . fetchedNews
+                    msg .= patchVer . "This update is required to continue using the app.`n`n" . fetchedNews
                         . (!isStandaloneScript ? "Would you like to auto-update now?" : updInstrMsg)
 
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No

@@ -22,27 +22,28 @@ RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
         }
     }
 
-    if !FileExist(filePath != "" ? filePath : "..\..\dist\vaultOps-Setup.exe") {
-        MsgBox("File not found: ..\..\dist\vaultOps-Setup.exe")
+    targetFile := (filePath != "" ? filePath : "..\..\dist\vaultOps-Setup.exe")
+    if !FileExist(targetFile) {
+        MsgBox("File not found: " targetFile)
         ExitApp
     }
 
-    uploadResponse := UploadFile(filePath != "" ? filePath : "..\..\dist\vaultOps-Setup.exe", apiKey)
+    fileHash := ComputeSHA256(targetFile)
+    if (!fileHash || StrLen(fileHash) != 64) {
+        MsgBox("Failed to compute a valid SHA256 hash for this file.", "Error", 48)
+        ExitApp
+    }
+
+    uploadResponse := UploadFile(targetFile, apiKey)
 
     try obj := Jxon_Load(&uploadResponse)
 
-    if obj.Has("error") && IsObject(obj) {
-        if (obj["error"]["code"] = "AlreadySubmittedError") {
-            return HandleAlreadySubmitted(filePath, apiKey)
-        } else {
+    if IsObject(obj) && obj.Has("error") {
+        if (obj["error"]["code"] != "AlreadySubmittedError") {
             MsgBox("Upload failed:`n" uploadResponse)
             ExitApp
         }
     }
-
-    reportURL := ExtractReportURL(uploadResponse)
-    report := PollForCompletion(reportURL, apiKey)
-    fileHash := ExtractFileHash(report)
 
     ; Update README.md with latest VirusTotal link
     UpdateReadmeLink(fileHash)

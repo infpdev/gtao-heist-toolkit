@@ -1,5 +1,3 @@
-3.5.2
-App now encourages use of NoSave Standalone on unsupported resolutions.
-3.5.1: Improved NoSave handling; now detects toggle failures and shows a warning.
-3.5.0: Added auto-update functionality
+3.5.3
+Fixes “Rockstar Services unavailable” issue caused by leftover NoSave firewall rules.
 (Auto-update available for v3.5.0+ users)

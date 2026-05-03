@@ -39,7 +39,7 @@ checkResolution() {
             }
         }
         res := ShowResolutionWarning(targetW, targetH, iniFile)
-        if (res = 6) {
+        if (res = "Yes") {
             Run("https://github.com/infpdev/gtao-heist-toolkit#standalone-solvers")
             ExitApp
         } else
@@ -97,17 +97,17 @@ ShowResolutionWarning(targetW, targetH, iniFile) {
         . "Do you want to open the download page for the NoSave Standalone script instead?`n")
 
     chkDontShow := warningGui.AddCheckbox("-TabStop", "Do not show this again")
-    doNotShowWarning := 0, buttonResult := 7 ; Default to "No"
+    doNotShowWarning := 0, buttonResult := "No" ; Default to "No"
     chkDontShow.OnEvent("Click", (*) => (
         doNotShowWarning := chkDontShow.Value ? 1 : 0
     ))
 
     warningGui.AddButton("x200 w80", "Yes").OnEvent("Click", (*) => (
-        buttonResult := 6,
+        buttonResult := "Yes",
         warningGui.Destroy()
     ))
     warningGui.AddButton("x290 yp w80 Default", "No").OnEvent("Click", (*) => (
-        buttonResult := 7,
+        buttonResult := "No",
         warningGui.Destroy()
     ))
 

@@ -1,6 +1,5 @@
 #Requires AutoHotkey v2.0
 
-global firstFirewallCheckDone := false
 global NOSAVE_RULE_NAME := "123456"
 global NOSAVE_REMOTE_IP := "192.81.241.171"
 
@@ -52,17 +51,26 @@ if !A_IsAdmin {
             fwPolicy.Rules.Add(rule)
         } catch {
             ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
+            errMsg()
             return false
         }
 
-        enabled := IsNoSaveRuleActive()
+        enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
             ShowCenteredToolTip("NoSave enabled [Works]", 17)
             SetTimer () => clearNoSaveToolTip("enabled"), -2000
             forMode := "enabled"
+            return true
+        } else {
+            errMsg()
+            return false
         }
         ; IniWrite(enabled, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
-        return enabled
+
+        errMsg() {
+            MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
+                "FIREWALL WARNING", 48
+        }
 
     }
 
@@ -77,14 +85,21 @@ if !A_IsAdmin {
 
         try fwPolicy.Rules.Remove(NOSAVE_RULE_NAME)
 
-        disabled := !IsNoSaveRuleActive()
+        disabled := !IsNoSaveRuleActive(fwPolicy)
         if (disabled) {
             ShowCenteredToolTip("NoSave disabled", 17)
             SetTimer () => clearNoSaveToolTip("disabled"), -2000
             forMode := "disabled"
+            return true
+        } else {
+            errMsg()
+            return false
         }
 
-        return disabled
+        errMsg() {
+            MsgBox "Failed to disable NoSave mode. Please check your firewall settings and try again.",
+                "FIREWALL WARNING", 48
+        }
 
     }
 
@@ -110,17 +125,14 @@ if !A_IsAdmin {
 
     ; Ensures the firewall is enabled for the active profile(s).
     isFirewallEnabled() {
-        global firstFirewallCheckDone
+        fwPolicy := GetFirewallPolicy()
         if IsFirewallOnActiveProfile() {
-            if (!firstFirewallCheckDone) {
-                ShowCenteredToolTip("Firewall check passed :]", 17)
-                SetTimer () => ToolTip("", , , 17), -2000
-            }
-            firstFirewallCheckDone := true
+            ShowCenteredToolTip("Firewall check passed :]", 17)
+            SetTimer () => ToolTip("", , , 17), -2000
+            CleanupLegacyDuplicateRules()
             return true ; Already on, do nothing
         }
 
-        fwPolicy := GetFirewallPolicy()
         if fwPolicy {
             try {
                 activeMask := fwPolicy.CurrentProfileTypes
@@ -133,23 +145,22 @@ if !A_IsAdmin {
 
         Sleep 300
         if IsFirewallOnActiveProfile() {
-            if (!firstFirewallCheckDone)
-                ShowCenteredToolTip("Firewall check passed :]", 17)
+            ShowCenteredToolTip("Firewall check passed :]", 17)
             SetTimer () => ToolTip("", , , 17), -2000
-            firstFirewallCheckDone := true
+
             return true
 
         }
-        firstFirewallCheckDone := false
-        MsgBox "Windows Firewall appears to be inactive!`nPlease enable it for proper operation.", "FIREWALL WARNING",
+
+        MsgBox "Windows Firewall appears to be inactive!`nPlease enable it for proper operation.",
+            "FIREWALL WARNING",
             48
         return false
     }
 
     ; Returns true when the NoSave rule exists.
-    IsNoSaveRuleActive() {
+    IsNoSaveRuleActive(fwPolicy) {
         global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP
-        fwPolicy := GetFirewallPolicy()
         if !fwPolicy
             return false
 
@@ -162,6 +173,44 @@ if !A_IsAdmin {
             return true
         }
         return false
+    }
+
+    ; Optional cleanup: finds rules blocking the same IP as ours (legacy/faulty/conflicting).
+    ; Only removes if user explicitly chooses to. Safe to remove this entire function without side effects.
+    CleanupLegacyDuplicateRules() {
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP
+        fwPolicy := GetFirewallPolicy()
+        if !fwPolicy
+            return
+
+        conflictingRules := []
+        try for r in fwPolicy.Rules {
+            try {
+                ; Find rules that reference our IP but are NOT our canonical rule description
+                if InStr(r.RemoteAddresses, NOSAVE_REMOTE_IP)
+                    conflictingRules.Push(r.Name)
+            } catch {
+
+            }
+        }
+
+        if (conflictingRules.Length = 0)
+            return
+
+        ; Found other rules blocking the same IP
+        msg := "Found conflicting firewall rules blocking " NOSAVE_REMOTE_IP ".`n`n"
+        msg .= "These rules might cause issues while joining sessions:`n`n"
+        for ruleName in conflictingRules {
+            msg .= " - " ruleName "`n"
+        }
+        msg .= "`nDo you want to remove the conflicting rules?"
+        choice := MsgBox(msg, "Conflicting Firewall Rules Found", 0x4 " " 0x30) ; Yes/No, Question
+        if (choice != "Yes")
+            return
+
+        for ruleName in conflictingRules {
+            try fwPolicy.Rules.Remove(ruleName)
+        }
     }
 
     clearNoSaveToolTip(localMode) {

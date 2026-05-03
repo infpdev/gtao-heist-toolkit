@@ -476,15 +476,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (isNoSaveEnabled) {
             if (DisableNoSaveMode())
                 noSave := false
-            else
-                MsgBox "Failed to disable NoSave mode. Please check your firewall settings and try again.",
-                    "FIREWALL WARNING", 48
         } else {
             if (EnableNoSaveMode())
                 noSave := true
-            else
-                MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
-                    "FIREWALL WARNING", 48
         }
 
         UpdateGlobalStatus(hackInProgress)
