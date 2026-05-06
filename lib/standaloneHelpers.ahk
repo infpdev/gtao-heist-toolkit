@@ -2,6 +2,7 @@
 #Include updateCheck.ahk
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
+#Include ahk2py_socket.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir

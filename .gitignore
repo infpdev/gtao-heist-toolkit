@@ -8,3 +8,10 @@ build_options.ini
 **/AHK_BASE/
 **/AHK2EXE/
 **/Inno Setup 6/
+__pycache__/
+*.pyc
+run_*.py
+dump/
+*.xml
+nuitka_build
+OpenCV_Engine.exe

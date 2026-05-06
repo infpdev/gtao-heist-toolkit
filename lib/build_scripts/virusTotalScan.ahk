@@ -36,9 +36,11 @@ RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
 
     uploadResponse := UploadFile(targetFile, apiKey)
 
+    obj := 0
+
     try obj := Jxon_Load(&uploadResponse)
 
-    if IsObject(obj) && obj.Has("error") {
+    if (IsObject(obj) && obj.Has("error")) {
         if (obj["error"]["code"] != "AlreadySubmittedError") {
             MsgBox("Upload failed:`n" uploadResponse)
             ExitApp

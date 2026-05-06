@@ -1,7 +1,7 @@
 
 ; Inno Setup script for vaultOps
 #define MyAppName "vaultOps"
-#define MyAppVersion "3.5.3"
+#define MyAppVersion "4.0.0"
 #define MyAppPublisher "infpdev"
 #define MyAppURL "https://github.com/infpdev/gtao-heist-toolkit"
 #define MyAppExeName "vaultOps.exe"
@@ -51,10 +51,12 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 [Files]
 Source: "..\..\vaultOps.exe"; DestDir: "{app}"; Flags: ignoreversion 
 Source: "..\..\lib\vaultOpsUpdater.exe"; DestDir: "{app}\lib"; Flags: ignoreversion
+Source: "..\..\lib\OpenCV_Engine\OpenCV_Engine.exe"; DestDir: "{app}\lib\OpenCV_Engine"; Flags: ignoreversion
 Source: "gta.ico"; DestDir: "{app}\lib\static"; Flags: ignoreversion
 Source: "..\..\1366x768\*"; DestDir: "{app}\1366x768"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\1600x900\*"; DestDir: "{app}\1600x900"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\1920x1080\*"; DestDir: "{app}\1920x1080"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\..\1920x1080+\*"; DestDir: "{app}\1920x1080+"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Source: "settings_template.ini"; DestDir: "{app}"; DestName: "zSettings.ini"; Flags: ignoreversion
 Source: "..\static\*"; DestDir: "{app}\lib\static"; Flags: ignoreversion recursesubdirs createallsubdirs
 

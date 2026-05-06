@@ -8,8 +8,18 @@ If you prefer to verify the code or build the executable yourself, you can compi
 
 - **AutoHotkey v2.0**  
   *(Required only if you want to run the compiler script manually)*  
-- **WinRAR** or any archive tool 
-  *(Only if you want to compile the standalone scripts under `_src/standalone scripts/)`*  
+
+- **Python 3.13+**
+  *(Required for the OpenCV backend build step)*
+
+- Install Python dependencies:
+  ```bash
+  pip install -r ./lib/py_helpers/requirements.txt
+  ```
+
+- **WinRAR** or any archive tool  
+  *(Only needed for standalone script packaging under `_src/standalone scripts/`)*  
+
 - **Inno Setup 6** *(optional, included in this folder)*  
 
 ---
@@ -20,8 +30,12 @@ If you prefer to verify the code or build the executable yourself, you can compi
 2. Navigate to this directory (`_src/lib/build_scripts/`)  
 3. Run `compile_scripts.exe` or `dist.ahk`  
    - A build options dialog will appear  
-   - Choose your preferred build settings (see below)  
-   - The compiled files will be generated in the `_src/dist/` folder
+   - Choose your preferred build settings  
+   - The compiled files will be generated in the `_src/dist/` folder  
+
+During the build process:
+- The OpenCV backend under `lib/py_helpers/` is automatically compiled using Nuitka
+- The generated `OpenCV_Engine.exe` is placed in `lib/py_helpers/`
 
 ---
 
@@ -35,43 +49,46 @@ The build script provides a GUI with the following options:
 - **Scan build with VirusTotal** (Yes / No, optional)
   - Optionally scans the generated setup file after building
   - On selecting Yes, it will ask for your VirusTotal API key (free account available at [virustotal.com](https://www.virustotal.com))
-  - API key is saved locally in `build_options.ini` for future scans
-  - Opens scan results in your browser automatically, and updates README.md, when complete
+  - API key is saved locally in `build_options.ini`
+  - Opens scan results in your browser automatically and updates `README.md` when complete
 
-- **Compile standalone scripts** (Yes / No)
+- **Compile standalone scripts** (Yes / No - Requires devmode var to be set in build_options.ini)
   - Optionally compiles individual puzzle solvers as standalone executables
   - Standalone scripts can run independently without the main app
 
 - **Replace classes with originals** (Yes / No, conditional)
-  - Only available if standalone scripts compilation is enabled
+  - Only available if standalone script compilation is enabled
   - Creates temporary versions with original class definitions for compatibility
-
 
 ---
 
 ## Output
 
 After building completes:
+
 - **Main executable:** `_src/vaultOps.exe`
+- **OpenCV backend:** `_src/lib/py_helpers/OpenCV_Engine.exe`
 - **Updater executable:** `_src/lib/vaultOpsUpdater.exe`
 - **Installer:** `_src/dist/vaultOps-Setup.exe`
-- **Standalone scripts:** `_src/dist/standalone/` (if enabled)
+- **Standalone scripts:** `_src/dist/standalone/` *(if enabled)*
 
 ---
 
 ## Troubleshooting
 
 **Build fails or executables not found:**
-- Ensure AutoHotkey v2.0+ is installed and accessible
-- Check that all required files in this directory exist (especially `Inno Setup 6/` and `AHK_BASE/`)
-- Verify the repository structure hasn't been modified
+- Ensure AutoHotkey v2.0 is installed and accessible
+- Ensure Python 3.13+ is installed and available in PATH
+- Verify Python dependencies were installed from `requirements.txt`
+- Check that required files/folders exist (`Inno Setup 6/`, `AHK_BASE/`, etc.)
+- Verify the repository structure has not been modified
 
 **WinRAR not found:**
 - If using standalone packaging, you'll be prompted to locate `WinRAR.exe`
-- Ensure WinRAR is installed, or disable standalone SFX packaging in build options
+- Ensure WinRAR is installed, or disable standalone SFX packaging
 
 **VirusTotal scan fails:**
-- Verify your API key is correct (get one from [virustotal.com](https://www.virustotal.com))
+- Verify your API key is correct
 - Ensure the setup file was created successfully before scanning
 - Check if you exceeded your API usage quota
-- Check that you have internet connectivity
+- Ensure internet connectivity is available

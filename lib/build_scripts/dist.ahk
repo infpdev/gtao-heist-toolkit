@@ -73,11 +73,15 @@ buildVaultOps() {
 
     sleep 20
 
+    ; Build the OpenCV helper exe that the compiled app loads from lib/.
+    BuildOpenCVEngine(parentDir)
+
     ; === Compile standalone scripts if option is selected ===
     if (compileStandalone)
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
 
     ; === Compile and package the main vaultOps executable ===
+    ShowCenteredToolTip "Compiling vaultOps.exe and updater..."
     RunWait cmd, , "Hide"
     RunWait updaterCmd, , "Hide"
     RunWait innoCmd, , "Hide"
@@ -121,6 +125,89 @@ buildVaultOps() {
     ExitApp
 }
 
+BuildOpenCVEngine(parentDir) {
+    global iconPath
+    pyHelpersDir := parentDir "\lib\py_helpers"
+    libOpenCVDir := parentDir "\lib\OpenCV_Engine"
+    sourceFile := pyHelpersDir "\OpenCV_Engine.py"
+    outputFile := pyHelpersDir "\OpenCV_Engine.exe"
+    buildDir := pyHelpersDir "\nuitka_build"
+    libOutputFile := libOpenCVDir "\OpenCV_Engine.exe"
+
+    RequireExistingFile(sourceFile, "OpenCV engine helper")
+
+    pythonExe := FindPythonExe()
+    if (pythonExe = "") {
+        MsgBox "No Python executable was found for the Nuitka build step. Please ensure Python is installed or on PATH.",
+            "Error", 48
+        ExitApp
+    }
+
+    if FileExist(outputFile)
+        try FileDelete(outputFile)
+
+    if !DirExist(libOpenCVDir)
+        try DirCreate(libOpenCVDir)
+
+    if FileExist(libOutputFile)
+        try FileDelete(libOutputFile)
+
+    ; if DirExist(buildDir)
+    ;     try DirDelete(buildDir, true)
+
+    if !DirExist(buildDir)
+        try DirCreate(buildDir)
+
+    ShowCenteredToolTip "Compiling OpenCV_Engine.py with Nuitka..."
+
+    quotedPython := '"' pythonExe '"'
+    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
+    ; nuitkaCmd := 'cmd /k ""' pythonExe '" -m nuitka --onefile --follow-imports --nofollow-import-to=PIL.ImageShow --assume-yes-for-downloads --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '""'
+
+    RunWait nuitkaCmd, , "Hide"
+
+    sleep 3000
+
+    builtExe := buildDir "\OpenCV_Engine.exe"
+    if !FileExist(builtExe) {
+        MsgBox "Nuitka finished but OpenCV_Engine.exe was not created.`n`nCommand:`n" nuitkaCmd, "Error", 48
+        ExitApp
+    }
+
+    FileCopy builtExe, outputFile, true
+    FileCopy builtExe, libOutputFile, true
+
+    ; try DirDelete(buildDir, true)
+
+    if !FileExist(outputFile) {
+        MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
+        ExitApp
+    }
+
+    if !FileExist(libOutputFile) {
+        MsgBox "OpenCV_Engine.exe was not copied into lib\\OpenCV_Engine.", "Error", 48
+        ExitApp
+    }
+}
+FindPythonExe() {
+    localAppData := EnvGet("LocalAppData")
+    candidates := [
+        localAppData "\Programs\Python\Python313\python.exe",
+        localAppData "\Programs\Python\Python312\python.exe",
+        localAppData "\Programs\Python\Python311\python.exe",
+        localAppData "\Programs\Python\Python310\python.exe",
+        localAppData "\Programs\Python\Python39\python.exe",
+        localAppData "\Programs\Python\Python38\python.exe"
+    ]
+
+    for _, candidate in candidates {
+        if FileExist(candidate)
+            return candidate
+    }
+
+    return "python"
+}
+
 ; --- Standalone script packaging using WinRAR SFX ---
 createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOriginalClasses := false) {
     global rarExe, AHK2EXEPath, iconPath
@@ -142,6 +229,15 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         ; Clean up any leftover temp files from previous builds before starting
         loop files, standaloneDir "\temp_*.ahk", "F" {
             try FileDelete(A_LoopFilePath)
+        }
+
+        ; Copy the compiled OpenCV helper into the standalone lib folder so OpenCV mode works there too.
+        ocvSourceDir := parentDir "\lib\OpenCV_Engine"
+        ocvDestDir := distStandaloneDir "\lib\OpenCV_Engine"
+        if DirExist(ocvSourceDir) {
+            if !DirExist(ocvDestDir)
+                DirCreate(ocvDestDir)
+            try FileCopy(ocvSourceDir "\OpenCV_Engine.exe", ocvDestDir "\OpenCV_Engine.exe", true)
         }
 
         ; Copy image folders into dist/standalone regardless of packaging, since both compiled and SFX versions need them

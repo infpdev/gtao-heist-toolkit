@@ -32,25 +32,31 @@ init()
  * 
  * ### FLOW:
  * ```text
- * AutoHack()/ManualMode() → findAnchor() → start MainLoop(timer)
+ * AutoHack()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
- *   InitDetected()        ; reset detection state
- *   findAnchor()          ; validate UI (loss → timeout/Idle)
- *   DetectAnchorGroup()   ; detect active group (fail → return)
+ *   InitDetected()            ; reset detection state
+ *   if useOpenCv/highRes:
+ *     tryOpenCV()             ; OpenCV anchor → REQ_FINGERPRINT → openCVSelect()
+ *     → if OpenCV fails
+ *  and fallback is allowed, 
+ *  continue with AHK flow
+ *   findAnchor()              ; validate UI (loss → timeout/Idle)
+ *   DetectAnchorGroup()       ; detect active group (fail → return)
  * 
  *   (manual mode):
- *     Pmatch()            ; detect pieces (per anchorGroup)
- *     updateCounter()     ; count detected pieces
- *     → set handoffPending (>=4)
+ *     Pmatch()                ; detect pieces (per anchorGroup)
+ *     updateCounter()         ; count detected pieces
+ *     → set handoffPending
+ *      (>=4)
  * 
  *   (auto mode):
  *     if !handoffPending:
- *       Pmatch()          ; detect pieces
+ *       Pmatch()              ; detect pieces
  *       updateCounter()
  * 
  *     if counter >= 4:
- *       Select()          ; compute + send inputs
+ *       Select()              ; compute + send inputs
  *       clearAll()
  *       → fallback Send "{Tab}"
  * 
@@ -58,7 +64,7 @@ init()
  * ```
  * 
  * ### Pipeline:
- * Anchor → Group → Match Pieces → Count → Select → Repeat
+ * OpenCV / Anchor → OpenCV Match/Select OR Group → Match Pieces → Count → Select → Repeat
  */
 class FingerprintSolver {
 
@@ -71,6 +77,7 @@ class FingerprintSolver {
     lastSeenPrint := 0
     lastFoundTick := 0
     prevFoundPixel := 0
+    prevPrints := ""
 
     XP1 := A_ScreenWidth * 0.23
     YP1 := A_ScreenHeight * 0.23
@@ -90,15 +97,19 @@ class FingerprintSolver {
     foundAnchor := false
     isBusy := false
     isShuttingDown := false
+    autoStarted := false
 
-    lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
+    lowRes := A_ScreenWidth < 1920
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "") {
+    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
+        AHK_ENGINE) {
         global folder
 
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
         this.folder := folderPath != "" ? folderPath : folder
+        this.highRes := highRes
+        this.useOpenCv := engine == OPENCV_ENGINE
 
         SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
@@ -124,6 +135,15 @@ class FingerprintSolver {
     }
 
     /**
+     * Sets the engine to use for detection.
+     * 1 for OpenCV, 0 for AHK.
+     * @param engine 
+     */
+    setEngine(engine) {
+        this.useOpenCv := engine == OPENCV_ENGINE
+    }
+
+    /**
      * Sets the solver to idle mode, clears tooltips and resets the state.
      */
     Idle() {
@@ -135,6 +155,7 @@ class FingerprintSolver {
         this.anchorTolerance := 50
         this.mode := "idle"
         this.lastSeenPrint := 0
+        this.lastFoundTick := 0
         this.InitDetected()
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
@@ -173,8 +194,9 @@ class FingerprintSolver {
         if (this.isShuttingDown)
             return
 
+        this.autoStarted := true
         this.prevFoundPixel := anchorPixelCoords
-        this.ManualMode()
+        this.ManualMode(true)
 
         ; SetTimer this.fnCheckFalsePositive, 0
         SetTimer this.fnCheckFalsePositive, -5000
@@ -196,9 +218,14 @@ class FingerprintSolver {
     /**
      * Starts / switches to manual mode and starts the main loop timer.
      */
-    ManualMode() {
+    ManualMode(autoStarted := false) {
+        if (this.autoStarted && !autoStarted)
+            this.autoStarted := false
+
         if (this.isShuttingDown)
             return
+
+        this.lastFoundTick := 0
 
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
@@ -216,8 +243,13 @@ class FingerprintSolver {
      * Starts / switches to auto mode and starts the main loop timer.
      */
     AutoHack() {
+        if (this.autoStarted)
+            this.autoStarted := false
+
         if (this.isShuttingDown)
             return
+
+        this.lastFoundTick := 0
 
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
@@ -229,6 +261,50 @@ class FingerprintSolver {
         this.MainLoop()
         SetTimer this.fnMainLoop, 200
 
+    }
+
+    tryOpenCV() {
+        if (!this.useOpenCv)
+            return false
+
+        try {
+            this.foundAnchor := Integer(GetResFromOpenCV(ANCHOR_FINGERPRINT))
+            ; ShowCenteredToolTip this.foundAnchor
+            if (!this.foundAnchor || this.foundAnchor == ERRMSG) {
+                this.foundAnchor := false
+                this.needStatusUpdate := true
+                this.prevFoundPixel := 0
+                return false
+            } else {
+                this.lastFoundTick := A_TickCount
+            }
+
+            positions := GetResFromOpenCV(REQ_FINGERPRINT)
+            if (positions != -1) {
+                if (this.needStatusUpdate) {
+                    UpdateGlobalStatus(true)
+                    this.needStatusUpdate := false
+                }
+
+                if (positions != this.prevPrints) {
+                    this.lastOpenCVPositions := positions
+                    this.markPrints(positions)
+                }
+
+                if (this.mode == "auto")
+                    this.openCVSelect(positions)
+
+                return true
+            } else {
+                this.pArr := Map()
+                this.clearAll()
+            }
+
+            this.needStatusUpdate := true
+            return false
+        } catch {
+            return false
+        }
     }
 
     /**
@@ -248,6 +324,24 @@ class FingerprintSolver {
         this.isBusy := true
 
         this.checkTimeout()
+
+        ; Try OpenCV detection if enabled, fallback to AHK only if highRes is false, since AHK is not supported
+        ; on higher resolutions.
+        cvWorked := this.tryOpenCV()
+
+        if (cvWorked) {
+            this.isBusy := false
+            return
+        }
+
+        if (this.highRes) {
+            ; OpenCV failed, but fallback is not allowed
+            this.isBusy := false
+            return
+        } else {
+            if (debug)
+                ShowCenteredToolTip "Using AHK detection", 17
+        }
 
         try {
             if (!(this.mode == "auto" && this.handoffPending)) {
@@ -331,8 +425,9 @@ class FingerprintSolver {
         if (this.isShuttingDown || this.mode == "idle")
             return
 
-        static timeoutMs := 10000
-        if (this.lastSeenPrint != 0 && !this.foundAnchor) {
+        static timeoutMs := 5000
+        if (this.lastFoundTick != 0 && !this.foundAnchor) {
+            this.clearAll()
             timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
             updateGlobalStatus(false, true, timeLeft)
             this.needStatusUpdate := true
@@ -355,6 +450,9 @@ class FingerprintSolver {
         static y1 := A_ScreenHeight * 0.22
         static x2 := A_ScreenWidth * 0.8
         static y2 := A_ScreenHeight * 0.25
+
+        if (this.highRes)
+            return false
 
         if (this.isShuttingDown || this.mode == "idle") {
             this.foundAnchor := false
@@ -520,48 +618,29 @@ class FingerprintSolver {
 
         slot := ""
 
-        xOffset := N < 10 ? 0 : this.Adjust(-0.003, 0.9)
-
-        lowResOffset := this.Adjust(-0.003, 1)
-
-        lowResX := this.Adjust(0.223, 0.9) + lowResOffset
-
         if (FoundX >= 0.24 && FoundX <= 0.3) {
-            tTipX := ((this.lowRes ? lowResX : 0.227) + (debug ? xOffset : 0.004)) * this.scrW
-            if (FoundY >= 0.24 && FoundY <= 0.37) {
-                tTipY := 0.293 * this.scrH
+            if (FoundY >= 0.24 && FoundY <= 0.37)
                 slot := 0
-            } else if (FoundY >= 0.37 && FoundY <= 0.5) {
-                tTipY := 0.426 * this.scrH
+            else if (FoundY >= 0.37 && FoundY <= 0.5)
                 slot := 2
-            } else if (FoundY >= 0.51 && FoundY <= 0.63) {
-                tTipY := 0.561 * this.scrH
+            else if (FoundY >= 0.51 && FoundY <= 0.63)
                 slot := 4
-            } else if (FoundY >= 0.64) {
-                tTipY := 0.695 * this.scrH
+            else if (FoundY >= 0.64)
                 slot := 6
-            }
-            ToolTip(debug ? N " ▶" : "▶", tTipX, tTipY, N)
         }
         else if (FoundX >= 0.305 && FoundX <= 0.4) {
-            tTipX := 0.389 * this.scrW
-            if (FoundY >= 0.24 && FoundY <= 0.32) {
-                tTipY := 0.293 * this.scrH
+            if (FoundY >= 0.24 && FoundY <= 0.32)
                 slot := 1
-            } else if (FoundY >= 0.33 && FoundY <= 0.5) {
-                tTipY := 0.426 * this.scrH
+            else if (FoundY >= 0.33 && FoundY <= 0.5)
                 slot := 3
-            } else if (FoundY >= 0.51 && FoundY <= 0.63) {
-                tTipY := 0.561 * this.scrH
+            else if (FoundY >= 0.51 && FoundY <= 0.63)
                 slot := 5
-            } else if (FoundY >= 0.64) {
-                tTipY := 0.695 * this.scrH
+            else if (FoundY >= 0.64)
                 slot := 7
-            }
-            ToolTip(debug ? "◀ " N : "◀", tTipX, tTipY, N)
         }
 
         if (slot != "") {
+            this.markPrint(slot, N)
             this.pArr[N] := slot
         } else if this.pArr.Has(N) {
             this.pArr.Delete(N)
@@ -569,6 +648,53 @@ class FingerprintSolver {
 
         if (debug)
             ToolTip "Tracked pieces: " this.pArr.Count, 50, 50, 19
+    }
+
+    markPrint(slot, N) {
+        ; debug := false
+
+        xOffset := N < 10 ? 0 : this.Adjust(-0.003, 0.9)
+        lowResOffset := this.Adjust(-0.003, 1)
+        lowResX := this.Adjust(0.2, 0.9) + lowResOffset
+        if (A_ScreenWidth == 1366)
+            lowResX := this.Adjust((N > 10 && !debug) ? 0.175 : 0.177, 0.9)
+
+        if (slot == 0 || slot == 2 || slot == 4 || slot == 6) {
+            tTipX := ((this.lowRes ? lowResX : 0.227) + (debug ? xOffset : 0.004)) * this.scrW
+
+            if (slot == 0)
+                tTipY := 0.293 * this.scrH
+            else if (slot == 2)
+                tTipY := 0.426 * this.scrH
+            else if (slot == 4)
+                tTipY := 0.561 * this.scrH
+            else
+                tTipY := 0.695 * this.scrH
+
+            ToolTip(debug ? N " ▶" : "▶", tTipX, tTipY, N)
+        }
+        else {
+            tTipX := 0.389 * this.scrW
+
+            if (slot == 1)
+                tTipY := 0.293 * this.scrH
+            else if (slot == 3)
+                tTipY := 0.426 * this.scrH
+            else if (slot == 5)
+                tTipY := 0.561 * this.scrH
+            else
+                tTipY := 0.695 * this.scrH
+
+            ToolTip(debug ? "◀ " N : "◀", tTipX, tTipY, N)
+        }
+    }
+
+    markPrints(arr) {
+        arr := StrSplit(arr, ",")
+        for _, val in arr {
+            slot := val - 1
+            this.markPrint(slot, val)
+        }
     }
 
     /**
@@ -624,6 +750,48 @@ class FingerprintSolver {
 
             prev := val
         }
+    }
+
+    ; ===== OPENCV-SPECIFIC LOGIC =====
+
+    openCVSelect(positions) {
+        if (this.mode != "auto" || positions == "")
+            return
+
+        SetKeyDelay(this.delay, this.delay)
+        ; MsgBox(positions)
+
+        arr := StrSplit(positions, ",")
+
+        if (arr.Length != 4)
+            return
+
+        prev := 0
+        for _, val in arr {
+            val := Integer(val) - 1  ; convert to 0–7
+
+            times := val - prev
+
+            if (Mod(times, 2) == 0) {
+                times := times / 2
+                if (times != 0)
+                    Send "{Down " Floor(times) "}"
+            } else {
+                Send "{Right}"
+                times := Floor(times / 2)
+                if (times != 0)
+                    Send "{Down " times "}"
+            }
+
+            Sleep 10
+            Send "{Enter}"
+
+            prev := val
+        }
+
+        Sleep 10
+        Send "{Tab}"
+        this.clearAll()
     }
 
     ; ===== HELPERS =====

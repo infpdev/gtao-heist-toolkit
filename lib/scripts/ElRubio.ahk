@@ -6,19 +6,25 @@
  * 
  * ### FLOW:
  * ```text
- * Hack() → findAnchor() → start MainLoop(timer)
+ * Hack()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
- *   findAnchor()          ; validate UI (loss → ResetState)
- *   getFingerprintGroup() ; detect print (fail → return)
- *   obviousReturn()       ; guard (invalid state → return)
- *   FindElRing()          ; get current row (fail → return)
+ *   findAnchor()              ; validate UI / anchor (loss → ResetState)
+ *   if useOpenCv/highRes:
+ *     tryOpenCV()             ; OpenCV anchor → REQ_CAYO → solveOpenCV()/showOpenCVClicks()
+ *     → if OpenCV fails and 
+ *   fallback is allowed, 
+ *   continue with AHK flow
  * 
- *   findPrintInRow()      ; traverse (align segment)
- *     isPrintInRow()      ; cached → fallback search
+ *   getFingerprintGroup()     ; detect print (fail → return)
+ *   obviousReturn()           ; guard (invalid state → return)
+ *   FindElRing()              ; get current row (fail → return)
  * 
- *   Solve() / Send Down   ; solve or skip row
- *   moveToRow(nextRow)    ; advance
+ *   findPrintInRow()          ; traverse (align segment)
+ *     isPrintInRow()          ; cached → fallback search
+ * 
+ *   Solve() / Send Down       ; solve or skip row
+ *   moveToRow(nextRow)        ; advance
  * 
  *   if all solved → ResetState()
  * 
@@ -26,7 +32,7 @@
  * ```
  * 
  * ### Pipeline:
- * Anchor → Row → Print Group → Print in Row → Solve → Next Row
+ * OpenCV / Anchor → Solve (OpenCV) / Row → Print Group → Print in Row → Solve → Next Row
  */
 class ElRubioSolver {
 
@@ -40,6 +46,7 @@ class ElRubioSolver {
     lastFoundTick := 0
     prevFoundPixel := 0
     cachedCursorRow := 0
+    prevClicks := ""
 
     x1 := A_ScreenWidth * 0.27
     y1 := A_ScreenHeight * 0.33
@@ -59,16 +66,22 @@ class ElRubioSolver {
     isBusy := false
     isChangingPrint := false
     isShuttingDown := false
+    highRes := false
+    useOpenCv := false
     shouldAbort := false
+    autoStarted := false
 
     lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "") {
+    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
+        AHK_ENGINE) {
         global folder
 
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
         this.folder := folderPath != "" ? folderPath : folder
+        this.highRes := highRes
+        this.useOpenCv := engine == OPENCV_ENGINE
 
         SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
@@ -89,6 +102,15 @@ class ElRubioSolver {
     }
 
     /**
+     * Sets the engine to use for detection.
+     * 1 for OpenCV, 0 for AHK.
+     * @param engine 
+     */
+    setEngine(engine) {
+        this.useOpenCv := engine == OPENCV_ENGINE
+    }
+
+    /**
      * Sets the solver to idle mode, clears tooltips and resets the state.
      * @returns {void}
      */
@@ -100,6 +122,7 @@ class ElRubioSolver {
         this.mode := "idle"
         this.isBusy := false
         this.lastSeenPrint := 0
+        this.prevClicks := ""
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
         updateGlobalStatus(false)
@@ -111,6 +134,7 @@ class ElRubioSolver {
      */
     Destroy() {
         this.isShuttingDown := true
+        this.shouldAbort := true
         this.mode := "idle"
         this.traversed.Clear()
         this.solved.Clear()
@@ -125,7 +149,6 @@ class ElRubioSolver {
             ToolTip "El Rubio solver destroyed", 0, 0, 18
         this.clearAll()
         ResetHackMode()
-
     }
 
     /**
@@ -135,11 +158,13 @@ class ElRubioSolver {
      * @param {object} anchorPixelCoords - Anchor pixel coordinates
      */
     autoStartManual(anchorPixelCoords) {
+        this.autoStarted := true
         if (this.isShuttingDown)
             return
+        this.autoStarted := true
         this.prevFoundPixel := anchorPixelCoords
         this.foundAnchor := true
-        this.Hack()
+        this.Hack(true)
 
         SetTimer () => (this.CheckFalsePositive()), -5000
     }
@@ -148,7 +173,7 @@ class ElRubioSolver {
      * Checks for false positives and resets if anchor is lost during auto-start.
      */
     CheckFalsePositive() {
-        if (this.isShuttingDown || this.mode != "auto")
+        if (this.isShuttingDown || this.mode != "auto" || !this.autoStarted)
             return
         if (!this.foundAnchor) {
             ResetHackMode()
@@ -160,6 +185,9 @@ class ElRubioSolver {
      * Switches solver to manual mode. For this class, manual mode does nothing except allow PgUp hotkey.
      */
     SwitchToManual() {
+        if (this.autoStarted)
+            this.autoStarted := false
+
         if (this.mode == "manual")
             return
         this.ResetState()
@@ -175,7 +203,10 @@ class ElRubioSolver {
     /**
      * Main entrypoint: starts the automated solve loop. Call to begin solving.
      */
-    Hack(*) {
+    Hack(autoStart := false, *) {
+        if (this.autoStarted && !autoStart)
+            this.autoStarted := false
+
         if (this.isShuttingDown)
             return
         SetTimer this.fnMainLoop, 0
@@ -186,6 +217,61 @@ class ElRubioSolver {
         updateGlobalStatus(this.foundAnchor)
         this.findAnchor()
         SetTimer this.fnMainLoop, 200
+    }
+
+    /**
+     * Attempts to detect fingerprints using OpenCV methods.
+     * Returns true if OpenCV detection succeeded and handled the detection logic, false otherwise.
+     * @returns {boolean}
+     */
+    tryOpenCV() {
+        if (!this.useOpenCv)
+            return false
+
+        try {
+            this.foundAnchor := GetResFromOpenCV(ANCHOR_CAYO)
+            ; MsgBox this.foundAnchor
+            if (!this.foundAnchor || this.foundAnchor == ERRMSG) {
+                this.foundAnchor := false
+                this.needStatusUpdate := true
+                this.prevFoundPixel := 0
+                this.needStatusUpdate := true
+                this.prevClicks := ""
+                return false
+            }
+            this.lastFoundTick := A_TickCount
+
+            res := GetResFromOpenCV(REQ_CAYO)
+            if (res = ERRMSG || res = "" || !res) {
+                return false
+            }
+
+            if (this.needStatusUpdate) {
+                updateGlobalStatus(true)
+                this.needStatusUpdate := false
+            }
+
+            cayoResult := this.parseOpenCayoResult(res)
+            if (!IsObject(cayoResult))
+                return false
+
+            cursorRow := cayoResult.row
+            clicks := cayoResult.clicks
+
+            if (this.mode == "auto")
+                this.solveOpenCV(cursorRow, clicks)
+            else {
+                ; manually show a tooltip showing the number of clicks (left or right) based on the result.
+                if (cayoResult.clicksKey != this.prevClicks) {
+                    this.prevClicks := cayoResult.clicksKey
+                    this.showOpenCVClicks(clicks)
+                }
+            }
+            this.autoStarted := false ; Reset autoStarted flag since it can't be a false positive if we got a valid OpenCV result
+            return true
+        } catch {
+            return false
+        }
     }
 
     /**
@@ -213,6 +299,20 @@ class ElRubioSolver {
         this.checkTimeout()
 
         try {
+            ; Try OpenCV detection if enabled, fallback to AHK only if highRes is false
+            cvWorked := this.tryOpenCV()
+
+            if (cvWorked) {
+                this.isBusy := false
+                return
+            }
+
+            if (this.highRes) {
+                ; OpenCV failed, but fallback is not allowed
+                this.isBusy := false
+                return
+            }
+
             this.findAnchor()
 
             fpGroupID := this.getFingerprintGroup()
@@ -225,6 +325,9 @@ class ElRubioSolver {
                 this.isBusy := false
                 return
             }
+
+            this.autoStarted := false ; Reset autoStarted flag since we got a valid anchor
+            ;  and print group, so it can't be a false positive
             row := this.FindElRing()
             if (row = -1) {
                 this.isBusy := false
@@ -288,7 +391,9 @@ class ElRubioSolver {
     }
 
     checkTimeout() {
-        if (!this.foundAnchor && this.lastFoundTick != 0 && this.mode == "auto") {
+        if (!this.foundAnchor && this.lastFoundTick != 0 && (this.mode == "auto" || this.useOpenCv || this.highRes)) {
+            this.clearAll()
+            this.needStatusUpdate := true
             timeLeft := Integer((10000 - (A_TickCount - this.lastFoundTick)) / 1000) + 1
             updateGlobalStatus(false, true, timeLeft)
             if (A_TickCount - this.lastFoundTick > 10000) {
@@ -315,6 +420,11 @@ class ElRubioSolver {
         static y1 := A_ScreenHeight * 0.1
         static x2 := A_ScreenWidth * 0.59
         static y2 := A_ScreenHeight * 0.11
+
+        if (this.highRes) {
+            ; For high res, we rely on OpenCV and skip the AHK image search entirely
+            return
+        }
 
         now := A_TickCount
         if (now - lastCalled < 1000 && this.prevFoundPixel && !this.isChangingPrint) {
@@ -352,7 +462,7 @@ class ElRubioSolver {
 
         if (elFound) {
             if (debug) {
-                ToolTip("EL RUBIO ANCHOR", fpPx + 2, fpPy, 18)
+                ToolTip("EL RUBIO ANCHOR", fpPx + 100, fpPy, 18)
             }
 
             if (this.needStatusUpdate) {
@@ -401,7 +511,7 @@ class ElRubioSolver {
         static x2 := 0.715 * A_ScreenWidth
         static y2 := 0.42 * A_ScreenHeight
 
-        if (!this.foundAnchor)
+        if (!this.foundAnchor || this.highRes)
             return false
 
         now := A_TickCount
@@ -451,7 +561,7 @@ class ElRubioSolver {
     Solve(row, fpGroupID, withRespectToAlt := false) {
         SetKeyDelay(this.delay, this.delay)
 
-        if (this.obviousReturn())
+        if (this.obviousReturn() || this.highRes)
             return false
 
         if (!this.traversed.Has(row)) {
@@ -478,6 +588,82 @@ class ElRubioSolver {
         return true
     }
 
+    ; ===== OPENCV-SPECIFIC LOGIC =====
+
+    /**
+     * Solves the fingerprint puzzle using OpenCV detection results.
+     * @param cursorRow {number} The current cursor row.
+     * @param clicks {array} The list of clicks to apply.
+     */
+    solveOpenCV(cursorRow, clicks) {
+        SetKeyDelay(this.delay, this.delay)
+
+        ; move current cursor to row 1 first
+        if (cursorRow > 1)
+            Send "{Up " (cursorRow - 1) "}"
+
+        Sleep 10
+
+        for row, offset in clicks {
+            if (this.mode != "auto")
+                return
+
+            ; apply rotation
+            if (offset > 0) {
+                Send "{Right " offset "}"
+            }
+            else if (offset < 0) {
+                Send "{Left " Abs(offset) "}"
+            }
+
+            Sleep 10
+
+            ; move next row (except last)
+            if (row < clicks.Length) {
+                Send "{Down}"
+                Sleep 10
+            }
+        }
+    }
+
+    /**
+     * Parses the OpenCV Cayo response into row/click data.
+     * Expected JSON shape: {"row": <number>, "clicks": [<numbers>...]}
+     * @param {string} res - Raw response from the helper
+     * @returns {object|false}
+     */
+    parseOpenCayoResult(res) {
+        try {
+            if !RegExMatch(res, '"row"\s*:\s*(-?\d+)', &rowMatch)
+                return false
+
+            if !RegExMatch(res, '"clicks"\s*:\s*\[(.*?)\]', &clicksMatch)
+                return false
+
+            clicks := []
+            rawClicks := Trim(clicksMatch[1])
+            if (rawClicks != "") {
+                for _, v in StrSplit(rawClicks, ",") {
+                    v := Trim(v)
+                    if (v = "")
+                        continue
+                    clicks.Push(Integer(v))
+                }
+            }
+
+            if (clicks.Length != 8)
+                return false
+
+            clicksKey := ""
+            for _, v in clicks
+                clicksKey .= v ","
+
+            return { row: Integer(rowMatch[1]), clicks: clicks, clicksKey: clicksKey }
+        } catch {
+            return false
+        }
+    }
+
     ; ===== HELPERS =====
 
     /**
@@ -489,6 +675,11 @@ class ElRubioSolver {
         static y1 := A_ScreenHeight * 0.323
         static x2 := A_ScreenWidth * 0.202
         static y2 := A_ScreenHeight * 0.891
+
+        if (this.highRes) {
+            ; For high res, we rely on OpenCV and skip the AHK image search entirely
+            return
+        }
 
         fx := 0, fy := 0
         if !ImageSearch(&fx, &fy, x1, y1, x2, y2, "*50 " this.folder "elRing.png")
@@ -504,6 +695,11 @@ class ElRubioSolver {
      * @returns {void}
      */
     moveToRow(targetRow) {
+
+        if (this.highRes) {
+            ; For high res, we rely on OpenCV and skip the AHK image search entirely
+            return
+        }
 
         SetKeyDelay(this.delay, this.delay)
         currentRow := this.FindElRing()
@@ -540,12 +736,12 @@ class ElRubioSolver {
         static AltImage := 2
 
         SetKeyDelay(this.delay, this.delay)
-        if this.obviousReturn()
+        if this.obviousReturn() || this.highRes
             return false
         maxTries := 16
         tries := 0
         while (tries < maxTries) {
-            if (this.shouldAbort)
+            if (this.shouldAbort || this.isShuttingDown)
                 return false
             if (debug)
                 ToolTip "IN ROW " row " TRY " tries, (this.scrW / 2) - 20, 0, 19
@@ -577,7 +773,7 @@ class ElRubioSolver {
     isPrintInRow(fpGroupID, row) {
         static cachedPrint := false, failCount := 0
 
-        if (this.obviousReturn())
+        if (this.obviousReturn() || this.highRes)
             return false
 
         totalRects := 8
@@ -663,6 +859,48 @@ class ElRubioSolver {
     }
 
     /**
+     * Displays OpenCV click positions on the screen.
+     * @param clicks 
+     */
+    showOpenCVClicks(clicks) {
+        static baseY := 0.323
+        static gapH := 10 / 1080
+        static rectH := 65 / 1080
+
+        x := this.scrW * 0.15
+
+        ; clear old tooltips
+        loop 8
+            ToolTip("", , , A_Index)
+
+        for row, offset in clicks {
+            if (this.isShuttingDown)
+                return
+
+            y := this.scrH * (baseY + (row - 1) * (rectH + gapH) + rectH / 2)
+
+            if (offset > 0) {
+                txt := offset " Right"
+            }
+            else if (offset < 0) {
+                txt := Abs(offset) " Left"
+            }
+            else {
+                txt := "Aligned"
+            }
+
+            ToolTip(
+                txt,
+                x,
+                y,
+                row
+            )
+        }
+        if (this.isShuttingDown)
+            this.clearAll()
+    }
+
+    /**
      * Returns true if the solver should exit early due to state (anchor lost, changing print, not auto, or shutting down).
      * @returns {boolean}
      */
@@ -682,6 +920,7 @@ class ElRubioSolver {
         this.solved.Clear()
         this.foundAnchor := false
         this.needStatusUpdate := true
+        this.prevClicks := ""
     }
 
     /**

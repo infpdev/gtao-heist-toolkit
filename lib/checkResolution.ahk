@@ -29,25 +29,50 @@ checkResolution() {
     ; folder for resolution-specific templates
     global folder := dir "\" targetW "x" targetH "\"
 
-    if (targetW != A_ScreenWidth || targetH != A_ScreenHeight) {
-        iniFile := dir "\zSettings.ini"
-        global unsupportedResolution := true
-        if (FileExist(iniFile)) {
-            disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
-            if (disableWarningFlag = "1") {
-                return
-            }
+    ; Check if exact match
+    isExactMatch := false
+    for _, res in supportedResolutions {
+        if (A_ScreenWidth = res[1] && A_ScreenHeight = res[2]) {
+            isExactMatch := true
+            break
         }
-        res := ShowResolutionWarning(targetW, targetH, iniFile)
-        if (res = "Yes") {
-            Run("https://github.com/infpdev/gtao-heist-toolkit#standalone-solvers")
-            ExitApp
-        } else
-            return
-
-    } else {
-        global unsupportedResolution := false
     }
+
+    if (isExactMatch) {
+        global unsupportedResolution := false
+        global higherRes := false
+        return
+    }
+
+    ; Check aspect ratio (16:9 ≈ 1.777...)
+    aspectRatio := A_ScreenWidth / A_ScreenHeight
+    is16to9 := (aspectRatio > 1.75 && aspectRatio < 1.80)
+
+    if (is16to9 && A_ScreenWidth > 1920) {
+        ; Higher resolution 16:9 screen - use fallback to nearest supported
+        global unsupportedResolution := false
+        global higherRes := true
+        global engine := OPENCV_ENGINE
+        return
+    }
+
+    ; Not exact match, not 16:9 and higher - unsupported
+    global unsupportedResolution := true
+    global higherRes := false
+
+    iniFile := dir "\zSettings.ini"
+    if (FileExist(iniFile)) {
+        disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
+        if (disableWarningFlag = "1") {
+            return
+        }
+    }
+    res := ShowResolutionWarning(targetW, targetH, iniFile)
+    if (res = "Yes") {
+        Run("https://github.com/infpdev/gtao-heist-toolkit#standalone-solvers")
+        ExitApp
+    } else
+        return
 }
 
 DirGetParent(path) {

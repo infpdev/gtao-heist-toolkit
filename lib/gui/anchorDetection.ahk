@@ -10,7 +10,8 @@
  * Side effects: Updates cached anchor globals.
  */
 foundAnchor() {
-    global cachedFingerprintAnchor, cachedKeypadAnchor, folder, scrW, scrH, debug, cachedRubioAnchor
+    global cachedFingerprintAnchor, cachedKeypadAnchor, folder, scrW, scrH, debug, cachedRubioAnchor,
+        engine, OPENCV_ENGINE, AHK_ENGINE
     static fp_x1 := 0.76 * A_ScreenWidth
     static fp_y1 := 0.22 * A_ScreenHeight
     static fp_x2 := 0.8 * A_ScreenWidth
@@ -23,11 +24,22 @@ foundAnchor() {
 
     static rb_x1 := A_ScreenWidth * 0.48
     static rb_y1 := A_ScreenHeight * 0.1
-    static rb_x2 := A_ScreenWidth * 0.815
-    static rb_y2 := A_ScreenHeight * 0.295
+    static rb_x2 := A_ScreenWidth * 0.59
+    static rb_y2 := A_ScreenHeight * 0.11
 
     static tolerance := "*" 20 " "
     static rubioAnchorTolerance := "*" 10 " "
+
+    if (engine == OPENCV_ENGINE || higherRes || debug) {
+        puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
+        if (puzzle) {
+            ; MsgBox puzzle
+            return { mode: puzzle, x: 0, y: 0 }
+        }
+        else if (puzzle = ERRMSG) {
+            ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 39)", 17
+        }
+    }
 
     localSearchSize := 20
     fpFound := false, kpFound := false, elFound := false
@@ -152,7 +164,14 @@ findAnchorsAndCreateInstance() {
         anchorFound := false
         return
     }
+    if (!debug && !isGtaFocused())
+        return
+
     anchor := foundAnchor()
+
+    if (anchor && !shouldCreateInstance(anchor.mode))
+        return
+
     if (IsObject(anchor) && anchor.mode == "fingerprint") {
         anchorFound := true
         if (heist != DIAMOND_CASINO)
@@ -179,6 +198,128 @@ findAnchorsAndCreateInstance() {
         CreateHeistInstance()
 
     hackMode := (heist == DIAMOND_CASINO ? "manual" : "auto") ; Default to manual mode when anchor is found
+
     SetTimer(() => (IsObject(heistInstance) ? heistInstance.autoStartManual(anchor) : ""), -100) ; Start manual mode on the exact switched instance
     SetTimer(findAnchorsAndCreateInstance, 0) ; Stop anchor detection timer
+}
+
+shouldCreateInstance(forType := "") {
+    global heistInstance, fingerprintMode, higherRes, heist
+
+    if (forType == "")
+        return false
+
+    ; MsgBox forType
+
+    temp_heist := (forType == "cayo" ? CAYO_PERICO : DIAMOND_CASINO)
+    temp_fingerprintMode := (forType == "fingerprint" ? 1 : 0)
+
+    try {
+        if (engine == AHK_ENGINE) {
+            if (temp_heist == DIAMOND_CASINO) {
+                if (temp_fingerprintMode) {
+                    return is_black_area_present_fingerprint()
+                } else {
+                    return is_black_area_present_keypad()
+                }
+                return false
+
+            } else if (temp_heist == CAYO_PERICO) {
+                return is_black_area_present_cayo()
+            }
+        }
+        else if (engine == OPENCV_ENGINE || higherRes) {
+            if (temp_heist == DIAMOND_CASINO) {
+                if (temp_fingerprintMode) {
+                    res := GetResFromOpenCV(REQ_BLACK_FP)
+                    if (debug)
+                        ShowCenteredToolTip "Fingerprint(Opencv): " res, 15
+                    return res
+                } else {
+                    res := GetResFromOpenCV(REQ_BLACK_KP)
+                    if (debug)
+                        ShowCenteredToolTip "Keypad(Opencv): " res, 15
+                    return res
+                }
+
+            } else {
+                if (temp_heist == CAYO_PERICO) {
+                    res := GetResFromOpenCV(REQ_BLACK_CAYO)
+                    if (debug)
+                        ShowCenteredToolTip "Cayo(Opencv): " res, 15
+                    return res
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Return true if the fingerprint anchor black-area is PRESENT.
+ * Searches for blackAnchor.png in the region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
+ * 
+ * Returns:
+ *   true if blackAnchor.png is found (black area present)
+ *   false if not found
+ */
+is_black_area_present_fingerprint() {
+    global folder, scrW, scrH
+    static black_x1 := 0.837 * A_ScreenWidth
+    static black_y1 := 0.746 * A_ScreenHeight
+    static black_x2 := 0.985 * A_ScreenWidth
+    static black_y2 := 0.873 * A_ScreenHeight
+
+    static tolerance := "*" 10 " "
+
+    found := ImageSearch(&px, &py, black_x1, black_y1, black_x2, black_y2, tolerance folder "blackAnchor.png")
+
+    if (debug)
+        ShowCenteredToolTip "Fingerprint: " found, 15
+    return found
+}
+
+/**
+ * Return true if the keypad anchor black-area is PRESENT.
+ * Searches for blackAnchor.png in the region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
+ * 
+ * Returns:
+ *   true if blackAnchor.png is found (black area present)
+ *   false if not found
+ */
+is_black_area_present_keypad() {
+    global folder, scrW, scrH
+    static black_x1 := 0.837 * A_ScreenWidth
+    static black_y1 := 0.746 * A_ScreenHeight
+    static black_x2 := 0.985 * A_ScreenWidth
+    static black_y2 := 0.873 * A_ScreenHeight
+
+    static tolerance := "*" 10 " "
+
+    found := ImageSearch(&px, &py, black_x1, black_y1, black_x2, black_y2, tolerance folder "blackAnchor.png")
+    if (debug)
+        ShowCenteredToolTip "Keypad: " found, 15
+    return found
+}
+
+/**
+ * Return true if the cayo anchor black-area is PRESENT.
+ * Searches for blackAnchor.png in the region: 1605, 329, 1898, 783 (normalized: 0.836, 0.305, 0.989, 0.725)
+ * 
+ * Returns:
+ *   true if blackAnchor.png is found (black area present)
+ *   false if not found
+ */
+is_black_area_present_cayo() {
+    global folder, scrW, scrH
+    static black_x1 := 0.836 * A_ScreenWidth
+    static black_y1 := 0.305 * A_ScreenHeight
+    static black_x2 := 0.989 * A_ScreenWidth
+    static black_y2 := 0.725 * A_ScreenHeight
+
+    static tolerance := "*" 10 " "
+
+    found := ImageSearch(&px, &py, black_x1, black_y1, black_x2, black_y2, tolerance folder "elBlackAnchor.png")
+    if (debug)
+        ShowCenteredToolTip "Cayo: " found, 15
+    return found
 }

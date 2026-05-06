@@ -11,14 +11,15 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.5.3"
+ver := "4.0.0"
+global isBeta := true
+
 
 MAJOR_UPDATE_REQUIRED := 3
 PARTIAL_BUT_MANDATORY := 2
 PARTIAL_UPDATE_REQUIRED := 1
 NO_UPDATE_REQUIRED := 0
 global trimmedVer := ""
-global isBeta := false
 global isStandaloneScript := isStandalone()
 isNoSaveStandalone := isStandaloneScript && InStr(A_ScriptName, "NoSave")
 if !IsSet(vaultOps)
