@@ -598,6 +598,9 @@ class ElRubioSolver {
     solveOpenCV(cursorRow, clicks) {
         SetKeyDelay(this.delay, this.delay)
 
+        if (this.obviousReturn())
+            return
+
         ; move current cursor to row 1 first
         if (cursorRow > 1)
             Send "{Up " (cursorRow - 1) "}"
@@ -605,7 +608,7 @@ class ElRubioSolver {
         Sleep 10
 
         for row, offset in clicks {
-            if (this.mode != "auto")
+            if (this.obviousReturn())
                 return
 
             ; apply rotation
@@ -741,7 +744,7 @@ class ElRubioSolver {
         maxTries := 16
         tries := 0
         while (tries < maxTries) {
-            if (this.shouldAbort || this.isShuttingDown)
+            if (this.obviousReturn())
                 return false
             if (debug)
                 ToolTip "IN ROW " row " TRY " tries, (this.scrW / 2) - 20, 0, 19
