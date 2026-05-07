@@ -15,3 +15,4 @@ dump/
 *.xml
 nuitka_build
 OpenCV_Engine.exe
+_old.*

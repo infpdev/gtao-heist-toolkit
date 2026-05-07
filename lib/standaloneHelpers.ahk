@@ -65,6 +65,8 @@ ExitScript(*) {
 OnExit(OnExitSaveCache)
 
 OnExitSaveCache(*) {
+    global isShuttingDown := true
+    try StopPython()
     try SaveCache()
 }
 

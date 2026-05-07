@@ -128,11 +128,9 @@ buildVaultOps() {
 BuildOpenCVEngine(parentDir) {
     global iconPath
     pyHelpersDir := parentDir "\lib\py_helpers"
-    libOpenCVDir := parentDir "\lib\OpenCV_Engine"
     sourceFile := pyHelpersDir "\OpenCV_Engine.py"
     outputFile := pyHelpersDir "\OpenCV_Engine.exe"
     buildDir := pyHelpersDir "\nuitka_build"
-    libOutputFile := libOpenCVDir "\OpenCV_Engine.exe"
 
     RequireExistingFile(sourceFile, "OpenCV engine helper")
 
@@ -145,12 +143,6 @@ BuildOpenCVEngine(parentDir) {
 
     if FileExist(outputFile)
         try FileDelete(outputFile)
-
-    if !DirExist(libOpenCVDir)
-        try DirCreate(libOpenCVDir)
-
-    if FileExist(libOutputFile)
-        try FileDelete(libOutputFile)
 
     ; if DirExist(buildDir)
     ;     try DirDelete(buildDir, true)
@@ -175,7 +167,6 @@ BuildOpenCVEngine(parentDir) {
     }
 
     FileCopy builtExe, outputFile, true
-    FileCopy builtExe, libOutputFile, true
 
     ; try DirDelete(buildDir, true)
 
@@ -183,12 +174,8 @@ BuildOpenCVEngine(parentDir) {
         MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
         ExitApp
     }
-
-    if !FileExist(libOutputFile) {
-        MsgBox "OpenCV_Engine.exe was not copied into lib\\OpenCV_Engine.", "Error", 48
-        ExitApp
-    }
 }
+
 FindPythonExe() {
     localAppData := EnvGet("LocalAppData")
     candidates := [
@@ -232,12 +219,20 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         }
 
         ; Copy the compiled OpenCV helper into the standalone lib folder so OpenCV mode works there too.
-        ocvSourceDir := parentDir "\lib\OpenCV_Engine"
-        ocvDestDir := distStandaloneDir "\lib\OpenCV_Engine"
-        if DirExist(ocvSourceDir) {
+        ocvSource := parentDir "\lib\py_helpers\OpenCV_Engine.exe"
+
+        ocvDestDir := distStandaloneDir "\lib"
+
+        if FileExist(ocvSource) {
+
             if !DirExist(ocvDestDir)
                 DirCreate(ocvDestDir)
-            try FileCopy(ocvSourceDir "\OpenCV_Engine.exe", ocvDestDir "\OpenCV_Engine.exe", true)
+
+            try FileCopy(
+                ocvSource,
+                ocvDestDir "\OpenCV_Engine.exe",
+                true
+            )
         }
 
         ; Copy image folders into dist/standalone regardless of packaging, since both compiled and SFX versions need them
@@ -315,7 +310,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             SetWorkingDir(distStandaloneDir)
             sfxName := StrReplace(exeName, ".exe", "-SFX.exe")
             ToolTip "Packaging SFX: " exeName, 0, 0, 1
-            rarCmd := '"' rarExe '" a -r -sfx "' sfxName '" "' exeName '"' imgStr ' -z"package.txt"'
+            rarCmd := '"' rarExe '" a -r -sfx "' sfxName '" "' exeName '" "lib"' imgStr ' -z"package.txt"'
             RunWait rarCmd, , "Hide"
             ToolTip "SFX created: " exeName, 0, 0, 1
             SetWorkingDir(A_ScriptDir)
@@ -323,6 +318,8 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             try FileDelete(outExe) ; Delete the compiled exe after packaging
 
         }
+
+        try DirDelete(ocvDestDir, true) ; Clean up copied OpenCV helper after packaging since SFX contains it
 
         ; Delete the copied image folders from dist/standalone if
         ; packaging was done, since the SFX packages contain the images and we don't need duplicates

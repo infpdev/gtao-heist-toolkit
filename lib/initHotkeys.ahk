@@ -87,13 +87,16 @@ global AHK_ENGINE := 0
 
 /** @vaultOps
  *  Boolean state that represents the OpenCV detection (1)
- */ 
+ */
 global OPENCV_ENGINE := 1
 
 /** @vaultOps
  *  Boolean state that determines the anchor detection engine, 1 for OpenCV, 0 for legacy AHK detection.
  */
 global engine := IniRead(iniFile, "Options", "Engine", 0)
+
+; Used to prevent OpenCV callbacks from running while the script is exiting
+global isShuttingDown := false
 
 /** @vaultOps
  * Hotkey to toggle noSave mode which prevents the script from saving progress, useful during heists

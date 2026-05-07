@@ -9,6 +9,8 @@ if A_LineFile = A_ScriptFullPath {
 }
 
 global useCompiledExe := false
+global isShuttingDown := false
+global ocvCallInProgress := false
 
 ; Request type constants so callers do not need to repeat raw strings.
 
@@ -44,6 +46,8 @@ global REQ_BLACK_CAYO := "is_black_area_present_cayo"
 
 ; Error code returned when anything goes wrong
 global ERRMSG := "ErrNoResponse"
+; Helper ping request used to keep the OpenCV engine alive while the host is running.
+global REQ_HEARTBEAT := "heartbeat"
 
 ; =========================
 ; STARTUP / DETECTION
@@ -52,7 +56,7 @@ global ERRMSG := "ErrNoResponse"
 ; Check for a compiled helper exe in `lib/` and switch to it if present.
 ; Returns true when compiled exe was found and selected.
 DetectCompiledExe() {
-    exePath := A_ScriptDir "\lib\OpenCV_Engine\OpenCV_Engine.exe"
+    exePath := A_ScriptDir "\lib\OpenCV_Engine.exe"
     if (FileExist(exePath)) {
         global useCompiledExe := true
         global scriptPath := exePath
@@ -69,9 +73,14 @@ initPython() {
 ; Start the Python helper process (or compiled exe). Initializes environment and
 ; stores the process object in `pyProc` for later communication/termination.
 StartPython() {
-    global pyProc, pythonExe, scriptPath, useCompiledExe
+    global pyProc, pythonExe, scriptPath, useCompiledExe, isShuttingDown
 
-    if (pyProc)
+    if (isShuttingDown) {
+        ShowCenteredToolTip "Not starting helper since script is exiting.", 15
+        sleep 1000
+    }
+
+    if (pyProc || isShuttingDown)
         return
 
     shell := ComObject("WScript.Shell")
@@ -79,19 +88,28 @@ StartPython() {
 
     if (useCompiledExe) {
         ; Run compiled exe directly
-        cmd := scriptPath
+        cmd := '"' scriptPath '"'
     } else {
         ; Run OpenCV_Engine.py via pythonw.exe
         cmd := Format('"{1}" -u "{2}"', pythonExe, scriptPath)
     }
 
     pyProc := shell.Exec(cmd)
+    SetTimer(HeartbeatOpenCV, 1000)
 }
 
 ; Stop the helper process if running and clear the `pyProc` handle.
 StopPython(*) {
     global pyProc
+
+    SetTimer(HeartbeatOpenCV, 0)
+
     try pyProc.Terminate()
+
+    ; force-kill any remaining helper
+    ; if (useCompiledExe)
+    ;     RunWait 'taskkill /F /IM OpenCV_Engine.exe >nul 2>&1', , "Hide"
+
     pyProc := 0
 }
 
@@ -111,7 +129,7 @@ RestartPython(err := "") {
 ; Send a JSON request to the helper process and wait (short timeout) for reply.
 ; Returns the raw response line or empty string on timeout/failure.
 CallPython(puzzleType, params := 0) {
-    global pyProc
+    global pyProc, ocvCallInProgress
 
     if (!pyProc) {
         initPython()
@@ -136,21 +154,27 @@ CallPython(puzzleType, params := 0) {
         return ""
     }
 
+    ocvCallInProgress := true
     try {
         pyProc.StdIn.WriteLine(req)
     } catch as err {
+        ocvCallInProgress := false
         RestartPython(err.Message)
         return ""
     }
 
     ; wait for response (timeout)
     start := A_TickCount
-    while (A_TickCount - start < 1000) {
-        if (!pyProc.StdOut.AtEndOfStream) {
-            line := pyProc.StdOut.ReadLine()
-            return line
+    try {
+        while (A_TickCount - start < 1000) {
+            if (!pyProc.StdOut.AtEndOfStream) {
+                line := pyProc.StdOut.ReadLine()
+                return line
+            }
+            Sleep 10
         }
-        Sleep 10
+    } finally {
+        ocvCallInProgress := false
     }
 
     ; timeout → restart python
@@ -170,6 +194,15 @@ GetResFromOpenCV(type, params := 0) {
         return ERRMSG ; fallback trigger
 
     return result
+}
+
+HeartbeatOpenCV(*) {
+    global pyProc, ocvCallInProgress, isShuttingDown
+
+    if (isShuttingDown || !IsObject(pyProc) || ocvCallInProgress)
+        return
+
+    try CallPython(REQ_HEARTBEAT)
 }
 
 ; =========================

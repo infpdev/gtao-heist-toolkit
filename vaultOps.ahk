@@ -625,7 +625,7 @@ Init() {
         txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
 
     ; ======== Boolean flags and state variables ========
-    global noSave, scriptsEnabled, fingerprintMode, engine, hackMode, heist, delay, iniFile
+    global noSave, scriptsEnabled, fingerprintMode, engine, hackMode, heist, delay, iniFile, debug
     global anchorFound := false, pgUpSent := false, hackInProgress := false, pgUpDisabled := false, isBeta,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
@@ -639,6 +639,10 @@ Init() {
     ; ======= Resource folder path (for images, etc.) ========
     global folder, unsupportedResolution, higherRes
     global staticFolder := A_ScriptDir "\lib\static\"
+
+    ; ==== TEMP DEBUG BUILD ====
+    ; higherRes := true
+    debug := true
 
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
@@ -742,7 +746,6 @@ Init() {
     ; ⏐===================== ROW 3: Engine Selection (AHK / OpenCV) ======================⏐
     ; ⏐===================================================================================⏐
     {
-        ; higherRes := true
         engineX := xField - 85 / scale
 
         txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
@@ -982,6 +985,7 @@ Init()
 OnExit(SaveCacheOnExit)
 
 SaveCacheOnExit(*) {
+    global isShuttingDown := true
     ShowCenteredToolTip "Terminating vaultOps"
     try SaveCache()
     try StopPython()
