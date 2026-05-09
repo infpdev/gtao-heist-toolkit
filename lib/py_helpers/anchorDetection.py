@@ -293,14 +293,29 @@ def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: floa
             (int(1920 * scale), int(1080 * scale))
         )
     
-    region = (
-        int(0.837 * 1920 * scale),
-        int(0.746 * 1080 * scale),
-        int(0.985 * 1920 * scale),
-        int(0.873 * 1080 * scale),
-    )
+    regions = [
+        (
+            int(1606 * scale),
+            int(441 * scale),
+            int(1882 * scale),
+            int(531 * scale),
+        ),
 
-    return is_dark_uniform_region(search_img, region)
+        (
+            int(122 * scale),
+            int(596 * scale),
+            int(312 * scale),
+            int(744 * scale),
+        ),
+    ]
+    
+
+    scores = [
+        is_dark_uniform_region(search_img, r)
+        for r in regions
+    ]
+
+    return any(score > 0.82 for score in scores)
 
 
 def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1.0) -> bool:
@@ -315,14 +330,29 @@ def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1
             (int(1920 * scale), int(1080 * scale))
         )
     
-    region = (
-        int(0.837 * 1920 * scale),
-        int(0.746 * 1080 * scale),
-        int(0.985 * 1920 * scale),
-        int(0.873 * 1080 * scale),
-    )
+    regions = [
+        (
+            int(1606 * scale),
+            int(441 * scale),
+            int(1882 * scale),
+            int(531 * scale),
+        ),
+
+        (
+            int(122 * scale),
+            int(596 * scale),
+            int(312 * scale),
+            int(744 * scale),
+        ),
+    ]
     
-    return is_dark_uniform_region(search_img, region)
+
+    scores = [
+        is_dark_uniform_region(search_img, r)
+        for r in regions
+    ]
+
+    return any(score > 0.82 for score in scores)
 
 
 def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5) -> bool:

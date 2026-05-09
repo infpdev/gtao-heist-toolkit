@@ -14,7 +14,6 @@ if !A_IsAdmin {
 ver := "4.0.0"
 global isBeta := true
 
-
 MAJOR_UPDATE_REQUIRED := 3
 PARTIAL_BUT_MANDATORY := 2
 PARTIAL_UPDATE_REQUIRED := 1
@@ -35,8 +34,8 @@ CheckForUpdate() {
 
     ShowCenteredToolTip("checking for updates", 17)
 
-    Url :=
-        "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/refs/heads/main/lib/version.txt?nocache=1"
+    raw := "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/main/lib/version.txt"
+    Url := raw "?nocache=1"
     Http := ComObject("WinHttp.WinHttpRequest.5.1")
     try {
         Http.Open("GET", Url, false)

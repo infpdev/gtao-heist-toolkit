@@ -6,6 +6,10 @@ if !A_IsAdmin {
     }
     ExitApp
 }
+
+if (!IsSet(OPENCV_ENGINE))
+    global OPENCV_ENGINE := 1
+
 checkResolution() {
     supportedResolutions := [[1366, 768], [1600, 900], [1920, 1080]]
     nearestRes := supportedResolutions[1]

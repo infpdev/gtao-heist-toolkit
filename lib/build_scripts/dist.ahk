@@ -81,7 +81,7 @@ buildVaultOps() {
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
 
     ; === Compile and package the main vaultOps executable ===
-    ShowCenteredToolTip "Compiling vaultOps.exe and updater..."
+    ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
     RunWait cmd, , "Hide"
     RunWait updaterCmd, , "Hide"
     RunWait innoCmd, , "Hide"
