@@ -241,6 +241,9 @@ class ElRubioSolver {
             }
             this.lastFoundTick := A_TickCount
 
+            if (debug)
+                ToolTip("Rubio Anchor (opencv)", 0, 0, 18)
+
             res := GetResFromOpenCV(REQ_CAYO)
             if (res = ERRMSG || res = "" || !res) {
                 return false

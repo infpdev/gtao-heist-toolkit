@@ -144,7 +144,7 @@ foundAnchor() {
     }
 
     if (debug) {
-        ToolTip "No anchors found", 0, 0, 18
+        ToolTip "No anchors found (auto-detect)", 0, 0, 18
     }
     return false
 

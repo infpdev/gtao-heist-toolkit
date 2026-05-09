@@ -271,6 +271,8 @@ class KeypadSolver {
                 return false
             }
             this.anchorLastSeen := A_TickCount
+            if (debug)
+                ToolTip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
 
             ; Detect all columns and rows using OpenCV
             gridResult := GetResFromOpenCV(REQ_KEYPAD)
@@ -342,7 +344,7 @@ class KeypadSolver {
                 return
             }
 
-            if(debug)
+            if (debug)
                 ShowCenteredToolTip "Using AHK detection", 15
 
             this.validateAnchor()
@@ -532,7 +534,7 @@ class KeypadSolver {
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (kp)", 0, 0, 18
                 ; Sleep 500
             }
             return false

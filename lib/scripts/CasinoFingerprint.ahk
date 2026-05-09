@@ -252,6 +252,8 @@ class FingerprintSolver {
                 return false
             } else {
                 this.lastFoundTick := A_TickCount
+                if (debug)
+                    ToolTip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
             }
 
             positions := GetResFromOpenCV(REQ_FINGERPRINT)
@@ -487,7 +489,7 @@ class FingerprintSolver {
             cachedFingerprintAnchor := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (fp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -631,8 +633,8 @@ class FingerprintSolver {
         xOffset := N < 10 ? 0 : this.Adjust(-0.003, 0.9)
         lowResOffset := this.Adjust(-0.003, 1)
         lowResX := this.Adjust(0.2, 0.9) + lowResOffset
-        if(A_ScreenWidth == 1366)
-            lowResX := this.Adjust((N > 10 && !debug) ? 0.175: 0.177, 0.9)
+        if (A_ScreenWidth == 1366)
+            lowResX := this.Adjust((N > 10 && !debug) ? 0.175 : 0.177, 0.9)
 
         if (slot == 0 || slot == 2 || slot == 4 || slot == 6) {
             tTipX := ((this.lowRes ? lowResX : 0.227) + (debug ? xOffset : 0.004)) * this.scrW
