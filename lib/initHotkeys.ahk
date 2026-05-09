@@ -92,8 +92,9 @@ global OPENCV_ENGINE := 1
 
 /** @vaultOps
  *  Boolean state that determines the anchor detection engine, 1 for OpenCV, 0 for legacy AHK detection.
+ * OpenCV by default.
  */
-global engine := IniRead(iniFile, "Options", "Engine", 0)
+global engine := IniRead(iniFile, "Options", "Engine", 1)
 
 ; Used to prevent OpenCV callbacks from running while the script is exiting
 global isShuttingDown := false

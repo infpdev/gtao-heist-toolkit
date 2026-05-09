@@ -20,6 +20,7 @@ global scrW := A_ScreenWidth, scrH := A_ScreenHeight
 global hackMode := "idle", hackInProgress := false
 global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
+global engine := OPENCV_ENGINE
 global pgUpSent := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
@@ -59,6 +60,7 @@ ReloadScript(*) {
 }
 
 ExitScript(*) {
+    OnExitSaveCache()
     ExitApp
 }
 
@@ -66,6 +68,7 @@ OnExit(OnExitSaveCache)
 
 OnExitSaveCache(*) {
     global isShuttingDown := true
+    ShowCenteredToolTip "Terminating " A_ScriptName, 15
     try StopPython()
     try SaveCache()
 }
@@ -186,7 +189,8 @@ clearAllToolTips() {
 }
 
 isGtaFocused() {
-    return WinActive("Grand Theft Auto")
+    return (WinActive("ahk_exe GTA5.exe")
+    || WinActive("ahk_exe GTA5_Enhanced.exe"))
 }
 
 PgUpDown(*) {

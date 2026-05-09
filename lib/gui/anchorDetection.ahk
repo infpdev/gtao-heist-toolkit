@@ -30,17 +30,6 @@ foundAnchor() {
     static tolerance := "*" 20 " "
     static rubioAnchorTolerance := "*" 10 " "
 
-    if (engine == OPENCV_ENGINE || higherRes || debug) {
-        puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
-        if (puzzle) {
-            ; MsgBox puzzle
-            return { mode: puzzle, x: 0, y: 0 }
-        }
-        else if (puzzle = ERRMSG) {
-            ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 39)", 17
-        }
-    }
-
     localSearchSize := 20
     fpFound := false, kpFound := false, elFound := false
     fpPx := 0, fpPy := 0, kpPx := 0, kpPy := 0, elPx := 0, elPy := 0
@@ -150,6 +139,20 @@ foundAnchor() {
 
 }
 
+foundAnchorOpenCV() {
+
+    puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
+    if (puzzle) {
+        ; MsgBox puzzle
+        return { mode: puzzle, x: 0, y: 0 }
+    }
+    else if (puzzle = ERRMSG) {
+        ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 150)", 17
+        return 0
+    }
+
+}
+
 /**
  * Polls for anchor images and switches modes/instances accordingly.
  * If an anchor is found, switches to the correct mode and creates the instance.
@@ -164,10 +167,27 @@ findAnchorsAndCreateInstance() {
         anchorFound := false
         return
     }
-    if (!debug && !isGtaFocused())
+    if (!debug && !isGtaFocused(true))
         return
 
-    anchor := foundAnchor()
+    if (engine == AHK_ENGINE) {
+        anchor := foundAnchor()
+
+        if (!anchor) {
+            anchor := foundAnchorOpenCV()
+
+            if (IsObject(anchor) && anchor.mode) {
+                ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if it detects an anchor that AHK did not find
+                if (debug) {
+                    ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
+                    sleep 500
+                }
+            }
+        }
+
+    } else {
+        anchor := foundAnchorOpenCV()
+    }
 
     if (anchor && !shouldCreateInstance(anchor.mode))
         return

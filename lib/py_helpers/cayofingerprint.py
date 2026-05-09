@@ -29,11 +29,15 @@ SCAN = [
 
 def _find_match_index(scan_part: np.ndarray, target_parts: list) -> int:
     """Find which target part matches the scan part. Return -1 if no match."""
+    
+    threshold = 0.88
+
     for i, target_part in enumerate(target_parts):
         res = cv2.matchTemplate(target_part, scan_part, cv2.TM_CCOEFF_NORMED)
-        loc = np.where(res >= 0.65)
-        for _ in zip(*loc[::-1]):
+
+        if cv2.minMaxLoc(res)[1] >= threshold:
             return i
+
     return -1
 
 

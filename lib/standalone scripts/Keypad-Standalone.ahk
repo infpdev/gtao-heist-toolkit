@@ -18,7 +18,8 @@ init() {
         keypad.switchToManual()
     }
 
-    keypad := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor, folder, false, AHK_ENGINE)
+    keypad := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor, folder, higherRes,
+        OPENCV_ENGINE)
 }
 
 init()
@@ -296,6 +297,8 @@ class KeypadSolver {
                 return false
             }
             this.anchorLastSeen := A_TickCount
+            if (debug)
+                ToolTip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
 
             ; Detect all columns and rows using OpenCV
             gridResult := GetResFromOpenCV(REQ_KEYPAD)
@@ -557,7 +560,7 @@ class KeypadSolver {
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (kp)", 0, 0, 18
                 ; Sleep 500
             }
             return false

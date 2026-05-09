@@ -5,7 +5,12 @@ global pythonExe := "pyw.exe"
 if A_LineFile = A_ScriptFullPath {
     global scriptPath := A_ScriptDir "\py_helpers\OpenCV_Engine.py"
 } else {
-    global scriptPath := A_ScriptDir "\lib\py_helpers\OpenCV_Engine.py"
+    if (!A_IsCompiled && IsSet(isStandaloneScript) && isStandaloneScript) {
+        ; If running uncompiled in a standalone context (e.g. from VaultOps Toolkit), use parent dir for helper path
+        global scriptPath := A_ScriptDir "\..\py_helpers\OpenCV_Engine.py"
+    }
+    else
+        global scriptPath := A_ScriptDir "\lib\py_helpers\OpenCV_Engine.py"
 }
 
 global useCompiledExe := false
@@ -75,7 +80,7 @@ initPython() {
 StartPython() {
     global pyProc, pythonExe, scriptPath, useCompiledExe, isShuttingDown
 
-    if (isShuttingDown) {
+    if (isShuttingDown && IsSet(ShowCenteredToolTip)) {
         ShowCenteredToolTip "Not starting helper since script is exiting.", 15
         sleep 1000
     }

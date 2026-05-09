@@ -263,10 +263,17 @@ class FingerprintSolver {
                     this.needStatusUpdate := false
                 }
 
-                if (positions != this.prevPrints) {
-                    this.lastOpenCVPositions := positions
-                    this.markPrints(positions)
+                if (positions == 100) {
+                    this.markPrints(this.prevPrints, "")
+                    if (debug)
+                        ShowCenteredToolTip "All prints already selected", 17
+                    return true
+                } else {
+                    if (debug)
+                        ShowCenteredToolTip "OpenCV detected pieces: " positions, 17
                 }
+
+                this.markPrints(this.prevPrints, positions)
 
                 if (this.mode == "auto")
                     this.openCVSelect(positions)
@@ -666,11 +673,35 @@ class FingerprintSolver {
         }
     }
 
-    markPrints(arr) {
-        arr := StrSplit(arr, ",")
-        for _, val in arr {
-            slot := val - 1
-            this.markPrint(slot, val)
+    markPrints(prevArr, currArr) {
+        if (prevArr == currArr)
+            return
+
+        this.prevPrints := currArr
+
+        prevArr := StrSplit(prevArr, ",")
+        currArr := StrSplit(currArr, ",")
+
+        ; build lookup map for current values
+        currMap := Map()
+        for _, val in currArr {
+            if (val != "")
+                currMap[val] := true
+        }
+
+        ; remove marks that no longer exist
+        for _, val in prevArr {
+            if (val != "" && !currMap.Has(val)) {
+                ToolTip("", , , val)
+            }
+        }
+
+        ; add current marks
+        for _, val in currArr {
+            if (val != "") {
+                slot := val - 1
+                this.markPrint(slot, val)
+            }
         }
     }
 

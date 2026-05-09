@@ -520,10 +520,19 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         IniWrite(fingerprintMode, iniFile, "Options", "FingerprintMode")
     }
 
-    ToggleEngineMode(*) {
+    /**
+     * Toggles between AHK and OpenCV engine modes, 
+     * updates the toggle button and labels, and sets the engine mode in the current heist instance if it exists.
+     */
+    ToggleEngineMode(params := "", info := "", to := "") {
         global engine, picEngineToggle, iniFile, txtAHKLabel, txtOpenCVLabel, txtEngineLabel, hackInProgress,
             heistInstance
-        engine := !engine
+        if (to == AHK_ENGINE) {
+            engine := AHK_ENGINE
+        } else if (to == OpenCV_ENGINE) {
+            engine := OpenCV_ENGINE
+        } else
+            engine := !engine
 
         picEngineToggle.Value := engine == AHK_ENGINE ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
         txtAHKLabel.Opt("c" (engine == AHK_ENGINE ? "c648f64" : "White"))
@@ -611,9 +620,9 @@ Init() {
     global instrNoSave := "Lets you do the replay glitch in heists / missions.",
         instrScripts := "Enable scripts and show the toggle-mode button.",
         instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
-        instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable.",
-        instrOpenCVEngine := "Experimental OpenCV detection. Faster, with AHK fallback.",
-        instrOpenCVOnly := "Experimental OpenCV detection (fallback to AHK unsupported).",
+        instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
+        instrOpenCVEngine := "OpenCV detection. Works on all resolutions, with AHK fallback.",
+        instrOpenCVOnly := "OpenCV only (fallback to AHK unsupported).",
         instrManual := "Let the script find the prints without selecting them automatically.",
         instrAuto := "Automatically hack the fingerprints / keypad.",
         instrReset := "Resets the current script's progress. Use in case of errors.",

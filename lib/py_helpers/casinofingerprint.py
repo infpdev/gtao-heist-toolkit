@@ -18,13 +18,14 @@ parts = [[(482, 279, 482 + 102, 279 + 102), (0, 0)],
 [(627, 711, 627 + 102, 711 + 102), (1, 3)]]
 
 
-def dump_debug_scan_image(image, found_slots, searched_slots, scale=0.5):
+def dump_debug_scan_image(image, found_slots, searched_slots, brightness_map, scale=0.5):
     """Helper debug renderer for slot detection results.
 
-    Saves an annotated scan image that highlights searched slots and matched slots.
+    Saves an annotated scan image that highlights searched slots and matched slots,
+    including brightness value for each slot.
     """
     
-    output_path = os.path.join(resolve_dump_dir(), "debug.png")
+    output_path = os.path.join(resolve_dump_dir(), "fingerprint_debug.png")
 
     debug_image = image.copy()
     draw = ImageDraw.Draw(debug_image)
@@ -39,9 +40,11 @@ def dump_debug_scan_image(image, found_slots, searched_slots, scale=0.5):
         box_scaled = tuple(int(c * scale) for c in box)
         color = "lime" if idx in found_set else "red"
         draw.rectangle(box_scaled, outline=color, width=2)
-        label_x = box_scaled[0] + 3
-        label_y = box_scaled[1] + 3
-        draw.text((label_x, label_y), str(idx), fill=color)
+        label_x = box_scaled[0]
+        label_y = box_scaled[1] - 15
+        brightness = brightness_map.get(idx, 0)
+        label_text = f"{idx} ({brightness:.0f})"
+        draw.text((label_x, label_y), label_text, fill=color)
 
     debug_image.save(output_path)
     debug_image.close()
@@ -95,15 +98,43 @@ def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
 )
 
     found_slots = []
+    brightness_map = {}
+    templates = []
+    has_matches = False
 
+    # first pass → collect brightness
     for idx, part in enumerate(parts, start=1):
         rect = part[0]
-
         rect_scaled = tuple(int(v * scale) for v in rect)
 
         template = im.crop(rect_scaled)
 
-        if is_in(sub0, template, threshold=threshold):
+        gray_template = cv2.cvtColor(np.array(template), cv2.COLOR_BGR2GRAY)
+        brightness = float(np.mean(gray_template))
+
+        brightness_map[idx] = brightness
+        templates.append((idx, template, brightness))
+
+    # calculate dynamic baseline
+    all_brightness = list(brightness_map.values())
+    avg_brightness = np.mean(all_brightness)
+
+    # brightest tiles are usually the selected ones
+    brightness_cutoff = avg_brightness * 1.22
+
+    for idx, template, brightness in templates:
+
+        matched = is_in(sub0, template, threshold=threshold)
+
+        if matched:
+            has_matches = True
+
+        # reject unusually bright matched tiles
+        if brightness > brightness_cutoff:
+            template.close()
+            continue
+
+        if matched:
             found_slots.append(idx)
 
         template.close()
@@ -113,6 +144,7 @@ def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
             im,
             found_slots,
             range(1, len(parts) + 1),
+            brightness_map,
             scale=scale
         )
 
@@ -121,6 +153,9 @@ def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
 
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
     # print(elapsed_ms)
+    
+    if has_matches and not found_slots:
+        return 100   # special code for "matches found but all were too bright"
 
     if not found_slots:
         return 0
@@ -136,4 +171,4 @@ def main(bbox, debug=False):
     return result
 
 if __name__ == "__main__":
-    main(None, False)
+    main(None, True)

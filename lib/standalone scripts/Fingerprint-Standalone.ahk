@@ -17,7 +17,8 @@ init() {
         fingerPrint.ManualMode()
     }
 
-    fingerPrint := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedFingerprintAnchor, folder)
+    fingerPrint := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus,
+        cachedFingerprintAnchor, folder, higherRes, OPENCV_ENGINE)
 
 }
 
@@ -277,6 +278,8 @@ class FingerprintSolver {
                 return false
             } else {
                 this.lastFoundTick := A_TickCount
+                if (debug)
+                    ToolTip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
             }
 
             positions := GetResFromOpenCV(REQ_FINGERPRINT)
@@ -286,10 +289,17 @@ class FingerprintSolver {
                     this.needStatusUpdate := false
                 }
 
-                if (positions != this.prevPrints) {
-                    this.lastOpenCVPositions := positions
-                    this.markPrints(positions)
+                if (positions == 100) {
+                    this.markPrints(this.prevPrints, "")
+                    if (debug)
+                        ShowCenteredToolTip "All prints already selected", 17
+                    return true
+                } else {
+                    if (debug)
+                        ShowCenteredToolTip "OpenCV detected pieces: " positions, 17
                 }
+
+                this.markPrints(this.prevPrints, positions)
 
                 if (this.mode == "auto")
                     this.openCVSelect(positions)
@@ -512,7 +522,7 @@ class FingerprintSolver {
             cachedFingerprintAnchor := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (fp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -689,11 +699,35 @@ class FingerprintSolver {
         }
     }
 
-    markPrints(arr) {
-        arr := StrSplit(arr, ",")
-        for _, val in arr {
-            slot := val - 1
-            this.markPrint(slot, val)
+    markPrints(prevArr, currArr) {
+        if (prevArr == currArr)
+            return
+
+        this.prevPrints := currArr
+
+        prevArr := StrSplit(prevArr, ",")
+        currArr := StrSplit(currArr, ",")
+
+        ; build lookup map for current values
+        currMap := Map()
+        for _, val in currArr {
+            if (val != "")
+                currMap[val] := true
+        }
+
+        ; remove marks that no longer exist
+        for _, val in prevArr {
+            if (val != "" && !currMap.Has(val)) {
+                ToolTip("", , , val)
+            }
+        }
+
+        ; add current marks
+        for _, val in currArr {
+            if (val != "") {
+                slot := val - 1
+                this.markPrint(slot, val)
+            }
         }
     }
 
