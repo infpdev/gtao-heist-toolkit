@@ -75,18 +75,18 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             heistInstance := ""
         }
 
-        if (heist == CAYO_PERICO) {
-            heistInstance := ElRubioSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
+        if (heist == CAYO_PERICO) { 
+            heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
                 engine)
 
         } else if (heist == DIAMOND_CASINO) {
             pgUpSent := false ; Reset PgUp sent status when switching to casino
             txtPgUpLabel.Opt("cWhite")
             if (fingerprintMode) {
-                heistInstance := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus,
+                heistInstance := FingerprintSolver(delay, UpdateGlobalStatus,
                     cachedFingerprintAnchor, "", higherRes, engine)
             } else {
-                heistInstance := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor, "",
+                heistInstance := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, "",
                     higherRes, engine)
             }
 
@@ -331,7 +331,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (scriptsEnabled) {
             SetTimer () => (
                 SetTimer(findAnchorsAndCreateInstance, 500)
-            ), debug ? -5000 : -10000
+            ), -5000
         }
 
     }
@@ -547,6 +547,12 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         IniWrite(engine, iniFile, "Options", "Engine")
         UpdateGlobalStatus(hackInProgress)
+    }
+
+    ; Callback for using the OpenCV engine, used by solvers to switch
+    ; to OpenCV mode when AHK detection fails for more than 2 consecutive attempts.
+    UseOpenCVEngineCallback(){
+        ToggleEngineMode("", "", OpenCV_ENGINE)
     }
 
     SetModeToggleBtnVisibility(enabled) {
@@ -964,10 +970,11 @@ Init() {
     SetEngineToggleBtnVisibility(scriptsEnabled)
     SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
 
-    initPython()
     LoadCache()
 
-    if (noSave && !isFirewallEnabled())
+    fwEnabledLocal := isFirewallEnabled()
+
+    if (noSave && !fwEnabledLocal)
         ToggleNoSaveStatus()
 
     TryRegisterHotkeys()
@@ -975,20 +982,17 @@ Init() {
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
 
-    isFirewallEnabled()
-
     ForceForeground(guiApp)
+
+    guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
 
     if (!scriptsEnabled)
         UpdateGlobalStatus(false)
-    else {
-        ; findAnchorsAndCreateInstance()
-        SetTimer(findAnchorsAndCreateInstance, 500)
-        CreateHeistInstance()
-    }
+
 }
 
+initPython()
 Init()
 
 OnExit(SaveCacheOnExit)

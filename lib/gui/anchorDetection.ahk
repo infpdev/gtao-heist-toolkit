@@ -139,6 +139,16 @@ foundAnchor() {
 
 }
 
+/**
+ * Uses OpenCV to search for anchors, which is more reliable but slower than AHK's ImageSearch.
+ * Only called if AHK search fails to find any anchors.
+ * 
+ * Returns:
+ *   - {mode: "fingerprint"|"keypad"|"cayo", x, y} if found
+ *   - 0 if not found or on error
+ * 
+ * Side effects: None
+ */
 foundAnchorOpenCV() {
 
     puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
@@ -172,6 +182,18 @@ findAnchorsAndCreateInstance() {
 
     if (engine == AHK_ENGINE) {
         anchor := foundAnchor()
+        if (anchor && !shouldCreateInstance(anchor.mode)) {
+            openCVShouldCreateInstance := shouldCreateInstance(anchor.mode, OPENCV_ENGINE)
+            if (openCVShouldCreateInstance) {
+                ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if AHK detects an anchor but
+                ; fails to find the black region
+                if (debug) {
+                    ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
+                    sleep 500
+                }
+            } else
+                return
+        }
 
         if (!anchor) {
             anchor := foundAnchorOpenCV()
@@ -185,12 +207,14 @@ findAnchorsAndCreateInstance() {
             }
         }
 
-    } else {
+    }
+    else {
         anchor := foundAnchorOpenCV()
     }
 
-    if (anchor && !shouldCreateInstance(anchor.mode))
+    if (anchor && !shouldCreateInstance(anchor.mode)) {
         return
+    }
 
     if (IsObject(anchor) && anchor.mode == "fingerprint") {
         anchorFound := true
@@ -223,11 +247,16 @@ findAnchorsAndCreateInstance() {
     SetTimer(findAnchorsAndCreateInstance, 0) ; Stop anchor detection timer
 }
 
-shouldCreateInstance(forType := "") {
+shouldCreateInstance(forType := "", engineOverride := "") {
     global heistInstance, fingerprintMode, higherRes, heist
 
     if (forType == "")
         return false
+
+    if (engineOverride != "")
+        tempEngine := engineOverride
+    else
+        tempEngine := engine
 
     ; MsgBox forType
 
@@ -235,7 +264,7 @@ shouldCreateInstance(forType := "") {
     temp_fingerprintMode := (forType == "fingerprint" ? 1 : 0)
 
     try {
-        if (engine == AHK_ENGINE) {
+        if (tempEngine == AHK_ENGINE) {
             if (temp_heist == DIAMOND_CASINO) {
                 if (temp_fingerprintMode) {
                     return is_black_area_present_fingerprint()
@@ -248,7 +277,7 @@ shouldCreateInstance(forType := "") {
                 return is_black_area_present_cayo()
             }
         }
-        else if (engine == OPENCV_ENGINE || higherRes) {
+        else if (tempEngine == OPENCV_ENGINE || higherRes) {
             if (temp_heist == DIAMOND_CASINO) {
                 if (temp_fingerprintMode) {
                     res := GetResFromOpenCV(REQ_BLACK_FP)

@@ -367,14 +367,31 @@ def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5
             (int(1920 * scale), int(1080 * scale))
         )
     
-    region = (
-        int(0.836 * 1920 * scale),
-        int(0.305 * 1080 * scale),
-        int(0.989 * 1920 * scale),
-        int(0.725 * 1080 * scale),
-    )
+    regions = [
+        # 1666, 342, 1866, 547
+        (
+            int(1660 * scale),
+            int(340 * scale),
+            int(1870 * scale),
+            int(550 * scale),
+        ),
 
-    return is_dark_uniform_region(search_img, region)
+        # 68, 486, 285, 670
+        (
+            int(70 * scale),
+            int(480 * scale),
+            int(285 * scale),
+            int(670 * scale),
+        ),
+    ]
+    
+
+    scores = [
+        is_dark_uniform_region(search_img, r)
+        for r in regions
+    ]
+
+    return any(score > 0.82 for score in scores)
 
 
 def run_anchor_detectors(

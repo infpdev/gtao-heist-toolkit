@@ -155,6 +155,31 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
     MakeAllToolTipsClickThrough(hackMode == "idle")
 }
 
+; Callback for using the OpenCV engine, used by solvers to switch
+; to OpenCV mode when AHK detection fails for more than 2 consecutive attempts.
+UseOpenCVEngineCallback() {
+    ToggleEngineMode("", "", OpenCV_ENGINE)
+}
+
+ToggleEngineMode(params := "", info := "", to := "") {
+    global engine, iniFile, hackInProgress, heistinstance
+
+    if (to == AHK_ENGINE) {
+        engine := AHK_ENGINE
+    } else if (to == OpenCV_ENGINE) {
+        engine := OpenCV_ENGINE
+    } else
+        engine := !engine
+
+
+    if (heistinstance && heistInstance != "") {
+        heistInstance.setEngine(engine)
+    }
+
+    IniWrite(engine, iniFile, "Options", "Engine")
+    UpdateGlobalStatus(hackInProgress)
+}
+
 ToggleNoSaveStatus(*) {
     global noSave
     if (!isFirewallEnabled()) {

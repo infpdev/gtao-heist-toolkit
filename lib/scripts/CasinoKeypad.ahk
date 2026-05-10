@@ -89,7 +89,7 @@ class KeypadSolver {
     base_x2_imgSearch := 0.29
     base_y2_imgSearch := 0.769
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
+    __New(delay, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
         AHK_ENGINE) {
         global
 
@@ -319,6 +319,7 @@ class KeypadSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
+        static failCounter := 0
 
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -363,6 +364,15 @@ class KeypadSolver {
                 if (!this.stabilized) {
                     this.GridDetect()
                     this.StabilizationCheck()
+                    if (!this.cols.Length == 6) {
+                        failCounter++
+                        if (failCounter >= 3) {
+                            failCounter := 0
+                            UseOpenCVEngineCallback()
+                        }
+                    } else {
+                        failCounter := 0
+                    }
                 } else {
                     this.isCurrentColSelected()
                 }

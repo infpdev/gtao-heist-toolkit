@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "4.0.0"
+ver := "3.9.6"
 global isBeta := true
 
 MAJOR_UPDATE_REQUIRED := 3

@@ -73,7 +73,7 @@ class ElRubioSolver {
 
     lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
+    __New(delay, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
         AHK_ENGINE) {
         global folder
 
@@ -286,6 +286,8 @@ class ElRubioSolver {
     MainLoop() {
         static maxRows := 8
         static AltImage := 2
+        static failCounter := 0
+
         forAlt := false
 
         if (this.isShuttingDown && debug) {
@@ -320,9 +322,15 @@ class ElRubioSolver {
 
             fpGroupID := this.getFingerprintGroup()
             if (!this.foundAnchor || !fpGroupID || this.isChangingPrint) {
+                failCounter++
+                if (failCounter >= 2) {
+                    failCounter := 0
+                    UseOpenCVEngineCallback()
+                }
                 this.isBusy := false
                 return
-            }
+            } else
+                failCounter := 0
 
             if (this.obviousReturn()) {
                 this.isBusy := false

@@ -76,7 +76,7 @@ class FingerprintSolver {
 
     lowRes := A_ScreenWidth < 1920
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
+    __New(delay, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
         AHK_ENGINE) {
         global folder
 
@@ -298,6 +298,8 @@ class FingerprintSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
+        static failCounter := 0
+
         if (this.isShuttingDown || this.mode == "idle")
             return
 
@@ -358,8 +360,15 @@ class FingerprintSolver {
 
             localAnchor := this.DetectAnchorGroup()
             if (!this.foundAnchor && localAnchor.Length == 0) {
+                failCounter++
+                if (failCounter >= 2) {
+                    failCounter := 0
+                    UseOpenCVEngineCallback()
+                }
                 this.isBusy := false
                 return
+            } else {
+                failCounter := 0
             }
 
             if (this.anchorGroup.Length == 0 && localAnchor.Length == 0) {
