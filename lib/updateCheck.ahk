@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.9.6"
+ver := "3.9.7"
 global isBeta := true
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -25,8 +25,7 @@ if !IsSet(vaultOps)
     global vaultOps := false
 
 CheckForUpdate()
-if (!isNoSaveStandalone)
-    checkResolution()
+checkResolution()
 
 CheckForUpdate() {
     global ver

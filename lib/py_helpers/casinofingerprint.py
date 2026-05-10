@@ -3,8 +3,8 @@ import os
 import cv2
 import time
 import numpy as np
-from PIL import ImageGrab, ImageDraw
-from helpers import resolve_dump_dir
+from PIL import ImageDraw, Image
+from helpers import resolve_dump_dir, prepare_detection_image
 
 tofind = (950, 155, 1335, 685)
 
@@ -37,7 +37,7 @@ def dump_debug_scan_image(image, found_slots, searched_slots, brightness_map, sc
             continue
         
         box = part[0]
-        box_scaled = tuple(int(c * scale) for c in box)
+        box_scaled =  tuple(int(v * scale) for v in box)
         color = "lime" if idx in found_set else "red"
         draw.rectangle(box_scaled, outline=color, width=2)
         label_x = box_scaled[0]
@@ -62,7 +62,7 @@ def is_in(img, subimg, threshold=0.65):
     return max_val >= threshold
 
 
-def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
+def scan_fingerprint_slots(img=None, threshold=0.65, debug=False):
     """Helper scan routine used by CasinoFingerprint.ahk.
 
     Returns detected slot indices and elapsed milliseconds.
@@ -70,17 +70,10 @@ def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
     t0 = time.perf_counter()
 
     scale = 0.5
-
-    if bbox:
-        im = ImageGrab.grab(bbox)
-    else:
-        im = ImageGrab.grab()
-
-    # scale whole image once
-    im = im.resize((
-        int(1920 * scale),
-        int(1080 * scale)
-    ))
+    if img is None: 
+        img = prepare_detection_image(scale)
+        
+    im = Image.fromarray(img)
 
     # scale fingerprint search region
     tofind_scaled = tuple(int(v * scale) for v in tofind)
@@ -165,10 +158,19 @@ def scan_fingerprint_slots(bbox=None, threshold=0.65, debug=False):
 
 
 
-def main(bbox, debug=False):
+def main(debug=False):
     """Helper-facing entry point that returns sorted detected slots."""
-    result = scan_fingerprint_slots(bbox, debug=debug)
+    result = scan_fingerprint_slots(None, debug=debug)
     return result
 
 if __name__ == "__main__":
-    main(None, True)
+    base_dir = os.path.dirname(__file__)
+    img_path = os.path.join(base_dir, "zcasinowide.png")
+
+    img = cv2.imread(img_path)
+    # BGR -> RGB
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    processed = prepare_detection_image(0.5, img)
+
+    scan_fingerprint_slots(processed, debug=True)

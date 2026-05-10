@@ -1,10 +1,9 @@
 import os
 
-import cv2
 import numpy as np
-from PIL import Image, ImageDraw, ImageGrab
+import cv2
 
-from helpers import resolve_dump_dir
+from helpers import prepare_detection_image, _dump_debug_image
 
 
 # HSV color ranges
@@ -121,35 +120,13 @@ def _edge_density_in_region(img: np.ndarray, region: tuple) -> float:
     return float(np.count_nonzero(edges)) / float(total)
 
 
-def _dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
-    if search_img is None:
-        return
-    
-    output_path = os.path.join(resolve_dump_dir(), "anchorDebug.png")
 
-    if len(search_img.shape) == 2:
-        canvas = Image.fromarray(search_img.astype(np.uint8), mode='L').convert('RGB')
-    else:
-        canvas = Image.fromarray(search_img.astype(np.uint8), mode='RGB')
-
-    draw = ImageDraw.Draw(canvas)
-    for label, region, color in debug_regions:
-        x1, y1, x2, y2 = [int(v) for v in region]
-        draw.rectangle((x1, y1, x2, y2), outline=color, width=2)
-        draw.text((x1 + 4, max(0, y1 - 12)), label, fill=color)
-
-    canvas.save(output_path)
 
 
 def fingerprintAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_score: bool = False, scale: float = 0.5):
     """Detect fingerprint mode by red ratio in fingerprint region."""
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
-
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
+        search_img = prepare_detection_image(scale)
 
     rx1, ry1, rx2, ry2 = 0.757, 0.2182, 0.786, 0.267
     region = (
@@ -184,14 +161,9 @@ def fingerprintAnchor(search_img: np.ndarray = None, threshold: float = 0.1, ret
 def keypadAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_score: bool = False, scale: float = 0.5):
     """Detect keypad mode by warm-color ratio in keypad region."""
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
+        search_img = prepare_detection_image(scale)
 
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
-
-    rx1, ry1, rx2, ry2 = 0.535, 0.118, 0.567, 0.169
+    rx1, ry1, rx2, ry2 = 0.536, 0.119, 0.563, 0.168
     region = (
         int(rx1 * 1920 * scale),
         int(ry1 * 1080 * scale),
@@ -224,12 +196,7 @@ def keypadAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_s
 def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_score: bool = False, scale: float = 0.5):
     """Detect cayo mode by green ratio in cayo region."""
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
-
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
+        search_img = prepare_detection_image(scale)
 
     rx1, ry1, rx2, ry2 = 0.48, 0.09, 0.6, 0.11
     region = (
@@ -287,11 +254,7 @@ def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: floa
     Region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
     """
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
+        search_img = prepare_detection_image(scale)
     
     regions = [
         (
@@ -324,11 +287,7 @@ def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1
     Region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
     """
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
+        search_img = prepare_detection_image(scale)
     
     regions = [
         (
@@ -361,11 +320,7 @@ def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5
     Region: 1605, 329, 1898, 783 (normalized: 0.836, 0.305, 0.989, 0.725)
     """
     if search_img is None:
-        search_img = np.array(ImageGrab.grab())
-        search_img = cv2.resize(
-            search_img,
-            (int(1920 * scale), int(1080 * scale))
-        )
+        search_img = prepare_detection_image(scale)
     
     regions = [
         # 1666, 342, 1866, 547
@@ -403,28 +358,25 @@ def run_anchor_detectors(
     debug_path=None,
     processing_scale=0.5,
     return_details=False,
+    image=None,
 ):
-    img = ImageGrab.grab()
-    search_img = np.array(img)
-
-    if thresholds is None:
-        thresholds = {}
-
-    proc_img = cv2.resize(
-        search_img,
-        (int(1920 * processing_scale), int(1080 * processing_scale))
-    )
+    if image is None:
+        img = prepare_detection_image(processing_scale)
+    else:
+        img = image
 
     details = {}
     candidates = []
     debug_regions = []
+    if thresholds is None:
+        thresholds = {}
 
     # ------------------------
     # FINGERPRINT
     # ------------------------
     if forCasinoFP:
         if debug:
-            fp = fingerprintAnchor(proc_img, threshold=thresholds.get('fp', 0.1), return_score=True, scale=processing_scale)
+            fp = fingerprintAnchor(img, threshold=thresholds.get('fp', 0.1), return_score=True, scale=processing_scale)
 
             if fp:
                 details['fingerprint'] = fp['scores']
@@ -437,7 +389,7 @@ def run_anchor_detectors(
                 details['fingerprint'] = None
 
         else:
-            fp = fingerprintAnchor(proc_img, threshold=thresholds.get('fp', 0.1), return_score=False, scale=processing_scale)
+            fp = fingerprintAnchor(img, threshold=thresholds.get('fp', 0.1), return_score=False, scale=processing_scale)
 
             if fp:
                 candidates.append(('fingerprint', 1.0))  # dummy score
@@ -447,7 +399,7 @@ def run_anchor_detectors(
     # ------------------------
     if forCasinoKP:
         if debug:
-            kp = keypadAnchor(proc_img, threshold=thresholds.get('kp', 0.1), return_score=True, scale=processing_scale)
+            kp = keypadAnchor(img, threshold=thresholds.get('kp', 0.1), return_score=True, scale=processing_scale)
 
             if kp:
                 details['keypad'] = kp['scores']
@@ -460,7 +412,7 @@ def run_anchor_detectors(
                 details['keypad'] = None
 
         else:
-            kp = keypadAnchor(proc_img, threshold=thresholds.get('kp', 0.1), return_score=False, scale=processing_scale)
+            kp = keypadAnchor(img, threshold=thresholds.get('kp', 0.1), return_score=False, scale=processing_scale)
 
             if kp:
                 candidates.append(('keypad', 1.0))
@@ -470,7 +422,7 @@ def run_anchor_detectors(
     # ------------------------
     if forRubio:
         if debug:
-            rb = cayoAnchor(proc_img, threshold=thresholds.get('rubio', 0.4), return_score=True, scale=processing_scale)
+            rb = cayoAnchor(img, threshold=thresholds.get('rubio', 0.4), return_score=True, scale=processing_scale)
 
             if rb:
                 details['cayo'] = rb['scores']
@@ -483,7 +435,7 @@ def run_anchor_detectors(
                 details['cayo'] = None
 
         else:
-            rb = cayoAnchor(proc_img, threshold=thresholds.get('rubio', 0.4), return_score=False, scale=processing_scale)
+            rb = cayoAnchor(img, threshold=thresholds.get('rubio', 0.4), return_score=False, scale=processing_scale)
 
             if rb:
                 candidates.append(('cayo', 1.0))
@@ -503,7 +455,7 @@ def run_anchor_detectors(
     # DEBUG OUTPUT
     # ------------------------
     if debug:
-        _dump_debug_image(proc_img, debug_regions)
+        _dump_debug_image(img, debug_regions)
 
     # ------------------------
     # RETURN
@@ -516,5 +468,22 @@ def run_anchor_detectors(
 
     return mode
 
+
+
 if __name__ == "__main__":
-    print(is_black_area_present_keypad())
+    base_dir = os.path.dirname(__file__)
+    img_path = os.path.join(base_dir, "zkeypadwide.png")
+
+    img = cv2.imread(img_path)
+
+    if img is None:
+        raise FileNotFoundError(img_path)
+
+    # convert BGR -> RGB BEFORE helper
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    img = prepare_detection_image(0.5, img)
+
+    result = run_anchor_detectors(True, True, True, debug=True, processing_scale=0.5, return_details=True, image=img)
+
+    print(result)

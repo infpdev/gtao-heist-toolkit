@@ -1,7 +1,5 @@
 **/dist/
-zSettings.ini
-zAnchorCache.ini
-VaultOps.exe
+*.exe
 vaultOpsUpdater.exe
 temp_*.ahk
 build_options.ini
@@ -14,5 +12,5 @@ run_*.py
 dump/
 *.xml
 nuitka_build
-OpenCV_Engine.exe
+z*.*
 _old.*

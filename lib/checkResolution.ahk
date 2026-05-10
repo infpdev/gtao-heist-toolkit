@@ -51,8 +51,12 @@ checkResolution() {
     ; Check aspect ratio (16:9 ≈ 1.777...)
     aspectRatio := A_ScreenWidth / A_ScreenHeight
     is16to9 := (aspectRatio > 1.75 && aspectRatio < 1.80)
+    ; Check for ultrawide 21:9 aspect ratio (~2.333...)
+    is21to9 := (aspectRatio > 2.05 && aspectRatio < 2.4)
 
-    if (is16to9 && A_ScreenWidth > 1920) {
+    global wideScreen := is21to9
+
+    if ((is16to9 || is21to9) && A_ScreenWidth > 1920) {
         ; Higher resolution 16:9 screen - use fallback to nearest supported
         global unsupportedResolution := false
         global higherRes := true
@@ -71,12 +75,8 @@ checkResolution() {
             return
         }
     }
-    res := ShowResolutionWarning(targetW, targetH, iniFile)
-    if (res = "Yes") {
-        Run("https://github.com/infpdev/gtao-heist-toolkit#standalone-solvers")
-        ExitApp
-    } else
-        return
+    ShowResolutionWarning(targetW, targetH, iniFile, wideScreen)
+    return
 }
 
 DirGetParent(path) {
@@ -109,34 +109,34 @@ HasVaultOpsMarkers(basePath) {
     return hasExe || has1920 || has1600 || has1366
 }
 
-ShowResolutionWarning(targetW, targetH, iniFile) {
+ShowResolutionWarning(targetW, targetH, iniFile, wideScreen := false) {
     warningGui := Gui("-DPIScale")
     warningGui.SetFont("s10")
     warningGui.Title := "Unsupported Resolution"
 
-    warningGui.AddText(, "Your current resolution is not officially supported.`n`n"
-        . "The solvers may not work correctly at this resolution.`n`n"
-        . "If you still wish to use the solvers:`n"
-        . "• Switch to a supported resolution`n"
-        . "• Set the game to Borderless Fullscreen`n"
-        . "• Use the toolkit normally`n`n"
-        . "For now, using nearest supported templates: " targetW "x" targetH ".`n`n"
-        . "NoSave can still be used normally.`n`n"
-        . "You may also prefer using the NoSave Standalone script if you do not plan to use the solvers.`n`n"
-        . "Do you want to open the download page for the NoSave Standalone script instead?`n")
+    if (wideScreen) {
+        warningText :=
+            "⚠️ Ultrawide (21:9) support is experimental.`nIf you encounter any issues, please report them on GitHub.`n`n"
+    } else {
+        warningText := "Your current resolution is not officially supported.`n`n"
+            . "The solvers may not work correctly at this resolution.`n`n"
+            . "If you still wish to use the solvers:`n"
+            . "• Switch to a 16:9 or 21:9 aspect ratio resolution`n"
+            . "• Set the game to Borderless Fullscreen`n"
+            . "• Use the toolkit normally`n`n"
+            . "For now, using nearest supported templates: " targetW "x" targetH ".`n`n"
+            . "NoSave can still be used normally.`n`n"
+    }
+
+    warningGui.AddText(, warningText)
 
     chkDontShow := warningGui.AddCheckbox("-TabStop", "Do not show this again")
-    doNotShowWarning := 0, buttonResult := "No" ; Default to "No"
+    doNotShowWarning := 0
     chkDontShow.OnEvent("Click", (*) => (
         doNotShowWarning := chkDontShow.Value ? 1 : 0
     ))
 
-    warningGui.AddButton("x200 w80", "Yes").OnEvent("Click", (*) => (
-        buttonResult := "Yes",
-        warningGui.Destroy()
-    ))
-    warningGui.AddButton("x290 yp w80 Default", "No").OnEvent("Click", (*) => (
-        buttonResult := "No",
+    warningGui.AddButton("x250 w80 Default", "OK").OnEvent("Click", (*) => (
         warningGui.Destroy()
     ))
 
@@ -147,8 +147,6 @@ ShowResolutionWarning(targetW, targetH, iniFile) {
     if (doNotShowWarning) {
         disableWarning(iniFile)
     }
-
-    return buttonResult
 }
 
 disableWarning(iniFile) {

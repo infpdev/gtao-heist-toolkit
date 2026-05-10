@@ -364,7 +364,7 @@ class KeypadSolver {
                 if (!this.stabilized) {
                     this.GridDetect()
                     this.StabilizationCheck()
-                    if (!this.cols.Length == 6) {
+                    if (!this.cols.Count == 6) {
                         failCounter++
                         if (failCounter >= 3) {
                             failCounter := 0

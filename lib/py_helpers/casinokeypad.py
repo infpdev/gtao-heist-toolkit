@@ -1,10 +1,8 @@
 import os
-import sys
-
 import cv2
 import numpy as np
 from PIL import Image, ImageGrab
-from helpers import resolve_dump_dir
+from helpers import resolve_dump_dir, prepare_detection_image
 
 SCREEN_W = 1920
 SCREEN_H = 1080
@@ -33,28 +31,25 @@ def _dump_debug_image(image: np.ndarray, filename: str):
 
 def _prepare_image(image=None, scale: float = 0.5):
     if image is None:
-        image = np.array(ImageGrab.grab())
-    elif not isinstance(image, np.ndarray):
-        image = np.array(image)
+        image = prepare_detection_image(scale)
+    else:
+        if not isinstance(image, np.ndarray):
+            image = np.array(image)
+
+        if image is None or image.size == 0:
+            return None
+
+        if image.ndim == 3 and image.shape[2] == 4:
+            image = image[:, :, :3]
+
+        # normalize externally supplied images too
+        image = prepare_detection_image(scale, image)
 
     if image is None or image.size == 0:
         return None
 
     if image.ndim == 3 and image.shape[2] == 4:
         image = image[:, :, :3]
-
-    if image.shape[0] != SCREEN_H or image.shape[1] != SCREEN_W:
-        image = cv2.resize(image, (SCREEN_W, SCREEN_H), interpolation=cv2.INTER_AREA)
-
-    if scale is None or scale <= 0:
-        scale = 0.5
-
-    if scale != 1.0:
-        image = cv2.resize(
-            image,
-            (max(1, int(SCREEN_W * scale)), max(1, int(SCREEN_H * scale))),
-            interpolation=cv2.INTER_AREA,
-        )
 
     return image
 
@@ -176,19 +171,10 @@ def detect_keypad(image=None, scale=0.5, debug=False):
 
 
 def detect_ring(image=None, scale=0.3, debug=False, col=None):
+    image = _prepare_image(image, 1.0)
+
     if image is None:
-        image = np.array(ImageGrab.grab())
-    elif not isinstance(image, np.ndarray):
-        image = np.array(image)
-
-    if image is None or image.size == 0:
         return False
-
-    if image.ndim == 3 and image.shape[2] == 4:
-        image = image[:, :, :3]
-
-    if image.shape[0] != SCREEN_H or image.shape[1] != SCREEN_W:
-        image = cv2.resize(image, (SCREEN_W, SCREEN_H))
 
     img_small = cv2.resize(image, (0, 0), fx=scale, fy=scale)
 
@@ -435,9 +421,17 @@ def detect_column_selected(image=None, col=1, scale=0.5, debug=False):
 
 
 if __name__ == "__main__":
-    result = detect_keypad()
-    if result:
-        print(result["columns"])
-    else:
-        print(False)
-    
+    base_dir = os.path.dirname(__file__)
+    img_path = os.path.join(base_dir, "zkeypadwide.png")
+
+    img = cv2.imread(img_path)
+
+    if img is None:
+        raise FileNotFoundError(img_path)
+
+    # BGR -> RGB
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    result = detect_keypad(image=img, debug=True)
+
+    print(result)

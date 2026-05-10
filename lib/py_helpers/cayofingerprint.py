@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from PIL import ImageGrab, Image
-from helpers import resolve_dump_dir
+from helpers import resolve_dump_dir, prepare_detection_image
 import os
 
 TARGETS = [
@@ -64,15 +64,15 @@ def detect_fingerprint(image=None, debug=False):
         - cursor_row: 1-based row index of the brightest matched scan row, or -1 if unknown
     """
     if image is None:
-        image = np.array(ImageGrab.grab())
-    elif not isinstance(image, np.ndarray):
-        image = np.array(image)
+        image = prepare_detection_image(1.0)
+    else:
+        if not isinstance(image, np.ndarray):
+            image = np.array(image)
 
-    if image.ndim == 3 and image.shape[2] == 4:
-        image = image[:, :, :3]
-    
-    if image.shape[:2] != (1080, 1920):
-        image = cv2.resize(image, (1920, 1080))
+        if image.ndim == 3 and image.shape[2] == 4:
+            image = image[:, :, :3]
+
+        image = prepare_detection_image(1.0, image)
 
     # Prepare target parts (right side)
     target_parts = []
@@ -155,7 +155,7 @@ def detect_fingerprint(image=None, debug=False):
                 (255, 255, 0),
                 2,
             )
-        _dump_debug_image(image, debug_overlay, "fingerprint_debug_overlay.png")
+        _dump_debug_image(image, debug_overlay, "cayo_debug.png")
 
     return {
         "solution": signed_clicks,
@@ -173,4 +173,14 @@ def main(image=None):
 
 
 if __name__ == "__main__":
-    main()
+    base_dir = os.path.dirname(__file__)
+    img_path = os.path.join(base_dir, "zcayowide.png")
+
+    img = cv2.imread(img_path)
+
+    if img is None:
+        raise FileNotFoundError(img_path)
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    main(img)
