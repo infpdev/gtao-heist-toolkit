@@ -144,6 +144,9 @@ def fingerprintAnchor(search_img: np.ndarray = None, threshold: float = 0.1, ret
         and edge_density >= _FINGERPRINT_EDGE_MIN
         and score_final >= _FINGERPRINT_FINAL_MIN
     )
+    
+    matched = is_black_area_present_fingerprint(search_img=search_img, scale=scale) if matched else False
+    
     score = {
         'matched': matched,
         'score_raw': ratio,
@@ -179,6 +182,8 @@ def keypadAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_s
         and edge_density >= _KEYPAD_EDGE_MIN
         and score_final >= _KEYPAD_FINAL_MIN
     )
+    
+    matched = is_black_area_present_keypad(search_img=search_img, scale=scale) if matched else False
     score = {
         'matched': matched,
         'score_raw': ratio,
@@ -208,6 +213,9 @@ def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_sco
 
     ratio = _green_ratio_in_region(search_img, region)
     matched = ratio >= threshold
+    
+    matched = is_black_area_present_cayo(search_img=search_img, scale=scale) if matched else False
+    
     score = {
         'matched': matched,
         'score_raw': ratio,
@@ -233,7 +241,7 @@ def is_dark_uniform_region(img: np.ndarray, region: tuple) -> bool:
     if crop.size == 0:
         return False
 
-    hsv = cv2.cvtColor(crop, cv2.COLOR_BGR2HSV)
+    hsv = cv2.cvtColor(crop, cv2.COLOR_RGB2HSV)
 
     h, s, v = cv2.split(hsv)
 
@@ -278,7 +286,7 @@ def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: floa
         for r in regions
     ]
 
-    return any(score > 0.82 for score in scores)
+    return any(scores)
 
 
 def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1.0) -> bool:
@@ -311,7 +319,7 @@ def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1
         for r in regions
     ]
 
-    return any(score > 0.82 for score in scores)
+    return any(scores)
 
 
 def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
@@ -346,7 +354,7 @@ def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5
         for r in regions
     ]
 
-    return any(score > 0.82 for score in scores)
+    return any(scores)
 
 
 def run_anchor_detectors(

@@ -74,7 +74,7 @@ def handle_request(data):
             mode = run_anchor_detectors(forCasinoFP=True, forCasinoKP=True, forRubio=True)
             if mode:
                 return mode
-            return -1
+            return 0
 
         if t == "is_black_area_present_fingerprint":
             try:

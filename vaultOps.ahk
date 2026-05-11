@@ -75,7 +75,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             heistInstance := ""
         }
 
-        if (heist == CAYO_PERICO) { 
+        if (heist == CAYO_PERICO) {
             heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
                 engine)
 
@@ -348,7 +348,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * 
      * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
      */
-    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
+    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, caller := "", *) {
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
         global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
@@ -367,6 +367,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         ; noSaveText := noSave ? "NoSave enabled" : "NoSave disabled"
         noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
         earlyReturn := false
+
+        if (caller && debug)
+            ShowCenteredToolTip "Called by: " caller, 10, 25
 
         if (!scriptsEnabled) {
             status := "Scripts disabled`n" noSaveText
@@ -551,7 +554,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ; Callback for using the OpenCV engine, used by solvers to switch
     ; to OpenCV mode when AHK detection fails for more than 2 consecutive attempts.
-    UseOpenCVEngineCallback(){
+    UseOpenCVEngineCallback() {
         ToggleEngineMode("", "", OpenCV_ENGINE)
     }
 

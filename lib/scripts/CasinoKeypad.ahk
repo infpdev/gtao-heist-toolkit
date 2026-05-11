@@ -64,6 +64,7 @@ class KeypadSolver {
     cvGridStableSince := 0
     cvGridSignature := ""
     cvNoCircleSince := 0
+    kpFails := 0
 
     timeOut := 10000
     primaryAnchorTolerance := 10
@@ -132,6 +133,7 @@ class KeypadSolver {
      * @param engine 
      */
     setEngine(engine) {
+        this.kpFails := 0
         this.useOpenCv := engine == OPENCV_ENGINE
     }
 
@@ -145,7 +147,7 @@ class KeypadSolver {
         this.prevRingRow := 1
 
         this.clearAll()
-        updateGlobalStatus(false) ; ToolTip replacement
+        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; ToolTip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -198,7 +200,7 @@ class KeypadSolver {
     CheckFalsePositive() {
         if (this.isShuttingDown || this.mode != "manual" || !this.autoStarted)
             return
-
+        MsgBox this.autoStarted
         if (!this.foundAnchor) {
             ResetHackMode()
             this.Idle()
@@ -219,7 +221,7 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToAuto()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -242,7 +244,7 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToManual()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -277,15 +279,18 @@ class KeypadSolver {
             ; Detect all columns and rows using OpenCV
             gridResult := GetResFromOpenCV(REQ_KEYPAD)
             if (gridResult = ERRMSG) {
-                MsgBox "grid threw"
+                if (debug)
+                    MsgBox "grid threw"
                 this.foundAnchor := false
                 this.needStatusUpdate := true
                 return false
             }
-            ; MsgBox gridResult
 
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.autoStarted)
+                this.autoStarted := false
+
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.tryOpenCV()")
                 this.needStatusUpdate := false
             }
 
@@ -319,7 +324,6 @@ class KeypadSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
-        static failCounter := 0
 
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -365,13 +369,12 @@ class KeypadSolver {
                     this.GridDetect()
                     this.StabilizationCheck()
                     if (!this.cols.Count == 6) {
-                        failCounter++
-                        if (failCounter >= 3) {
-                            failCounter := 0
-                            UseOpenCVEngineCallback()
+                        this.kpFails++
+                        if (this.kpFails >= 3) {
+                            this.kpFails := 0
                         }
                     } else {
-                        failCounter := 0
+                        this.kpFails := 0
                     }
                 } else {
                     this.isCurrentColSelected()
@@ -402,8 +405,8 @@ class KeypadSolver {
             return false
 
         if this.findAnchor() {
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.validateAnchor()")
 
                 this.needStatusUpdate := false
             }
@@ -429,7 +432,7 @@ class KeypadSolver {
         if (this.anchorLastSeen != 0) {
             this.clearAll()
             timeLeft := Integer((this.timeOut - (A_TickCount - this.anchorLastSeen)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft) ; Inform the main script about the anchor loss and remaining time before reset
+            updateGlobalStatus(false, true, timeLeft, "CasinoKeypad.checkTimeout()")
             this.needStatusUpdate := true
             if (this.anchorLastSeen != 0 && (A_TickCount - this.anchorLastSeen > this.timeOut)) {
                 ResetHackMode()
@@ -646,6 +649,9 @@ class KeypadSolver {
         }
 
         if allDetected {
+            if (this.autoStarted)
+                this.autoStarted := false
+
             this.gridFilledOnce := true
             if newDetection {
                 this.lastDetectionTime := A_TickCount
@@ -967,7 +973,8 @@ class KeypadSolver {
             ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
-            this.ShowRingMap("", true)
+            if (this.mode == "manual")
+                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
             this.showkeys()
             if (this.cols.Count = 0 || targetCol == 6) {
                 this.ResetState()

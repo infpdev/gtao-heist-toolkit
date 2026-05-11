@@ -57,6 +57,9 @@ foundAnchor() {
     if (!fpFound)
         fpFound := ImageSearch(&fpPx, &fpPy, fp_x1, fp_y1, fp_x2, fp_y2, tolerance folder "anchor.png")
 
+    if (fpFound)
+        fpFound := is_black_area_present_fingerprint() ; Verify black area for fingerprint to prevent false positives
+
     ; Keypad: try cached area first, then fallback to full keypad area.
     if (debug) {
         ToolTip "Searching for keypad anchor", 0, 0, 18
@@ -79,6 +82,9 @@ foundAnchor() {
 
     if (!kpFound)
         kpFound := ImageSearch(&kpPx, &kpPy, kp_x1, kp_y1, kp_x2, kp_y2, tolerance folder "anchor.png")
+
+    if (kpFound)
+        kpFound := is_black_area_present_keypad() ; Verify black area for keypad to prevent false positives
 
     ; El Rubio: try cached area first, then fallback to full region.
     if (debug) {
@@ -104,6 +110,9 @@ foundAnchor() {
     if (!elFound)
         elFound := ImageSearch(&elPx, &elPy, rb_x1, rb_y1, rb_x2, rb_y2, rubioAnchorTolerance folder "elAnchor.png"
         )
+
+    if (elFound)
+        elFound := is_black_area_present_cayo() ; Verify black area for El Rubio to prevent false positives
 
     if (fpFound && kpFound)
         return "error"
@@ -157,7 +166,7 @@ foundAnchorOpenCV() {
         return { mode: puzzle, x: 0, y: 0 }
     }
     else if (puzzle = ERRMSG) {
-        ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 150)", 17
+        ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 169)", 15
         return 0
     }
 
@@ -180,56 +189,32 @@ findAnchorsAndCreateInstance() {
     if (!debug && !isGtaFocused(true))
         return
 
-    if (engine == AHK_ENGINE) {
-        anchor := foundAnchor()
-        if (anchor && !shouldCreateInstance(anchor.mode)) {
-            openCVShouldCreateInstance := shouldCreateInstance(anchor.mode, OPENCV_ENGINE)
-            if (openCVShouldCreateInstance) {
-                ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if AHK detects an anchor but
-                ; fails to find the black region
-                if (debug) {
-                    ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
-                    sleep 500
-                }
-            } else
-                return
-        }
+    anchor := (engine == AHK_ENGINE)
+        ? foundAnchor()
+        : foundAnchorOpenCV()
 
-        if (!anchor) {
-            anchor := foundAnchorOpenCV()
-
-            if (IsObject(anchor) && anchor.mode) {
-                ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if it detects an anchor that AHK did not find
-                if (debug) {
-                    ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
-                    sleep 500
-                }
-            }
-        }
-
-    }
-    else {
-        anchor := foundAnchorOpenCV()
-    }
-
-    if (anchor && !shouldCreateInstance(anchor.mode)) {
+    if (!anchor) {
+        ShowCenteredToolTip "No anchors found", 17
+        anchorFound := false
         return
+    } else {
+        ShowCenteredToolTip "Anchor found: " anchor.mode (engine == OPENCV_ENGINE ? " (OpenCV)" : ""), 17
+        sleep 500
     }
+
+    anchorFound := true
 
     if (IsObject(anchor) && anchor.mode == "fingerprint") {
-        anchorFound := true
         if (heist != DIAMOND_CASINO)
             ToggleHeistMode() ; Switch to Diamond Casino if not already in it
         if (!fingerprintMode)
             ToggleFingerprintMode() ; Switch to fingerprint mode if not already in it
     } else if (IsObject(anchor) && anchor.mode == "keypad") {
-        anchorFound := true
         if (heist != DIAMOND_CASINO)
             ToggleHeistMode() ; Switch to Diamond Casino if not already in it
         if (fingerprintMode)
             ToggleFingerprintMode() ; Switch to keypad mode if not already in it
     } else if (IsObject(anchor) && anchor.mode == "cayo") {
-        anchorFound := true
         if (heist != CAYO_PERICO)
             ToggleHeistMode() ; Switch to Cayo Perico if not already in it
 
@@ -247,62 +232,6 @@ findAnchorsAndCreateInstance() {
     SetTimer(findAnchorsAndCreateInstance, 0) ; Stop anchor detection timer
 }
 
-shouldCreateInstance(forType := "", engineOverride := "") {
-    global heistInstance, fingerprintMode, higherRes, heist
-
-    if (forType == "")
-        return false
-
-    if (engineOverride != "")
-        tempEngine := engineOverride
-    else
-        tempEngine := engine
-
-    ; MsgBox forType
-
-    temp_heist := (forType == "cayo" ? CAYO_PERICO : DIAMOND_CASINO)
-    temp_fingerprintMode := (forType == "fingerprint" ? 1 : 0)
-
-    try {
-        if (tempEngine == AHK_ENGINE) {
-            if (temp_heist == DIAMOND_CASINO) {
-                if (temp_fingerprintMode) {
-                    return is_black_area_present_fingerprint()
-                } else {
-                    return is_black_area_present_keypad()
-                }
-                return false
-
-            } else if (temp_heist == CAYO_PERICO) {
-                return is_black_area_present_cayo()
-            }
-        }
-        else if (tempEngine == OPENCV_ENGINE || higherRes) {
-            if (temp_heist == DIAMOND_CASINO) {
-                if (temp_fingerprintMode) {
-                    res := GetResFromOpenCV(REQ_BLACK_FP)
-                    if (debug)
-                        ShowCenteredToolTip "Fingerprint(Opencv): " res, 15
-                    return res
-                } else {
-                    res := GetResFromOpenCV(REQ_BLACK_KP)
-                    if (debug)
-                        ShowCenteredToolTip "Keypad(Opencv): " res, 15
-                    return res
-                }
-
-            } else {
-                if (temp_heist == CAYO_PERICO) {
-                    res := GetResFromOpenCV(REQ_BLACK_CAYO)
-                    if (debug)
-                        ShowCenteredToolTip "Cayo(Opencv): " res, 15
-                    return res
-                }
-            }
-        }
-    }
-}
-
 /**
  * Return true if the fingerprint anchor black-area is PRESENT.
  * Searches for blackAnchor.png in the region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
@@ -313,14 +242,22 @@ shouldCreateInstance(forType := "", engineOverride := "") {
  */
 is_black_area_present_fingerprint() {
     global folder, scrW, scrH
-    static black_x1 := 0.837 * A_ScreenWidth
-    static black_y1 := 0.746 * A_ScreenHeight
-    static black_x2 := 0.985 * A_ScreenWidth
-    static black_y2 := 0.873 * A_ScreenHeight
+    static black_x1 := 0.86 * A_ScreenWidth
+    static black_y1 := 0.43 * A_ScreenHeight
+    static black_x2 := 0.98 * A_ScreenWidth
+    static black_y2 := 0.88 * A_ScreenHeight
+
+    static black_x1_alt := 0.05 * A_ScreenWidth
+    static black_y1_alt := 0.55 * A_ScreenHeight
+    static black_x2_alt := 0.17 * A_ScreenWidth
+    static black_y2_alt := 0.8 * A_ScreenHeight
 
     static tolerance := "*" 10 " "
 
     found := ImageSearch(&px, &py, black_x1, black_y1, black_x2, black_y2, tolerance folder "blackAnchor.png")
+    if (!found)
+        found := ImageSearch(&px, &py, black_x1_alt, black_y1_alt, black_x2_alt, black_y2_alt, tolerance folder "blackAnchor.png"
+        )
 
     if (debug)
         ShowCenteredToolTip "Fingerprint: " found, 15
@@ -337,14 +274,23 @@ is_black_area_present_fingerprint() {
  */
 is_black_area_present_keypad() {
     global folder, scrW, scrH
-    static black_x1 := 0.837 * A_ScreenWidth
-    static black_y1 := 0.746 * A_ScreenHeight
-    static black_x2 := 0.985 * A_ScreenWidth
-    static black_y2 := 0.873 * A_ScreenHeight
+    static black_x1 := 0.86 * A_ScreenWidth
+    static black_y1 := 0.43 * A_ScreenHeight
+    static black_x2 := 0.98 * A_ScreenWidth
+    static black_y2 := 0.88 * A_ScreenHeight
+
+    static black_x1_alt := 0.05 * A_ScreenWidth
+    static black_y1_alt := 0.55 * A_ScreenHeight
+    static black_x2_alt := 0.17 * A_ScreenWidth
+    static black_y2_alt := 0.8 * A_ScreenHeight
 
     static tolerance := "*" 10 " "
 
     found := ImageSearch(&px, &py, black_x1, black_y1, black_x2, black_y2, tolerance folder "blackAnchor.png")
+    if (!found)
+        found := ImageSearch(&px, &py, black_x1_alt, black_y1_alt, black_x2_alt, black_y2_alt, tolerance folder "blackAnchor.png"
+        )
+
     if (debug)
         ShowCenteredToolTip "Keypad: " found, 15
     return found
@@ -371,4 +317,106 @@ is_black_area_present_cayo() {
     if (debug)
         ShowCenteredToolTip "Cayo: " found, 15
     return found
+}
+
+; Unused funcs
+{
+
+    getAnchorType() {
+        global OPENCV_ENGINE, AHK_ENGINE, engine, debug
+        if (engine == AHK_ENGINE) {
+            anchor := foundAnchor()
+            if (anchor && !shouldCreateInstance(anchor.mode)) {
+                openCVShouldCreateInstance := shouldCreateInstance(anchor.mode, OPENCV_ENGINE)
+                if (openCVShouldCreateInstance) {
+                    ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if AHK detects an anchor but
+                    ; fails to find the black region
+                    if (debug) {
+                        ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
+                        sleep 500
+                    }
+                } else
+                    return anchor
+            }
+
+            if (!anchor) {
+                anchor := foundAnchorOpenCV()
+
+                if (IsObject(anchor) && anchor.mode) {
+                    ToggleEngineMode(, , OPENCV_ENGINE) ; Switch to OpenCV engine if it detects an anchor that AHK did not find
+                    if (debug) {
+                        ShowCenteredToolTip "Switching to OpenCV engine for anchor detection", 15
+                        sleep 500
+                    }
+                }
+            }
+
+        }
+        else {
+            anchor := foundAnchorOpenCV()
+            return anchor
+        }
+
+        if (anchor && !shouldCreateInstance(anchor.mode)) {
+            return anchor
+        }
+    }
+
+    shouldCreateInstance(forType := "", engineOverride := "") {
+        global heistInstance, fingerprintMode, higherRes, heist
+
+        if (forType == "")
+            return false
+
+        if (engineOverride != "")
+            tempEngine := engineOverride
+        else
+            tempEngine := engine
+
+        ; MsgBox forType
+
+        temp_heist := (forType == "cayo" ? CAYO_PERICO : DIAMOND_CASINO)
+        temp_fingerprintMode := (forType == "fingerprint" ? 1 : 0)
+
+        try {
+            if (tempEngine == AHK_ENGINE) {
+                if (temp_heist == DIAMOND_CASINO) {
+                    if (temp_fingerprintMode) {
+                        return is_black_area_present_fingerprint()
+                    } else {
+                        return is_black_area_present_keypad()
+                    }
+                    return false
+
+                } else if (temp_heist == CAYO_PERICO) {
+                    return is_black_area_present_cayo()
+                }
+            }
+            else if (tempEngine == OPENCV_ENGINE || higherRes) {
+                ; return true ; OpenCV now handles both detection and black area verification for all modes
+                if (temp_heist == DIAMOND_CASINO) {
+                    if (temp_fingerprintMode) {
+                        res := GetResFromOpenCV(REQ_BLACK_FP)
+                        if (debug)
+                            ShowCenteredToolTip "Fingerprint(Opencv): " res, 15
+                        return res
+                    } else {
+                        res := GetResFromOpenCV(REQ_BLACK_KP)
+                        if (debug)
+                            ShowCenteredToolTip "Keypad(Opencv): " res, 15
+                        return res
+                    }
+
+                } else {
+                    if (temp_heist == CAYO_PERICO) {
+                        res := GetResFromOpenCV(REQ_BLACK_CAYO)
+                        if (debug)
+                            ShowCenteredToolTip "Cayo(Opencv): " res, 15
+                        return res
+                    }
+                }
+            }
+        }
+    }
+
 }

@@ -46,6 +46,7 @@ class ElRubioSolver {
     lastFoundTick := 0
     prevFoundPixel := 0
     cachedCursorRow := 0
+    cGpFails := 0
     prevClicks := ""
 
     x1 := A_ScreenWidth * 0.27
@@ -107,6 +108,7 @@ class ElRubioSolver {
      * @param engine 
      */
     setEngine(engine) {
+        this.cGpFails := 0
         this.useOpenCv := engine == OPENCV_ENGINE
     }
 
@@ -125,7 +127,7 @@ class ElRubioSolver {
         this.prevClicks := ""
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
-        updateGlobalStatus(false)
+        updateGlobalStatus(false, , , "ElRubioSolver.Idle()")
     }
 
     /**
@@ -197,7 +199,7 @@ class ElRubioSolver {
         this.findAnchor()
         this.getFingerprintGroup()
         SetTimer this.fnMainLoop, 500
-        updateGlobalStatus(false)
+        updateGlobalStatus(false, , , "ElRubioSolver.SwitchToManual()")
     }
 
     /**
@@ -214,7 +216,7 @@ class ElRubioSolver {
         this.mode := "auto"
         this.isChangingPrint := false
         this.lastFoundTick := 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "ElRubioSolver.Hack()")
         this.findAnchor()
         SetTimer this.fnMainLoop, 200
     }
@@ -233,7 +235,6 @@ class ElRubioSolver {
             ; MsgBox this.foundAnchor
             if (!this.foundAnchor || this.foundAnchor == ERRMSG) {
                 this.foundAnchor := false
-                this.needStatusUpdate := true
                 this.prevFoundPixel := 0
                 this.needStatusUpdate := true
                 this.prevClicks := ""
@@ -249,8 +250,11 @@ class ElRubioSolver {
                 return false
             }
 
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.autoStarted)
+                this.autoStarted := false
+
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "ElRubioSolver.tryOpenCV()")
                 this.needStatusUpdate := false
             }
 
@@ -286,7 +290,6 @@ class ElRubioSolver {
     MainLoop() {
         static maxRows := 8
         static AltImage := 2
-        static failCounter := 0
 
         forAlt := false
 
@@ -322,15 +325,17 @@ class ElRubioSolver {
 
             fpGroupID := this.getFingerprintGroup()
             if (!this.foundAnchor || !fpGroupID || this.isChangingPrint) {
-                failCounter++
-                if (failCounter >= 2) {
-                    failCounter := 0
-                    UseOpenCVEngineCallback()
+                this.cGpFails++
+                if (this.cGpFails >= 2) {
+                    this.cGpFails := 0
                 }
                 this.isBusy := false
                 return
             } else
-                failCounter := 0
+                this.cGpFails := 0
+
+            if (this.autoStarted)
+                this.autoStarted := false
 
             if (this.obviousReturn()) {
                 this.isBusy := false
@@ -403,10 +408,10 @@ class ElRubioSolver {
 
     checkTimeout() {
         if (!this.foundAnchor && this.lastFoundTick != 0 && (this.mode == "auto" || this.useOpenCv || this.highRes)) {
-            this.clearAll()
-            this.needStatusUpdate := true
+            if (this.needStatusUpdate)
+                this.clearAll()
             timeLeft := Integer((10000 - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft)
+            updateGlobalStatus(false, true, timeLeft, "ElRubioSolver.checkTimeout()")
             if (A_TickCount - this.lastFoundTick > 10000) {
                 ResetHackMode()
                 this.Idle()
@@ -477,7 +482,7 @@ class ElRubioSolver {
             }
 
             if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+                updateGlobalStatus(true, , , "ElRubioSolver.findAnchor()")
                 this.needStatusUpdate := false
             }
 

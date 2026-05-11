@@ -13,7 +13,11 @@ SetTitleMatchMode 2
 global noSaveActive := false
 
 global NOSAVE_RULE_NAME := "123456"
-global NOSAVE_REMOTE_IP := "192.81.241.171"
+global NOSAVE_REMOTE_IPS := [
+    "192.81.241.170",
+    "192.81.241.171",
+    "192.81.241.173"
+]
 
 if !A_IsAdmin {
     Run('*RunAs "' A_ScriptFullPath '"')
@@ -77,7 +81,7 @@ init() {
     }
 
     EnableNoSaveMode(*) {
-        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP, forMode
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IPS, forMode
         fwPolicy := GetFirewallPolicy()
         if !fwPolicy {
             ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
@@ -94,7 +98,7 @@ init() {
             rule.Action := 0
             rule.Enabled := true
             rule.Protocol := 256
-            rule.RemoteAddresses := NOSAVE_REMOTE_IP
+            rule.RemoteAddresses := NOSAVE_REMOTE_IPS[1] "," NOSAVE_REMOTE_IPS[2] "," NOSAVE_REMOTE_IPS[3]
             fwPolicy.Rules.Add(rule)
         } catch {
             ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
@@ -209,7 +213,7 @@ init() {
 
     ; Returns true when the NoSave rule exists.
     IsNoSaveRuleActive(fwPolicy) {
-        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IPS
         if !fwPolicy
             return false
 
@@ -217,7 +221,7 @@ init() {
             rule := fwPolicy.Rules.Item(NOSAVE_RULE_NAME)
             if (rule.Direction != 2 || rule.Action != 0 || !rule.Enabled)
                 return false
-            if !InStr(rule.RemoteAddresses, NOSAVE_REMOTE_IP)
+            if !InStr(rule.RemoteAddresses, NOSAVE_REMOTE_IPS[1]) && !InStr(rule.RemoteAddresses, NOSAVE_REMOTE_IPS[2])
                 return false
             return true
         }
@@ -227,7 +231,7 @@ init() {
     ; Optional cleanup: finds rules blocking the same IP as ours (legacy/faulty/conflicting).
     ; Only removes if user explicitly chooses to. Safe to remove this entire function without side effects.
     CleanupLegacyDuplicateRules() {
-        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP
+        global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IPS
         fwPolicy := GetFirewallPolicy()
         if !fwPolicy
             return
@@ -236,7 +240,7 @@ init() {
         try for r in fwPolicy.Rules {
             try {
                 ; Find rules that reference our IP but are NOT our canonical rule description
-                if InStr(r.RemoteAddresses, NOSAVE_REMOTE_IP)
+                if InStr(r.RemoteAddresses, NOSAVE_REMOTE_IPS[1]) || InStr(r.RemoteAddresses, NOSAVE_REMOTE_IPS[2])
                     conflictingRules.Push(r.Name)
             } catch {
 
@@ -247,7 +251,7 @@ init() {
             return
 
         ; Found other rules blocking the same IP
-        msg := "Found conflicting firewall rules blocking " NOSAVE_REMOTE_IP ".`n`n"
+        msg := "Found conflicting firewall rules blocking " NOSAVE_REMOTE_IPS[1] " or " NOSAVE_REMOTE_IPS[2] ".`n`n"
         msg .= "These rules might cause issues while joining sessions:`n`n"
         for ruleName in conflictingRules {
             msg .= " - " ruleName "`n"
