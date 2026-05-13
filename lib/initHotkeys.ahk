@@ -15,6 +15,7 @@ if !FileExist(iniFile) {
         . "[Options]`n"
         . "heist=1`n"
         . "FingerprintMode=1`n"
+        . "Engine=0`n"
         . "Delay=40`n`n"
         . "; ---------------------------`n"
         . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
@@ -78,6 +79,25 @@ global CAYO_PERICO := 0
  *  Boolean state that determines the type of hack, 1 for fingerprint hacking, 0 for keypad.
  */
 global fingerprintMode := IniRead(iniFile, "Options", "FingerprintMode", 1)
+
+/** @vaultOps
+ *  Boolean state that represents the AHK detection (0)
+ */
+global AHK_ENGINE := 0
+
+/** @vaultOps
+ *  Boolean state that represents the OpenCV detection (1)
+ */
+global OPENCV_ENGINE := 1
+
+/** @vaultOps
+ *  Boolean state that determines the anchor detection engine, 1 for OpenCV, 0 for legacy AHK detection.
+ * OpenCV by default.
+ */
+global engine := IniRead(iniFile, "Options", "Engine", 1)
+
+; Used to prevent OpenCV callbacks from running while the script is exiting
+global isShuttingDown := false
 
 /** @vaultOps
  * Hotkey to toggle noSave mode which prevents the script from saving progress, useful during heists

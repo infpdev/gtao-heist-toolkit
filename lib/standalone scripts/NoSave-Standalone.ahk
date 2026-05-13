@@ -171,12 +171,14 @@ init() {
     }
 
     ; Ensures the firewall is enabled for the active profile(s).
-    isFirewallEnabled() {
+    isFirewallEnabled(isJustAToggle := false) {
         fwPolicy := GetFirewallPolicy()
         if IsFirewallOnActiveProfile() {
-            ShowCenteredToolTip("Firewall check passed :]", 17)
-            SetTimer () => ToolTip("", , , 17), -2000
-            CleanupLegacyDuplicateRules()
+            if (!isJustAToggle) {
+                ShowCenteredToolTip("Firewall check passed :]", 17)
+                SetTimer () => ToolTip("", , , 17), -2000
+                CleanupLegacyDuplicateRules()
+            }
             return true ; Already on, do nothing
         }
 

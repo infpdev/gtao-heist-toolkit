@@ -17,6 +17,7 @@ global vaultOps := true
 ; common imports
 #Include <initHotkeys>
 #Include <updateCheck>
+#Include <ahk2py_socket>
 
 ; vaultOps scripts
 #Include <scripts\CasinoFingerprint>
@@ -54,7 +55,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * Side effects: Updates global heistInstance.
      */
     CreateHeistInstance() {
-        global fingerprintMode, heistInstance, scriptsEnabled, delay, heist, hackMode, pgUpSent, txtPgUpLabel
+        global fingerprintMode, heistInstance, scriptsEnabled, delay, heist,
+            hackMode, pgUpSent, txtPgUpLabel, engine, higherRes
 
         hackMode := "idle"
 
@@ -74,15 +76,18 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         }
 
         if (heist == CAYO_PERICO) {
-            heistInstance := ElRubioSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedRubioAnchor)
+            heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
+                engine)
 
         } else if (heist == DIAMOND_CASINO) {
             pgUpSent := false ; Reset PgUp sent status when switching to casino
             txtPgUpLabel.Opt("cWhite")
             if (fingerprintMode) {
-                heistInstance := FingerprintSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedFingerprintAnchor)
+                heistInstance := FingerprintSolver(delay, UpdateGlobalStatus,
+                    cachedFingerprintAnchor, "", higherRes, engine)
             } else {
-                heistInstance := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor)
+                heistInstance := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, "",
+                    higherRes, engine)
             }
 
         }
@@ -281,11 +286,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode, hackInProgress
         hackMode := "idle"
         hackInProgress := false
-        SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
-        if (IsObject(heistInstance))
+        SetTimer(findAnchorsAndCreateInstance, 0) ; Restart anchor detection timer
+        if (IsObject(heistInstance)) {
             if (heistInstance) {
-                try heistInstance.Destroy()
                 ToolTip "Resetting script", scrW, 0, 20
+                try heistInstance.Destroy()
                 sleep 500
                 CreateHeistInstance()
             }
@@ -293,6 +298,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                 ToolTip "Reset hotkey triggered!"
                 SetTimer () => ToolTip(), -700
             }
+        }
+
+        SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
 
     }
 }
@@ -321,12 +329,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode
         hackMode := "idle"
 
-        clearAllToolTips(scriptsEnabled)
+        SwitchCasinoInstance() ; Restart the heist instance to reset state
+        clearAllToolTips(0)
         UpdateGlobalStatus(false)
         if (scriptsEnabled) {
             SetTimer () => (
                 SetTimer(findAnchorsAndCreateInstance, 500)
-            ), debug ? -5000 : -10000
+            ), -5000
         }
 
     }
@@ -343,7 +352,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * 
      * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
      */
-    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
+    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, caller := "", *) {
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
         global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
@@ -363,6 +372,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
         earlyReturn := false
 
+        if (caller && debug)
+            ShowCenteredToolTip "Called by: " caller, 10, 25
+
         if (!scriptsEnabled) {
             status := "Scripts disabled`n" noSaveText
             earlyReturn := true
@@ -381,12 +393,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         }
 
         if (hackMode == "idle") {
+            hackStatus := "Auto detection active`n"
             if (heist == DIAMOND_CASINO) {
-                hackStatus := fingerprintMode ? "Fingerprint mode (idle)" : "Keypad mode (idle)"
+                hackStatus .= fingerprintMode ? "Fingerprint mode (idle)" : "Keypad mode (idle)"
             } else if (heist == CAYO_PERICO) {
-                hackStatus := "El Rubio mode (idle)"
+                hackStatus .= "El Rubio mode (idle)"
             } else {
-                hackStatus := "Unknown mode (idle)"
+                hackStatus .= "Unknown mode (idle)"
             }
         } else {
             if (isHacking) {
@@ -454,6 +467,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             SetTimer(findAnchorsAndCreateInstance, 0)
         }
         SetHeistToggleBtnVisibility(scriptsEnabled)
+        SetEngineToggleBtnVisibility(scriptsEnabled)
         SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
         TryRegisterHotkeys()
         picScriptsEnabled.Value := scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
@@ -465,7 +479,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ToggleNoSaveStatus(*) {
         global noSave, picNoSave, iniFile, scriptsEnabled
-        if (!isFirewallEnabled()) {
+        if (!isFirewallEnabled(true)) {
             MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
                 . "Please check your firewall settings and try again.",
                 "Firewall Access Error", 48
@@ -511,6 +525,41 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         UpdateGlobalStatus(false)
         SwitchCasinoInstance() ; Switch instance on mode toggle
         IniWrite(fingerprintMode, iniFile, "Options", "FingerprintMode")
+    }
+
+    /**
+     * Toggles between AHK and OpenCV engine modes, 
+     * updates the toggle button and labels, and sets the engine mode in the current heist instance if it exists.
+     */
+    ToggleEngineMode(params := "", info := "", to := "") {
+        global engine, picEngineToggle, iniFile, txtAHKLabel, txtOpenCVLabel, txtEngineLabel, hackInProgress,
+            heistInstance
+        if (to == AHK_ENGINE) {
+            engine := AHK_ENGINE
+        } else if (to == OpenCV_ENGINE) {
+            engine := OpenCV_ENGINE
+        } else
+            engine := !engine
+
+        picEngineToggle.Value := engine == AHK_ENGINE ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
+        txtAHKLabel.Opt("c" (engine == AHK_ENGINE ? "c648f64" : "White"))
+        txtOpenCVLabel.Opt("c" (engine != AHK_ENGINE ? "c648f64" : "White"))
+
+        if (heistinstance && heistInstance != "") {
+            heistInstance.setEngine(engine)
+        }
+        clearAllToolTips(1)
+
+        UpdateEngineInstrText()
+
+        IniWrite(engine, iniFile, "Options", "Engine")
+        UpdateGlobalStatus(hackInProgress)
+    }
+
+    ; Callback for using the OpenCV engine, used by solvers to switch
+    ; to OpenCV mode when AHK detection fails several times
+    UseOpenCVEngineCallback() {
+        ToggleEngineMode("", "", OpenCV_ENGINE)
     }
 
     SetModeToggleBtnVisibility(enabled) {
@@ -571,18 +620,22 @@ Init() {
     ; ========= GUI objects =========
     global Title := "vaultOps"
     global guiApp, picNoSave, xBtn, settingsGroup
-    global picFingerprintToggle, picScriptsEnabled, picHeistToggle
+    global picFingerprintToggle, picScriptsEnabled, picHeistToggle, picEngineToggle
     global inputManual := "", inputAuto := "", inputReset := ""
     global inputDelay := "", inputNoSave := "", inputToggleScripts := "", inputPgUp := ""
 
     ; Text labels
     global txtHeistLabel, txtCasinoLabel, txtCayoLabel, txtPgUpLabel,
-        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo
+        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo,
+        txtEngineLabel, txtAHKLabel, txtOpenCVLabel
 
     ; Instruction text variables (global scope)
     global instrNoSave := "Lets you do the replay glitch in heists / missions.",
         instrScripts := "Enable scripts and show the toggle-mode button.",
         instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
+        instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
+        instrOpenCVEngine := "OpenCV detection. Works on all resolutions, with AHK fallback.",
+        instrOpenCVOnly := "OpenCV only (fallback to AHK unsupported).",
         instrManual := "Let the script find the prints without selecting them automatically.",
         instrAuto := "Automatically hack the fingerprints / keypad.",
         instrReset := "Resets the current script's progress. Use in case of errors.",
@@ -590,28 +643,33 @@ Init() {
     ; Instruction text control variables (global scope)
     global txtNoSaveInstr := "", txtScriptsInstr := "", txtModeInstr := "",
         txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
-        txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := ""
+        txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
+        txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
 
     ; ======== Boolean flags and state variables ========
-    global noSave, scriptsEnabled, fingerprintMode, hackMode, heist, delay, iniFile
+    global noSave, scriptsEnabled, fingerprintMode, engine, hackMode, heist, delay, iniFile, debug
     global anchorFound := false, pgUpSent := false, hackInProgress := false, pgUpDisabled := false, isBeta,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
 
     ; ======= GUI Styling and dimension variables =======
-    global width := 950, height := (A_ScreenHeight // 2), borderRadius := 20
+    global width := 950, height := Max(540, (A_ScreenHeight // 2)), borderRadius := 20
     global scrW := A_ScreenWidth, scrH := A_ScreenHeight
     global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
 
     ; ======= Resource folder path (for images, etc.) ========
-    global folder, unsupportedResolution
+    global folder, unsupportedResolution, higherRes
     global staticFolder := A_ScriptDir "\lib\static\"
+
+    ; ==== TEMP DEBUG BUILD ====
+    ; higherRes := true
+    ; debug := true
 
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
     guiApp.BackColor := "222222"
-    overallFontSize := Floor((11 * (scrW / 1920) ** 0.5) / GetScreenScaling())
+    overallFontSize := Floor((11) / GetScreenScaling())
     guiApp.SetFont("s" overallFontSize / GetScreenScaling() " cWhite")
 
     ; ======= Top bar =======
@@ -636,7 +694,7 @@ Init() {
     groupW := (width - leftPadding) / scale
 
     ; ======= Labels / fields styling =======
-    numSettings := 7 ; Updated for Heist row
+    numSettings := 8 ; Includes Engine and mode rows
     labelW := 140 / scale
     fieldW := 90 / scale
     instrW := groupW - labelW - fieldW - 120 / scale
@@ -707,7 +765,45 @@ Init() {
     }
 
     ; ⏐===================================================================================⏐
-    ; ⏐=============================== ROW 3: Heist Toggle ===============================⏐
+    ; ⏐===================== ROW 3: Engine Selection (AHK / OpenCV) ======================⏐
+    ; ⏐===================================================================================⏐
+    {
+        engineX := xField - 85 / scale
+
+        txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
+
+        if (higherRes) {
+            engine := OpenCV_ENGINE
+            txtOpenCVLabel := guiApp.AddText(
+                "x" (engineX + 70 / scale) " y" y " c648f64",
+                "OpenCV"
+            )
+        } else {
+            txtAHKLabel := guiApp.AddText(
+                "x" (engineX + 35 / scale) " y" y " c" (engine == AHK_ENGINE ? "c648f64" : "White"),
+                "AHK"
+            )
+
+            picEngineToggle := guiApp.AddPicture(
+                "x" (engineX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
+                engine == AHK_ENGINE ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
+            )
+
+            txtOpenCVLabel := guiApp.AddText(
+                "x" (engineX + 125 / scale) " y" y " c" (engine != AHK_ENGINE ? "c648f64" : "White"),
+                "OpenCV"
+            )
+            picEngineToggle.OnEvent("Click", ToggleEngineMode)
+
+        }
+        txtEngineInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+
+        UpdateEngineInstrText()
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐=============================== ROW 4: Heist Toggle ===============================⏐
     ; ⏐===================================================================================⏐
     {
         ; Heist label 1
@@ -730,14 +826,15 @@ Init() {
         y += rowH
 
         ; --- Info Text: Enable scripts to toggle heist and mode ---
-        txtEnableScriptsInfo := guiApp.AddText("x" xLabel " y" (y - rowH / 2) " w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
-        "Enable scripts to toggle heist and mode")
+        txtEnableScriptsInfo := guiApp.AddText("x" xLabel " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        "Enable scripts to toggle heist, engine, and mode")
+        txtEnableScriptsInfo.SetFont("s12")
         txtEnableScriptsInfo.Opt("BackgroundTrans")
         txtEnableScriptsInfo.Visible := false
     }
 
     ; ⏐========================================================================================================⏐
-    ; ⏐======================== ROW 4: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
+    ; ⏐======================== ROW 5: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
     ; ⏐========================================================================================================⏐
     {
         modeX := xLabel, modeY := y, modeW := labelW, fingerprintX := (xField - 85 / scale)
@@ -775,7 +872,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐===========================ROW 5: Manual Keybind =========================⏐
+    ; ⏐===========================ROW 6: Manual Keybind =========================⏐
     ; ⏐==========================================================================⏐
     {
         ; Manual keybind label
@@ -793,7 +890,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐========================= ROW 6: AutoHack Keybind ========================⏐
+    ; ⏐========================= ROW 7: AutoHack Keybind ========================⏐
     ; ⏐==========================================================================⏐
     {
         ; AutoHack keybind label
@@ -811,7 +908,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐========================== ROW 7: Reset Keybind ==========================⏐
+    ; ⏐========================== ROW 8: Reset Keybind ==========================⏐
     ; ⏐==========================================================================⏐
     {
         ; Reset keybind label
@@ -829,7 +926,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐=============================== ROW 8: Delay =============================⏐
+    ; ⏐=============================== ROW 9: Delay =============================⏐
     ; ⏐==========================================================================⏐
     {
         ; Delay label
@@ -856,7 +953,7 @@ Init() {
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
-        linkText := guiApp.Add("Link", "xp y" (height / scale - (height / scale - (groupY + groupH)) /
+        linkText := guiApp.Add("Link", "xp-25 y" (height / scale - (height / scale - (groupY + groupH)) /
         (1.5 / scale) " w" groupW " c8484db center"),
         'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
         linkText.SetFont("s" 10 / scale " bold")
@@ -877,11 +974,14 @@ Init() {
     OnMessage(0x0006, GuiApp_OnActivate) ; 0x0006 = WM_ACTIVATE
     SetRoundedCorners(guiApp.Hwnd, width, height, borderRadius)
     SetHeistToggleBtnVisibility(scriptsEnabled)
+    SetEngineToggleBtnVisibility(scriptsEnabled)
     SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
 
     LoadCache()
 
-    if (noSave && !isFirewallEnabled())
+    fwEnabledLocal := isFirewallEnabled()
+
+    if (noSave && !fwEnabledLocal)
         ToggleNoSaveStatus()
 
     TryRegisterHotkeys()
@@ -889,24 +989,36 @@ Init() {
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
 
-    isFirewallEnabled()
+    gtaHwnd := getGtaHwnd()
 
     ForceForeground(guiApp)
+
+    guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
+
+    if (gtaHwnd) {
+        try {
+            sleep 100
+            WinActivate "ahk_id " gtaHwnd
+            WinWaitActive "ahk_id " gtaHwnd, , 2
+        } catch {
+            return
+        }
+    }
 
     if (!scriptsEnabled)
         UpdateGlobalStatus(false)
-    else {
-        ; findAnchorsAndCreateInstance()
-        SetTimer(findAnchorsAndCreateInstance, 500)
-        CreateHeistInstance()
-    }
+
 }
 
+initPython()
 Init()
 
 OnExit(SaveCacheOnExit)
 
 SaveCacheOnExit(*) {
+    global isShuttingDown := true
+    ShowCenteredToolTip "Terminating vaultOps"
     try SaveCache()
+    try StopPython()
 }

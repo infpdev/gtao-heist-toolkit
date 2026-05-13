@@ -3,22 +3,30 @@
 global fingerprintMode := 0
 
 init() {
+    global heistinstance
     try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
     try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
 
     standalone_switch_to_auto(*) {
         global hackMode := "auto"
         UpdateGlobalStatus(hackInProgress)
-        keypad.switchToAuto()
+        heistinstance.switchToAuto()
     }
 
     standalone_switch_to_manual(*) {
         global hackMode := "manual"
         UpdateGlobalStatus(hackInProgress)
-        keypad.switchToManual()
+        heistinstance.switchToManual()
     }
 
-    keypad := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor, folder)
+    CreateHeistInstance()
+}
+
+CreateHeistInstance() {
+    keypad := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, folder, higherRes,
+        OPENCV_ENGINE)
+
+    global heistinstance := keypad
 }
 
 init()
@@ -32,21 +40,31 @@ init()
  * 
  * ### FLOW:
  * ```text
- * switchToAuto()/switchToManual() → findAnchor() → start MainLoop(timer) 
+ * switchToAuto()/switchToManual() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
- *   validateAnchor()         ; ensure UI valid (loss → Idle/reset)
+ *   validateAnchor()                              ; ensure UI valid (loss → Idle/reset)
  *   
- *   if not stabilized:
- *     GridDetect()           ; detect all columns/rows (multi-pass)
- *     StabilizationCheck()   ; wait until grid stable (2s)
+ *   if useOpenCv/highRes:
+ *     tryOpenCV()                                 ; OpenCV anchor → REQ_KEYPAD → parseOpenCVGrid()
+ *     if not stabilized:
+ *       OpenCVStabilizationCheck()
+ *     else:
+ *       (AUTO)   ringDetected_AutoSelectOpenCV()
+ *       (MANUAL) isCurrentColSelectedOpenCV()
  * 
  *   else:
- *     (AUTO)   ringDetected_AutoSelect() → detect ring → SelectCurrentCol()
- *     (MANUAL) isCurrentColSelected()    ; wait for user selection
+ *     GridDetect()                                ; detect all columns/rows (multi-pass)
+ *     StabilizationCheck()                        ; wait until grid stable (2s)
  * 
- *       SelectCurrentCol()  → move (Up/Down) + Enter
- *       → isColSelected() → confirm via ScanColumnImage()
+ *     (AUTO)   ringDetected_AutoSelect()
+ *         → detect ring → SelectCurrentCol()
+ *     (MANUAL) isCurrentColSelected()             ; wait for user selection
+ * 
+ *       SelectCurrentCol() 
+ *         → move (Up/Down) + Enter
+ *       → isColSelected() → confirm via
+ *         ScanColumnImage()
  * 
  *    if all columns done → ResetState()
  * 
@@ -54,7 +72,7 @@ init()
  * ```
  * 
  * ### Pipeline:
- * Anchor → GridDetect → Stabilize → Detect Ring → Select → Repeat
+ * OpenCV / Anchor → OpenCV GridDetect/Stabilize/Ring/Select OR AHK GridDetect → Stabilize → Detect Ring → Select → Repeat
  */
 class KeypadSolver {
     needStatusUpdate := true
@@ -76,6 +94,10 @@ class KeypadSolver {
     prevFoundPixel := 0
     prevRingRow := 0
     delay := 0
+    cvGridStableSince := 0
+    cvGridSignature := ""
+    cvNoCircleSince := 0
+    kpFails := 0
 
     timeOut := 10000
     primaryAnchorTolerance := 10
@@ -92,6 +114,7 @@ class KeypadSolver {
     foundAnchor := false
     isBusy := false
     isShuttingDown := false
+    autoStarted := false
 
     baseX_ratio := 0.26
     baseY_ratio := 0.33
@@ -100,12 +123,15 @@ class KeypadSolver {
     base_x2_imgSearch := 0.29
     base_y2_imgSearch := 0.769
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel, folderPath := "") {
+    __New(delay, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
+        AHK_ENGINE) {
         global
 
         this.delay := delay
         this.folder := folderPath != "" ? folderPath : folder
         this.prevFoundPixel := prevFoundPixel
+        this.highRes := highRes
+        this.useOpenCv := engine == OPENCV_ENGINE
 
         SetKeyDelay(delay, delay)
         this.searchRadiusX := Round(this.scrW * 0.015) ; ~30px at 1920 width
@@ -135,6 +161,16 @@ class KeypadSolver {
     }
 
     /**
+     * Sets the engine to use for detection.
+     * 1 for OpenCV, 0 for AHK.
+     * @param engine 
+     */
+    setEngine(engine) {
+        this.kpFails := 0
+        this.useOpenCv := engine == OPENCV_ENGINE
+    }
+
+    /**
      * Sets the solver to idle mode, clears tooltips and resets the state.
      */
     Idle() {
@@ -143,12 +179,14 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.prevRingRow := 1
 
-        loop 18
-            ToolTip("", , , A_Index)
-        updateGlobalStatus(false) ; ToolTip replacement
+        this.clearAll()
+        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; ToolTip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
+        this.cvGridSignature := ""
+        this.cvGridStableSince := 0
+        this.cvNoCircleSince := 0
         this.cols := Map()
     }
 
@@ -161,6 +199,9 @@ class KeypadSolver {
         this.handoffPending := false
         this.foundAnchor := false
         this.anchorLastSeen := 0
+        this.cvGridSignature := ""
+        this.cvGridStableSince := 0
+        this.cvNoCircleSince := 0
         this.isShuttingDown := true
 
         ;  stop timer (critical)
@@ -172,12 +213,27 @@ class KeypadSolver {
     }
 
     /**
+     * Starts manual mode with the given anchor pixel coordinates, bypassing the initial anchor search.
+     * Used by the main script to immediately start manual mode
+     * when the main script auto-detects one of the anchor pixels.
+     * @param {object} anchorPixelCoords - Anchor pixel coordinates
+     */
+    autoStartManual(anchorPixelCoords) {
+        this.autoStarted := true
+        this.prevFoundPixel := anchorPixelCoords
+        this.switchToManual(true)
+
+        SetTimer this.fnCheckFalsePositive, 0
+        SetTimer this.fnCheckFalsePositive, -5000
+    }
+
+    /**
      * Checks for false positives and resets if anchor is lost during auto-start.
      */
     CheckFalsePositive() {
-        if (this.isShuttingDown || this.mode != "manual")
+        if (this.isShuttingDown || this.mode != "manual" || !this.autoStarted)
             return
-
+        MsgBox this.autoStarted
         if (!this.foundAnchor) {
             ResetHackMode()
             this.Idle()
@@ -185,31 +241,20 @@ class KeypadSolver {
     }
 
     /**
-     * Starts manual mode with the given anchor pixel coordinates, bypassing the initial anchor search.
-     * Used by the main script to immediately start manual mode
-     * when the main script auto-detects one of the anchor pixels.
-     * @param {object} anchorPixelCoords - Anchor pixel coordinates
-     */
-    autoStartManual(anchorPixelCoords) {
-        this.prevFoundPixel := anchorPixelCoords
-        this.switchToManual()
-
-        SetTimer this.fnCheckFalsePositive, 0
-        SetTimer this.fnCheckFalsePositive, -5000
-    }
-
-    /**
      * Switches solver to auto mode, finds anchor, and starts main loop timer. 
      * Used by the auto mode hotkey.
      */
     switchToAuto(*) {
+        if (this.autoStarted)
+            this.autoStarted := false
+
         if (this.mode == "auto")
             return
 
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToAuto()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -222,20 +267,89 @@ class KeypadSolver {
      * Switches solver to manual mode, finds anchor, and starts main loop timer.
      * Used by the manual mode hotkey.
      */
-    switchToManual(*) {
+    switchToManual(autoStart := false, *) {
+        if (this.autoStarted && !autoStart)
+            this.autoStarted := false
+
         if (this.mode == "manual")
             return
+
+        this.ShowRingMap() ; Show row mapping during handoff
 
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToManual()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
         this.handoffPending := true
         SetTimer this.fnMainLoop, 200
 
+    }
+
+    /**
+     * Attempts to detect keypad using OpenCV methods (detect_keypad, detect_ring, is_column_selected).
+     * Returns true if OpenCV detection succeeded and handled the detection logic, false otherwise.
+     * @returns {boolean}
+     */
+    tryOpenCV() {
+        if (!this.useOpenCv)
+            return false
+
+        try {
+            ; Verify anchor is still present using OpenCV
+            this.foundAnchor := GetResFromOpenCV(ANCHOR_KEYPAD)
+            ; ShowCenteredToolTip this.foundAnchor, 15
+            if (!this.foundAnchor || this.foundAnchor == "ERR") {
+                this.foundAnchor := false
+                this.needStatusUpdate := true
+                this.prevFoundPixel := 0
+                return false
+            }
+            this.anchorLastSeen := A_TickCount
+            if (debug)
+                ToolTip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
+
+            ; Detect all columns and rows using OpenCV
+            gridResult := GetResFromOpenCV(REQ_KEYPAD)
+            if (gridResult = ERRMSG) {
+                if (debug)
+                    MsgBox "grid threw"
+                this.foundAnchor := false
+                this.needStatusUpdate := true
+                return false
+            }
+
+            if (this.autoStarted)
+                this.autoStarted := false
+
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.tryOpenCV()")
+                this.needStatusUpdate := false
+            }
+
+            ; Parse grid detection result while circles are still visible.
+            if (!this.stabilized && gridResult != "-1")
+                this.parseOpenCVGrid(gridResult)
+
+            ; Check OpenCV-specific stabilization: only mark stable after 2s of continuous -1.
+            if (!this.stabilized) {
+                this.OpenCVStabilizationCheck(gridResult)
+                return true
+            }
+
+            ; If stabilized, detect ring and handle selection
+            if (this.mode == "manual") {
+                this.isCurrentColSelectedOpenCV()
+            } else if (this.mode == "auto") {
+                this.ringDetected_AutoSelectOpenCV()
+            }
+
+            return true
+        } catch {
+            return false
+        }
     }
 
     /**
@@ -246,6 +360,9 @@ class KeypadSolver {
      */
     MainLoop() {
 
+        if (!isGtaFocused(true))
+            ResetHackMode()
+
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
             return
@@ -253,22 +370,55 @@ class KeypadSolver {
 
         this.isBusy := true
         try {
-            this.validateAnchor()
 
             this.checkTimeout()
 
-            if (this.mode == "idle" || !this.foundAnchor)
+            ; Try OpenCV detection if enabled, fallback to AHK only if highRes is false
+            cvWorked := this.tryOpenCV()
+
+            if (cvWorked) {
+                this.isBusy := false
                 return
+            }
+
+            if (this.highRes) {
+                ; OpenCV failed, but fallback is not allowed
+                this.isBusy := false
+                return
+            }
+
+            if (debug)
+                ShowCenteredToolTip "Using AHK detection", 15
+
+            this.validateAnchor()
+
+            if (this.mode == "idle" || !this.foundAnchor) {
+                this.isBusy := false
+                return
+            }
 
             if (this.mode == "manual") {
                 if (this.handoffPending) {
-                    this.ShowRingMap("", true) ; Switch mapping tooltip to show manual selection guidance during handoff
+                    this.ShowRingMap() ; Show row mapping during handoff
                     this.handoffPending := false
                 }
 
                 if (!this.stabilized) {
                     this.GridDetect()
                     this.StabilizationCheck()
+                    if (!this.cols.Count == 6) {
+                        this.kpFails++
+                        if (this.kpFails >= 3) {
+                            if (!isGtaFocused()) {
+                                ResetHackMode()
+                                return
+                            }
+                            this.kpFails := 0
+                            UseOpenCVEngineCallback()
+                        }
+                    } else {
+                        this.kpFails := 0
+                    }
                 } else {
                     this.isCurrentColSelected()
                 }
@@ -298,8 +448,8 @@ class KeypadSolver {
             return false
 
         if this.findAnchor() {
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.validateAnchor()")
 
                 this.needStatusUpdate := false
             }
@@ -323,8 +473,9 @@ class KeypadSolver {
             return
 
         if (this.anchorLastSeen != 0) {
+            this.clearAll()
             timeLeft := Integer((this.timeOut - (A_TickCount - this.anchorLastSeen)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft) ; Inform the main script about the anchor loss and remaining time before reset
+            updateGlobalStatus(false, true, timeLeft, "CasinoKeypad.checkTimeout()")
             this.needStatusUpdate := true
             if (this.anchorLastSeen != 0 && (A_TickCount - this.anchorLastSeen > this.timeOut)) {
                 ResetHackMode()
@@ -379,18 +530,21 @@ class KeypadSolver {
     findAnchor() {
         global cachedKeypadAnchor
 
-        ToolTip "", , , 18
+        static x1 := A_ScreenWidth * 0.5
+        static y1 := A_ScreenHeight * 0.1
+        static x2 := A_ScreenWidth * 0.73
+        static y2 := A_ScreenHeight * 0.17
         static lastCalled := 0
+
+        if (this.highRes)
+            return false
+
+        ToolTip "", , , 18
         if (A_TickCount - lastCalled < 1000 && this.foundAnchor) {
             return this.prevFoundPixel
         }
 
         lastCalled := A_TickCount
-
-        static x1 := A_ScreenWidth * 0.5
-        static y1 := A_ScreenHeight * 0.1
-        static x2 := A_ScreenWidth * 0.73
-        static y2 := A_ScreenHeight * 0.17
 
         localSearchSize := 20
         kpFound := false
@@ -436,7 +590,7 @@ class KeypadSolver {
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (kp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -476,7 +630,7 @@ class KeypadSolver {
             prevRow := this.cols.Has(col) && this.cols[col].HasOwnProp("row") ? this.cols[col].row : ""
             singlePassWhenStable := (this.colDetectCount[col] >= 3) ? 1 : 0
             if (debug)
-                ToolTip "passes for col " col ": " this.colDetectCount[col], this.scrW / 2, 10, 19
+                ShowCenteredToolTip "passes for col " col ": " this.colDetectCount[col], 19
 
             attempt := 1
             while (!found && (this.colDetectCount[col] < 4 || singlePassWhenStable > 0)) {
@@ -538,6 +692,9 @@ class KeypadSolver {
         }
 
         if allDetected {
+            if (this.autoStarted)
+                this.autoStarted := false
+
             this.gridFilledOnce := true
             if newDetection {
                 this.lastDetectionTime := A_TickCount
@@ -652,10 +809,7 @@ class KeypadSolver {
             this.prevRingRow := ringRow
             ; Update state and select col as in RingDetect
             if (force || ringRow != "" || ringCol != "") {
-                if (this.mode == "auto")
-                    this.ShowRingMap(ringRow)
-                else
-                    this.ShowRingMap("", true)
+                this.ShowRingMap()
 
                 if (debug)
                     ToolTip "Ring: Row " ringRow ", Col " ringCol, px, py, 18
@@ -719,19 +873,153 @@ class KeypadSolver {
         Sleep this.delay
         SendEvent("{Enter}")
         start := A_TickCount
-        found := false
         while (A_TickCount - start < 2000) {
             if !this.cols.Has(col)
                 return
-            if this.isColSelected(col) {
-                found := true
-                return
+
+            if (this.highRes || this.useOpenCv) {
+                this.isCurrentColSelectedOpenCV(col)
+            } else {
+                this.isColSelected(col)
             }
             Sleep 10
         }
-        if found
+
+    }
+
+    ; ===== OPENCV-SPECIFIC LOGIC =====
+
+    /**
+     * Parses OpenCV grid detection result and populates the cols map.
+     * Expected format: comma-separated rows per column
+     * @param {string} gridResult - Result from detect_keypad()
+     */
+    parseOpenCVGrid(gridResult) {
+        rows := StrSplit(Trim(gridResult), ",")
+        col := 1
+
+        for _, row in rows {
+            row := Trim(row)
+            if (row = "")
+                continue
+
+            try {
+                row := Integer(row)
+            } catch {
+                ; MsgBox "parse threw"
+                continue
+            }
+
+            detected := { x: 0, y: 0, row: row, type: "key" }
+            this.cols[col] := detected
+
+            if (!this.colDetectCount.Has(col))
+                this.colDetectCount[col] := 0
+            this.colDetectCount[col]++
+            col++
+        }
+
+        this.showKeys()
+
+        if (col > 1)
+            this.lastDetectionTime := A_TickCount
+    }
+
+    /**
+     * Checks whether OpenCV has returned -1 continuously long enough to be considered stable.
+     * This keeps polling active while circles are still visible and only flips to stable once they stop flashing.
+     * @param {string} gridResult - Result from detect_keypad()
+     * @returns {boolean}
+     */
+    OpenCVStabilizationCheck(gridResult) {
+        if (gridResult != "-1") {
+            this.cvNoCircleSince := 0
+            return false
+        }
+
+        if (this.cvNoCircleSince = 0) {
+            this.cvNoCircleSince := A_TickCount
+            return false
+        }
+
+        if (A_TickCount - this.cvNoCircleSince <= 2000)
+            return false
+
+        if (!this.stabilized) {
+            this.showMapIfStabilized()
+            this.stabilized := true
+            this.handoffPending := true
+            this.showKeys()
+        }
+
+        return true
+    }
+
+    /**
+     * Detects ring position using OpenCV and handles auto-selection.
+     * @returns {boolean} True if ring was detected
+     */
+    ringDetected_AutoSelectOpenCV() {
+        ringResult := GetResFromOpenCV(REQ_DETECT_RING)
+
+        if (ringResult = ERRMSG || ringResult = "-1") {
+            return false
+        }
+
+        try {
+            ringRow := Integer(ringResult)
+            if (ringRow < 1 || ringRow > this.rowsCount)
+                return false
+
+            this.prevRingRow := ringRow
+            this.ShowRingMap()
+
+            ; Auto-select: find first column and select it
+            for col in this.cols {
+                this.SelectCurrentCol(col, ringRow)
+                return true
+            }
+            return false
+        } catch {
+            return false
+        }
+    }
+
+    /**
+     * Checks if columns are selected using OpenCV for manual mode.
+     */
+    isCurrentColSelectedOpenCV(colToFind := 0) {
+
+        if (colToFind)
+            targetCol := colToFind
+        else {
+            targetCol := 0
+
+            for col in this.cols {
+                c := this.cols[col]
+                if !(c.HasOwnProp("row"))
+                    continue
+                targetCol := col
+                break
+            }
+        }
+
+        if (!targetCol)
             return
 
+        colResult := GetResFromOpenCV(REQ_IS_COLUMN_SELECTED, Map("col", targetCol))
+        if (debug)
+            ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
+        if (colResult = "1" || colResult = 1) {
+            try this.cols.Delete(targetCol)
+            if (this.mode == "auto") {
+                this.ShowRingMap()
+                this.showkeys()
+            }
+            if (this.cols.Count = 0 || targetCol == 6) {
+                this.ResetState()
+            }
+        }
     }
 
     ; ===== HELPERS =====
@@ -746,7 +1034,7 @@ class KeypadSolver {
 
         for col in this.cols {
             if (this.isColSelected(col))
-                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
+                this.ShowRingMap() ; Update row mapping after a column is selected
             break
         }
     }
@@ -787,16 +1075,25 @@ class KeypadSolver {
      * (DebugDisplay)
      */
     showKeys() {
-        shown := false
+        ; clear removed cols
+        loop this.colsCount {
+            col := A_Index
+
+            if !this.cols.Has(col)
+                ToolTip("", , , col)
+        }
+
+        ; draw active cols
         for col, c in this.cols {
-            ; x := this.baseX + this.spacing * (col - 1)
-            ; y := this.baseY + this.spacing * (c.row - 1)
-            ; x := c.x
             x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
             y := this.baseYImg + (c.row - 1) * (this.spacing)
-            ToolTip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)), col
-            ; debug middot / arrow / selection indicator
-            shown := true
+
+            ToolTip(
+                "⛛",
+                x - (10 * ((1920 / this.scrW) ** 0.5)),
+                y - (18 * ((1080 / this.scrH) ** 0.8)),
+                col
+            )
         }
     }
 
@@ -805,39 +1102,22 @@ class KeypadSolver {
         if (!this.cols.Has(6))
             return
 
-        if (this.mode == "auto")
-            this.ShowRingMap(this.prevRingRow)
-        else
-            this.ShowRingMap("", true)
+        this.ShowRingMap()
     }
 
     /**
-     * Shows the ring map tooltip based on the detected ring position for auto-mode and static row-col 
-     * map for manual mode.
-     * @param {number|string} [ringRow] - Map for auto-mode if present, omit for manual mode.
-     * @param {boolean} [forManual=false] - Show map for manual mode.
+     * Shows a unified row map tooltip for all active columns.
      */
-    ShowRingMap(ringRow := "", forManual := false) {
+    ShowRingMap() {
         if (!this.cols.Has(6))
             return
         out := ""
-        if (!forManual && ringRow = "") {
-            out := "No ring detected."
-            ToolTip out, this.scrW * 0.105, this.scrH / 2, 17
-            return
-        }
 
         for col in this.cols {
             c := this.cols[col]
             if !c.HasOwnProp("row")
                 continue
-            if (forManual) {
-                out .= "Col " col ": Row " c.row "`n"
-                continue
-            }
-            diff := c.row - ringRow
-            dir := diff >= 0 ? "Down" : "Up"
-            out .= "Col " col ": " dir " " Abs(diff) "`n"
+            out .= "Col " col ": Row " c.row "`n"
         }
         if (out = "")
             out := "No mapping found."
@@ -860,8 +1140,15 @@ class KeypadSolver {
         this.cols := Map()
         this.colDetectCount := Map()
         this.needStatusUpdate := true
+        this.cvNoCircleSince := 0
+        this.cvGridStableSince := 0
         ; ToolTip "Resetting state", this.scrW / 2, 10, 19
         Sleep 2500
         SetTimer this.fnMainLoop, 100
+    }
+
+    clearAll() {
+        loop 18
+            ToolTip("", , , A_Index)
     }
 }

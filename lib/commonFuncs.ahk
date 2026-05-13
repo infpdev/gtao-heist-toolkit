@@ -22,7 +22,7 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
     DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
 
     ; Center horizontally, position Y at parameter or top
-    centerX := (A_ScreenWidth // 2) - (width // 2)
+    centerX := (A_ScreenWidth // 2) - 0.9 * (width // 2)  ; Adjust for slight visual centering
     centerY := y > 0 ? y : 0
 
     ToolTip(text, centerX, centerY, id)

@@ -11,22 +11,21 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "3.5.3"
+ver := "4.0.0"
+global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
 PARTIAL_BUT_MANDATORY := 2
 PARTIAL_UPDATE_REQUIRED := 1
 NO_UPDATE_REQUIRED := 0
 global trimmedVer := ""
-global isBeta := false
 global isStandaloneScript := isStandalone()
 isNoSaveStandalone := isStandaloneScript && InStr(A_ScriptName, "NoSave")
 if !IsSet(vaultOps)
     global vaultOps := false
 
 CheckForUpdate()
-if (!isNoSaveStandalone)
-    checkResolution()
+checkResolution()
 
 CheckForUpdate() {
     global ver
@@ -34,8 +33,8 @@ CheckForUpdate() {
 
     ShowCenteredToolTip("checking for updates", 17)
 
-    Url :=
-        "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/refs/heads/main/lib/version.txt?nocache=1"
+    raw := "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/main/lib/version.txt"
+    Url := raw "?nocache=1"
     Http := ComObject("WinHttp.WinHttpRequest.5.1")
     try {
         Http.Open("GET", Url, false)

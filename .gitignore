@@ -1,10 +1,16 @@
 **/dist/
-zSettings.ini
-zAnchorCache.ini
-VaultOps.exe
+*.exe
 vaultOpsUpdater.exe
 temp_*.ahk
 build_options.ini
 **/AHK_BASE/
 **/AHK2EXE/
 **/Inno Setup 6/
+__pycache__/
+*.pyc
+run_*.py
+dump/
+*.xml
+nuitka_build
+z*.*
+_old.*

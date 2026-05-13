@@ -7,25 +7,31 @@
  * 
  * ### FLOW:
  * ```text
- * AutoHack()/ManualMode() → findAnchor() → start MainLoop(timer)
+ * AutoHack()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
- *   InitDetected()        ; reset detection state
- *   findAnchor()          ; validate UI (loss → timeout/Idle)
- *   DetectAnchorGroup()   ; detect active group (fail → return)
+ *   InitDetected()            ; reset detection state
+ *   if useOpenCv/highRes:
+ *     tryOpenCV()             ; OpenCV anchor → REQ_FINGERPRINT → openCVSelect()
+ *     → if OpenCV fails
+ *  and fallback is allowed, 
+ *  continue with AHK flow
+ *   findAnchor()              ; validate UI (loss → timeout/Idle)
+ *   DetectAnchorGroup()       ; detect active group (fail → return)
  * 
  *   (manual mode):
- *     Pmatch()            ; detect pieces (per anchorGroup)
- *     updateCounter()     ; count detected pieces
- *     → set handoffPending (>=4)
+ *     Pmatch()                ; detect pieces (per anchorGroup)
+ *     updateCounter()         ; count detected pieces
+ *     → set handoffPending
+ *      (>=4)
  * 
  *   (auto mode):
  *     if !handoffPending:
- *       Pmatch()          ; detect pieces
+ *       Pmatch()              ; detect pieces
  *       updateCounter()
  * 
  *     if counter >= 4:
- *       Select()          ; compute + send inputs
+ *       Select()              ; compute + send inputs
  *       clearAll()
  *       → fallback Send "{Tab}"
  * 
@@ -33,7 +39,7 @@
  * ```
  * 
  * ### Pipeline:
- * Anchor → Group → Match Pieces → Count → Select → Repeat
+ * OpenCV / Anchor → OpenCV Match/Select OR Group → Match Pieces → Count → Select → Repeat
  */
 class FingerprintSolver {
 
@@ -46,12 +52,15 @@ class FingerprintSolver {
     lastSeenPrint := 0
     lastFoundTick := 0
     prevFoundPixel := 0
+    lastSeenGroupTick := 0
+    ahkFailTimer := 0
+    prevPrints := ""
 
     XP1 := A_ScreenWidth * 0.23
     YP1 := A_ScreenHeight * 0.23
     XP2 := A_ScreenWidth * 0.41
     YP2 := A_ScreenHeight * 0.78
-    anchorTolerance := 50
+    anchorTolerance := 100
     primaryAnchorTolerance := 30
     baseW := 1920
     scale := 1
@@ -65,15 +74,19 @@ class FingerprintSolver {
     foundAnchor := false
     isBusy := false
     isShuttingDown := false
+    autoStarted := false
 
-    lowRes := (A_ScreenWidth == 1366 && A_ScreenHeight == 768) || (A_ScreenWidth == 1600 && A_ScreenHeight == 900)
+    lowRes := A_ScreenWidth < 1920
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel := 0, folderPath := "") {
+    __New(delay, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
+        AHK_ENGINE) {
         global folder
 
         this.delay := delay
         this.prevFoundPixel := prevFoundPixel
         this.folder := folderPath != "" ? folderPath : folder
+        this.highRes := highRes
+        this.useOpenCv := engine == OPENCV_ENGINE
 
         SetKeyDelay delay, delay
         this.fnMainLoop := ObjBindMethod(this, "MainLoop")
@@ -99,6 +112,17 @@ class FingerprintSolver {
     }
 
     /**
+     * Sets the engine to use for detection.
+     * 1 for OpenCV, 0 for AHK.
+     * @param engine 
+     */
+    setEngine(engine) {
+        this.ahkFailTimer := 0
+        this.lastSeenGroupTick := 0
+        this.useOpenCv := engine == OPENCV_ENGINE
+    }
+
+    /**
      * Sets the solver to idle mode, clears tooltips and resets the state.
      */
     Idle() {
@@ -110,10 +134,13 @@ class FingerprintSolver {
         this.anchorTolerance := 50
         this.mode := "idle"
         this.lastSeenPrint := 0
+        this.lastFoundTick := 0
+        this.lastSeenGroupTick := 0
+        this.ahkFailTimer := 0
         this.InitDetected()
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
-        updateGlobalStatus(false)
+        updateGlobalStatus(false, false, , "CasinoFingerprint.Idle()")
     }
 
     Destroy() {
@@ -126,6 +153,8 @@ class FingerprintSolver {
         this.counter := 0
         this.lastSeenPrint := 0
         this.lastFoundTick := 0
+        this.lastSeenGroupTick := 0
+        this.ahkFailTimer := 0
         this.pArr := Map()
         this.detected := []
         this.anchorGroup := []
@@ -148,8 +177,9 @@ class FingerprintSolver {
         if (this.isShuttingDown)
             return
 
+        this.autoStarted := true
         this.prevFoundPixel := anchorPixelCoords
-        this.ManualMode()
+        this.ManualMode(true)
 
         ; SetTimer this.fnCheckFalsePositive, 0
         SetTimer this.fnCheckFalsePositive, -5000
@@ -171,15 +201,20 @@ class FingerprintSolver {
     /**
      * Starts / switches to manual mode and starts the main loop timer.
      */
-    ManualMode() {
+    ManualMode(autoStarted := false) {
+        if (this.autoStarted && !autoStarted)
+            this.autoStarted := false
+
         if (this.isShuttingDown)
             return
+
+        this.lastFoundTick := 0
 
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
 
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoFingerprint.ManualMode()")
 
         this.findAnchor()
         this.MainLoop()
@@ -191,19 +226,80 @@ class FingerprintSolver {
      * Starts / switches to auto mode and starts the main loop timer.
      */
     AutoHack() {
+        if (this.autoStarted)
+            this.autoStarted := false
+
         if (this.isShuttingDown)
             return
+
+        this.lastFoundTick := 0
 
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
 
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoFingerprint.AutoHack()")
 
         this.findAnchor()
         this.MainLoop()
         SetTimer this.fnMainLoop, 200
 
+    }
+
+    tryOpenCV() {
+        if (!this.useOpenCv)
+            return false
+
+        try {
+            this.foundAnchor := Integer(GetResFromOpenCV(ANCHOR_FINGERPRINT))
+            ; ShowCenteredToolTip this.foundAnchor
+            if (!this.foundAnchor || this.foundAnchor == ERRMSG) {
+                this.foundAnchor := false
+                this.needStatusUpdate := true
+                this.prevFoundPixel := 0
+                return false
+            } else {
+                this.lastFoundTick := A_TickCount
+                if (debug)
+                    ToolTip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
+            }
+
+            positions := GetResFromOpenCV(REQ_FINGERPRINT)
+            if (positions != -1) {
+                if (this.autoStarted)
+                    this.autoStarted := false
+
+                if (this.needStatusUpdate && this.foundAnchor) {
+                    UpdateGlobalStatus(true, , , "CasinoFingerprint.tryOpenCV()")
+                    this.needStatusUpdate := false
+                }
+
+                if (positions == 100) {
+                    this.markPrints(this.prevPrints, "")
+                    if (debug)
+                        ShowCenteredToolTip "All prints already selected", 17
+                    return true
+                } else {
+                    if (debug)
+                        ShowCenteredToolTip "OpenCV detected pieces: " positions, 17
+                }
+
+                this.markPrints(this.prevPrints, positions)
+
+                if (this.mode == "auto")
+                    this.openCVSelect(positions)
+
+                return true
+            } else {
+                this.pArr := Map()
+                this.clearAll()
+            }
+
+            this.needStatusUpdate := true
+            return false
+        } catch {
+            return false
+        }
     }
 
     /**
@@ -213,6 +309,10 @@ class FingerprintSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
+
+        if (!isGtaFocused(true))
+            ResetHackMode()
+
         if (this.isShuttingDown || this.mode == "idle")
             return
 
@@ -223,6 +323,24 @@ class FingerprintSolver {
         this.isBusy := true
 
         this.checkTimeout()
+
+        ; Try OpenCV detection if enabled, fallback to AHK only if highRes is false, since AHK is not supported
+        ; on higher resolutions.
+        cvWorked := this.tryOpenCV()
+
+        if (cvWorked) {
+            this.isBusy := false
+            return
+        }
+
+        if (this.highRes) {
+            ; OpenCV failed, but fallback is not allowed
+            this.isBusy := false
+            return
+        } else {
+            if (debug)
+                ShowCenteredToolTip "Using AHK detection", 17
+        }
 
         try {
             if (!(this.mode == "auto" && this.handoffPending)) {
@@ -254,15 +372,51 @@ class FingerprintSolver {
             }
 
             localAnchor := this.DetectAnchorGroup()
-            if (!this.foundAnchor && localAnchor.Length == 0) {
-                this.isBusy := false
-                return
+            if (localAnchor.Length == 0 && !this.useOpenCv) {
+
+                if (this.lastSeenGroupTick) {
+                    fallbackTimer := Integer((A_TickCount - this.lastSeenGroupTick) / 1000)
+                    if (fallbackTimer >= 7) {
+                        if (!isGtaFocused(true)) {
+                            ResetHackMode()
+                            return
+                        }
+                        this.ahkFailTimer := 0
+                        UseOpenCVEngineCallback()
+                    }
+
+                    if (debug)
+                        ShowCenteredToolTip "Switching to OpenCV in " Integer(7 - fallbackTimer) " seconds", 19, 50
+
+                } else {
+                    if (!this.ahkFailTimer && this.lastFoundTick)
+                        this.ahkFailTimer := A_TickCount
+                    fallbackTimer := Integer((A_TickCount - this.ahkFailTimer) / 1000)
+                    if (fallbackTimer >= 7) {
+                        if (!isGtaFocused(true)) {
+                            ResetHackMode()
+                            return
+                        }
+                        this.ahkFailTimer := 0
+                        UseOpenCVEngineCallback()
+                    }
+
+                    if (debug)
+                        ShowCenteredToolTip "Switching to OpenCV in " Integer(7 - fallbackTimer) " seconds", 19, 50
+
+                }
             }
 
             if (this.anchorGroup.Length == 0 && localAnchor.Length == 0) {
                 this.isBusy := false
                 return
             }
+
+            this.ahkFailTimer := 0
+            this.lastSeenGroupTick := A_TickCount
+
+            if (this.autoStarted)
+                this.autoStarted := false
 
             if (this.mode == "manual") {
 
@@ -296,6 +450,8 @@ class FingerprintSolver {
                     }
                 }
             }
+        } catch as err {
+            MsgBox err.Message "`n`n" err.Stack
         }
         finally {
             this.isBusy := false
@@ -306,10 +462,11 @@ class FingerprintSolver {
         if (this.isShuttingDown || this.mode == "idle")
             return
 
-        static timeoutMs := 10000
-        if (this.lastSeenPrint != 0 && !this.foundAnchor) {
+        static timeoutMs := 5000
+        if (this.lastFoundTick != 0 && !this.foundAnchor) {
+            this.clearAll()
             timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft)
+            updateGlobalStatus(false, true, timeLeft, "CasinoFingerprint.checkTimeout()")
             this.needStatusUpdate := true
             if (A_TickCount - this.lastFoundTick > timeoutMs) {
                 ResetHackMode()
@@ -330,6 +487,9 @@ class FingerprintSolver {
         static y1 := A_ScreenHeight * 0.22
         static x2 := A_ScreenWidth * 0.8
         static y2 := A_ScreenHeight * 0.25
+
+        if (this.highRes)
+            return false
 
         if (this.isShuttingDown || this.mode == "idle") {
             this.foundAnchor := false
@@ -389,7 +549,7 @@ class FingerprintSolver {
             cachedFingerprintAnchor := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found", 0, 0, 18
+                ToolTip "No anchors found (fp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -403,6 +563,12 @@ class FingerprintSolver {
      */
     DetectAnchorGroup() {
         static lastFoundPrintGroup := 0
+
+        static x1 := 0.5 * A_ScreenWidth
+        static y1 := 0.1 * A_ScreenHeight
+        static x2 := 0.7 * A_ScreenWidth
+        static y2 := 0.35 * A_ScreenHeight
+
         this.anchorGroup := []
         static timeoutMs := 10000
 
@@ -421,10 +587,6 @@ class FingerprintSolver {
             [this.folder "9-12.png", [9, 10, 11, 12]],
             [this.folder "13-16.png", [13, 14, 15, 16]]
         ]
-        x1 := 0.5 * this.scrW
-        y1 := 0.1 * this.scrH
-        x2 := 0.7 * this.scrW
-        y2 := 0.35 * this.scrH
 
         for i, pair in anchorFiles {
             file := pair[1]
@@ -432,10 +594,11 @@ class FingerprintSolver {
             try {
                 if ImageSearch(&Px, &Py, x1, y1, x2, y2, "*" this.anchorTolerance " " file) {
 
-                    if (this.needStatusUpdate) { ; update status only on first found print to avoid excessive updates
-                        updateGlobalStatus(true)
+                    if (this.needStatusUpdate && this.foundAnchor) { ; update status only on first found print to avoid excessive updates
+                        updateGlobalStatus(true, , , "CasinoFingerprint.DetectAnchorGroup()")
                         this.needStatusUpdate := false
                     }
+
                     this.lastSeenPrint := i
                     ToolTip("Found fingerprint " i, Round(x1 + ((x2 - x1) / 2) - (this.scrW * 0.04)), Round(
                         this.scrH / 2), 17)
@@ -495,48 +658,29 @@ class FingerprintSolver {
 
         slot := ""
 
-        xOffset := N < 10 ? 0 : this.Adjust(-0.003, 0.9)
-
-        lowResOffset := this.Adjust(-0.003, 1)
-
-        lowResX := this.Adjust(0.223, 0.9) + lowResOffset
-
         if (FoundX >= 0.24 && FoundX <= 0.3) {
-            tTipX := ((this.lowRes ? lowResX : 0.227) + (debug ? xOffset : 0.004)) * this.scrW
-            if (FoundY >= 0.24 && FoundY <= 0.37) {
-                tTipY := 0.293 * this.scrH
+            if (FoundY >= 0.24 && FoundY <= 0.37)
                 slot := 0
-            } else if (FoundY >= 0.37 && FoundY <= 0.5) {
-                tTipY := 0.426 * this.scrH
+            else if (FoundY >= 0.37 && FoundY <= 0.5)
                 slot := 2
-            } else if (FoundY >= 0.51 && FoundY <= 0.63) {
-                tTipY := 0.561 * this.scrH
+            else if (FoundY >= 0.51 && FoundY <= 0.63)
                 slot := 4
-            } else if (FoundY >= 0.64) {
-                tTipY := 0.695 * this.scrH
+            else if (FoundY >= 0.64)
                 slot := 6
-            }
-            ToolTip(debug ? N " ▶" : "▶", tTipX, tTipY, N)
         }
         else if (FoundX >= 0.305 && FoundX <= 0.4) {
-            tTipX := 0.389 * this.scrW
-            if (FoundY >= 0.24 && FoundY <= 0.32) {
-                tTipY := 0.293 * this.scrH
+            if (FoundY >= 0.24 && FoundY <= 0.32)
                 slot := 1
-            } else if (FoundY >= 0.33 && FoundY <= 0.5) {
-                tTipY := 0.426 * this.scrH
+            else if (FoundY >= 0.33 && FoundY <= 0.5)
                 slot := 3
-            } else if (FoundY >= 0.51 && FoundY <= 0.63) {
-                tTipY := 0.561 * this.scrH
+            else if (FoundY >= 0.51 && FoundY <= 0.63)
                 slot := 5
-            } else if (FoundY >= 0.64) {
-                tTipY := 0.695 * this.scrH
+            else if (FoundY >= 0.64)
                 slot := 7
-            }
-            ToolTip(debug ? "◀ " N : "◀", tTipX, tTipY, N)
         }
 
         if (slot != "") {
+            this.markPrint(slot, N)
             this.pArr[N] := slot
         } else if this.pArr.Has(N) {
             this.pArr.Delete(N)
@@ -544,6 +688,73 @@ class FingerprintSolver {
 
         if (debug)
             ToolTip "Tracked pieces: " this.pArr.Count, 50, 50, 19
+    }
+
+    markPrint(slot, N) {
+        ; debug := false
+
+        static slots := [{ x: 0.227, y: 0.293, arrow: "▶" }, { x: 0.389, y: 0.293, arrow: "◀" }, { x: 0.227, y: 0.426,
+            arrow: "▶" }, { x: 0.389, y: 0.426, arrow: "◀" }, { x: 0.227, y: 0.561, arrow: "▶" }, { x: 0.389, y: 0.561,
+                arrow: "◀" }, { x: 0.227, y: 0.695, arrow: "▶" }, { x: 0.389, y: 0.695, arrow: "◀" }
+        ]
+
+        slotData := slots[slot + 1]
+
+        xOffset := N < 10 ? 0 : this.Adjust(-0.003, 0.9)
+
+        lowResOffset := this.Adjust(-0.003, 1)
+        lowResX := this.Adjust(0.2, 0.9) + lowResOffset
+
+        if (A_ScreenWidth == 1366)
+            lowResX := this.Adjust((N > 10 && !debug) ? 0.175 : 0.177, 0.9)
+
+        tTipX := slotData.x * this.scrW
+
+        ; apply low-res adjustment only to left-side arrows
+        if (Mod(slot, 2) == 0)
+            tTipX := ((this.lowRes ? lowResX : slotData.x) + (debug ? xOffset : 0.004)) * this.scrW
+
+        tTipY := slotData.y * this.scrH
+
+        text := debug
+            ? (slotData.arrow == "▶"
+                ? N " " slotData.arrow
+                    : slotData.arrow " " N)
+                : slotData.arrow
+
+        ToolTip(text, tTipX, tTipY, N)
+    }
+
+    markPrints(prevArr, currArr) {
+        if (prevArr == currArr)
+            return
+
+        this.prevPrints := currArr
+
+        prevArr := StrSplit(prevArr, ",")
+        currArr := StrSplit(currArr, ",")
+
+        ; build lookup map for current values
+        currMap := Map()
+        for _, val in currArr {
+            if (val != "")
+                currMap[val] := true
+        }
+
+        ; remove marks that no longer exist
+        for _, val in prevArr {
+            if (val != "" && !currMap.Has(val)) {
+                ToolTip("", , , val)
+            }
+        }
+
+        ; add current marks
+        for _, val in currArr {
+            if (val != "") {
+                slot := val - 1
+                this.markPrint(slot, val)
+            }
+        }
     }
 
     /**
@@ -599,6 +810,48 @@ class FingerprintSolver {
 
             prev := val
         }
+    }
+
+    ; ===== OPENCV-SPECIFIC LOGIC =====
+
+    openCVSelect(positions) {
+        if (this.mode != "auto" || positions == "")
+            return
+
+        SetKeyDelay(this.delay, this.delay)
+        ; MsgBox(positions)
+
+        arr := StrSplit(positions, ",")
+
+        if (arr.Length != 4)
+            return
+
+        prev := 0
+        for _, val in arr {
+            val := Integer(val) - 1  ; convert to 0–7
+
+            times := val - prev
+
+            if (Mod(times, 2) == 0) {
+                times := times / 2
+                if (times != 0)
+                    Send "{Down " Floor(times) "}"
+            } else {
+                Send "{Right}"
+                times := Floor(times / 2)
+                if (times != 0)
+                    Send "{Down " times "}"
+            }
+
+            Sleep 10
+            Send "{Enter}"
+
+            prev := val
+        }
+
+        Sleep 10
+        Send "{Tab}"
+        this.clearAll()
     }
 
     ; ===== HELPERS =====

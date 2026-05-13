@@ -2,7 +2,7 @@
 ; worker function directly (if scripts are enabled)
 ; or setting a timer to call it after 1 second
 ; (if scripts are not enabled).
-clearAllToolTips(scriptsEnabled) {
+clearAllToolTips(scriptsEnabled := true) {
     scriptsEnabled ? clearToolTipsWorker() : SetTimer(clearToolTipsWorker, -1000)
 }
 

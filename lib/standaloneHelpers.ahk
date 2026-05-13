@@ -2,6 +2,7 @@
 #Include updateCheck.ahk
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
+#Include ahk2py_socket.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir
@@ -19,6 +20,7 @@ global scrW := A_ScreenWidth, scrH := A_ScreenHeight
 global hackMode := "idle", hackInProgress := false
 global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
+global engine := OPENCV_ENGINE
 global pgUpSent := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
@@ -37,7 +39,7 @@ try {
     MsgBox "Failed to register NoSave hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
 try {
-    Hotkey "~*" CanonicalToRegistration(resetKey), ReloadScript
+    Hotkey "~*" CanonicalToRegistration(resetKey), resetSolver
 } catch {
     MsgBox "Failed to register Reset hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
@@ -48,22 +50,42 @@ try {
 }
 
 LoadCache()
+initPython()
 
 SetTimer(() => (isFirewallEnabled()), -100)
 
 ; --- Common Functions ---
 
-ReloadScript(*) {
-    Reload
+/**
+ * Destroys the current heist instance (if any) and creates a new one based on current settings.
+ * Used for switching between fingerprint/keypad modes or heists.
+ * 
+ * Side effects: Updates global heistInstance.
+ */
+resetSolver(*) {
+    global fingerprintMode, heistInstance, scriptsEnabled
+    if (heistInstance) {
+        try heistInstance.Destroy()
+        heistInstance := ""
+    }
+
+    CreateHeistInstance()
 }
 
 ExitScript(*) {
+    if (IsObject(heistinstance))
+        heistinstance.Destroy()
+
+    OnExitSaveCache()
     ExitApp
 }
 
 OnExit(OnExitSaveCache)
 
 OnExitSaveCache(*) {
+    global isShuttingDown := true
+    ShowCenteredToolTip "Terminating " A_ScriptName, 15
+    try StopPython()
     try SaveCache()
 }
 
@@ -71,6 +93,8 @@ ResetHackMode() {
     global hackMode
     hackMode := "idle"
     clearAllToolTips()
+
+    resetSolver()
 }
 
 /**
@@ -149,6 +173,30 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
     MakeAllToolTipsClickThrough(hackMode == "idle")
 }
 
+; Callback for using the OpenCV engine, used by solvers to switch
+; to OpenCV mode when AHK detection fails for more than 2 consecutive attempts.
+UseOpenCVEngineCallback() {
+    ToggleEngineMode("", "", OpenCV_ENGINE)
+}
+
+ToggleEngineMode(params := "", info := "", to := "") {
+    global engine, iniFile, hackInProgress, heistinstance
+
+    if (to == AHK_ENGINE) {
+        engine := AHK_ENGINE
+    } else if (to == OpenCV_ENGINE) {
+        engine := OpenCV_ENGINE
+    } else
+        engine := !engine
+
+    if (heistinstance && heistInstance != "") {
+        heistInstance.setEngine(engine)
+    }
+
+    IniWrite(engine, iniFile, "Options", "Engine")
+    UpdateGlobalStatus(hackInProgress)
+}
+
 ToggleNoSaveStatus(*) {
     global noSave
     if (!isFirewallEnabled()) {
@@ -182,8 +230,9 @@ clearAllToolTips() {
         ToolTip "", , , A_Index
 }
 
-isGtaFocused() {
-    return WinActive("Grand Theft Auto")
+isGtaFocused(excludeGui := true) {
+    return (WinActive("ahk_exe GTA5.exe")
+    || WinActive("ahk_exe GTA5_Enhanced.exe") || debug)
 }
 
 PgUpDown(*) {
@@ -221,3 +270,28 @@ PgUpUp(*) {
     pgUpSent := false
     UpdateGlobalStatus(hackInProgress)
 }
+
+; Toggle debug mode with Alt+F12.
+ToggleDebugChord(*) {
+    global debug
+    if (!IsSet(debug))
+        debug := false
+
+    debug := !debug
+
+    if (debug) {
+        Hotkey("F2", (*) => Reload(), "On")
+        Hotkey("F3", (*) => ExitApp(), "On")
+        ShowCenteredToolTip "Debug mode enabled", 17
+        sleep 1000
+    } else {
+        try Hotkey("F2", "Off")
+        try Hotkey("F3", "Off")
+        ShowCenteredToolTip "Debug mode disabled", 17
+        sleep 1000
+    }
+
+    SetTimer(() => (debug ? ToolTip("", , , 17) : clearAllToolTips()), -1200)
+}
+
+Hotkey("!F10", ToggleDebugChord)

@@ -31,6 +31,17 @@
         if IsSet(txtModeInstr)
             txtModeInstr.Text := instrMode hotKeyTextMode
     }
+
+    UpdateEngineInstrText() {
+        global instrAHKEngine, instrOpenCVEngine, txtEngineInstr, higherRes, instrOpenCVOnly
+        if IsSet(txtEngineInstr) {
+            if (higherRes)
+                txtEngineInstr.Text := instrOpenCVOnly
+            else
+                txtEngineInstr.Text := engine == AHK_ENGINE ? instrAHKEngine : instrOpenCVEngine
+        }
+    }
+
     UpdateManualInstrText() {
         global instrManual, manualKey, txtManualInstr
         hotKeyTextManual := " Press " CanonicalToDisplay(manualKey) " to trigger."
@@ -86,6 +97,39 @@
                 txtHeistInstr.Visible := false
             if IsSet(txtEnableScriptsInfo)
                 txtEnableScriptsInfo.Visible := true
+        }
+    }
+
+    SetEngineToggleBtnVisibility(enabled) {
+        global picEngineToggle, txtEngineLabel, txtAHKLabel, txtOpenCVLabel, txtEngineInstr
+
+        if enabled {
+            if (IsSet(picEngineToggle) && picEngineToggle) {
+                picEngineToggle.Visible := true
+                picEngineToggle.Opt("BackgroundTrans")
+                picEngineToggle.OnEvent("Click", ToggleEngineMode)
+            }
+            if IsSet(txtEngineLabel)
+                txtEngineLabel.Visible := true
+            if IsSet(txtAHKLabel)
+                txtAHKLabel.Visible := true
+            if IsSet(txtOpenCVLabel)
+                txtOpenCVLabel.Visible := true
+            if IsSet(txtEngineInstr)
+                txtEngineInstr.Visible := true
+        } else {
+            if (IsSet(picEngineToggle) && picEngineToggle) {
+                picEngineToggle.Visible := false
+                picEngineToggle.OnEvent("Click", ToggleEngineMode, 0)
+            }
+            if IsSet(txtEngineLabel)
+                txtEngineLabel.Visible := false
+            if IsSet(txtAHKLabel)
+                txtAHKLabel.Visible := false
+            if IsSet(txtOpenCVLabel)
+                txtOpenCVLabel.Visible := false
+            if IsSet(txtEngineInstr)
+                txtEngineInstr.Visible := false
         }
     }
 

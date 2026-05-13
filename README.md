@@ -2,8 +2,8 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
-*An upgraded version of the standalone script **"GTA Casino Solver v2"**.
-A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0. Runs entirely locally, no data is sent anywhere.
+>A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2. An upgraded version of the standalone script **"GTA Casino Solver v2"**
+>Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine.
 
 
 <br>
@@ -41,17 +41,20 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
 
 - Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
+- Supports both **AHK-based** and **OpenCV-based** detection methods  
+- Supports all common **16:9** and **21:9 ultrawide** resolutions  
 - Cayo Perico **PgUp** bug fix  
-- Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit.
+- Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit  
 - Manual and auto solving modes  
-- GUI app with labels (tooltips) and customizable hotkeys — designed for non-technical users  
+- GUI app with labels/tooltips and customizable hotkeys — designed for non-technical users  
 
 ## What This Script Is (and Isn't)
 
 <details>
 <summary>Is this a mod?</summary>
 
-No — it's not a mod, neither does it modify the game or its files. It's simply an AHK script with a GUI.
+No — it is not a mod, nor does it modify the game or its files.  
+It is simply an external AHK-based tool with a GUI.
 </details>
 
 <details>
@@ -63,7 +66,8 @@ No — it does not inject DLLs, modify memory, hook into the game process, or re
 <details>
 <summary>How does it work then?</summary>
 
-It runs externally using AutoHotkey:
+It runs externally using AutoHotkey and OpenCV:
+
 - Reads pixels from the screen (to detect puzzles)  
 - Sends keyboard and mouse inputs (to automate interactions)  
 </details>
@@ -71,41 +75,32 @@ It runs externally using AutoHotkey:
 <details>
 <summary>Is this safe to use? Will I get banned?</summary>
 
-The solvers (fingerprint/keypad) function like input automation and are generally lower risk when used normally.  
-However, the **NoSave** feature involves exploiting game behavior — excessive or repeated use can increase the risk of account action.
+The puzzle solvers (fingerprint/keypad) function similarly to input automation and are generally lower risk when used normally.  
+
+However, the **NoSave** feature involves exploiting game behavior — excessive or repeated abuse may increase the risk of account action.
 </details>
 
 <details>
 <summary>So what should I keep in mind?</summary>
 
-Use responsibly, and avoid overexploiting the **(NoSave)** replay glitch.
+Use responsibly, and avoid overusing the **NoSave** replay glitch.
 </details>
 
-Everything runs externally, similar to a macro tool, with a GUI for ease of use.
-
-
+Everything runs externally, similar to a macro tool, with a GUI designed for ease of use.
 ## Requirements
 
-- **Windows** (tested on Windows 11) 
-- **GTA Online** — tested on E&E, *may* work on Legacy
-- The game should be in **Borderless Fullscreen**, OR **Borderless Windowed** at maximum in-game resolution (matching your screen resolution).
-- **Supported screen resolution** (16:9)
-  - The tool relies on fixed UI detection and only works when your screen resolution is one of the supported resolutions below.
-  - If your resolution is unsupported, the app will show a warning, and the solvers may not work correctly. You can still use **NoSave** normally. You may also prefer using the [NoSave Standalone](#standalone-solvers) script if you do not plan to use the solvers.
-  - If you still want to use the solvers, you can temporarily switch to a supported resolution, set the game to **Borderless Fullscreen**, and use the toolkit normally.
-  - **Currently supports:**
-    - 1920×1080
-    - 1600×900
-    - 1366×768
-- **Internet connection**  
+- **Windows** (tested on Windows 11)  
+- **GTA Online** — tested on E&E, may also work on Legacy  
+- The game should be running in **Borderless Fullscreen** or **Borderless Windowed** mode  
+- **Supported resolutions**
+  - Supports common **16:9** and **21:9 ultrawide** resolutions
+- **Internet connection** *(optional)*  
   - Used only for update checks  
   - No data is collected or sent externally  
-  - You can review the update-check logic in the source code  
+  - The update-check logic is fully visible in the source code  
 - **Firewall enabled** *(optional)*  
-  - Needed for NoSave functionality  
-  - The app will attempt to enable it automatically if needed 
-
-
+  - Required for the NoSave feature  
+  - The toolkit can automatically enable it when needed  
 ## ⚠️ Disclaimer
 
 This is a hobby project built while learning AutoHotkey.
@@ -117,7 +112,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/37baec6d6aa1c4d08552b0169281bd4dc85f9f2f70d353bcb474f5e647853983
+> https://www.virustotal.com/gui/file/7f6a64f46ce716f4923da3cd596096db9d9ba3d3056c9a49e35329b5fd040309
 
 
 <p align="center">
@@ -126,7 +121,7 @@ Provided as-is, with no guarantees.
 
 ### Plug and Play (TL;DR)
 
-1. Downlaod and run the setup [vaultOps-Setup.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Setup.exe) to extract the contents
+1. Download and run the setup [vaultOps-Setup.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Setup.exe) to extract the contents
 2. Launch `vaultOps.exe`  
 3. Click **Enable Scripts**  
 4. Start a heist puzzle → the tool will detect it automatically → marks the prints for Casino hacks and auto-solves in case of  Cayo Perico fingerprints.
@@ -160,37 +155,49 @@ Provided as-is, with no guarantees.
 
 
 ### Fingerprint / Keypad solvers
+
 1. **Enable Scripts**
-   - Activates the solvers  
-   - Automatically detects puzzles and switches modes  
+   - Activates the puzzle solvers  
+   - Automatically detects puzzles and switches modes when possible  
 
    **Behavior:**
-   - May occasionally misdetect normal scenes as puzzles  
-   - This can cause the label to switch modes unnecessarily  
+   - Auto-detection may occasionally misdetect normal scenes as puzzles  
+   - This can cause the label or selected mode to switch unexpectedly  
 
    **Recommendation:**
    - Enable only when solving puzzles  
-   - Or use **Manual mode** to prevent auto switching  
-   - Assign a hotkey for quick toggling <br><br>
+   - Or use **Manual mode** to prevent automatic switching  
+   - Assign a hotkey for quick toggling  <br><br>
 
-2. **Select Heist**
+2. **Detection Engine**
+   - **AHK**
+     - Legacy pixel-based detection  
+     - Fast and battle-tested  
+     - Available only on supported lower 16:9 resolutions  
+
+   - **OpenCV**
+     - More flexible image-based detection  
+     - Recommended for higher resolutions and ultrawide displays
+     - Automatically selected on unsupported resolutions/aspect ratios
+     - Higher resolutions and 21:9 setups will use OpenCV automatically  <br><br>
+
+3. **Select Heist**
    - **Casino**
      - Solves Fingerprint and Keypad puzzles  
+
    - **Cayo Perico**
      - Solves the fingerprint cloner puzzle  
-     - Enables PgUp forwarding for plasma cutter  
+     - Enables PgUp forwarding for the plasma cutter  
      - Default PgUp key: **Left Mouse Button** `LMB`  
-     - Can be changed to any key (e.g., `Enter`)  
+     - Can be changed to another key (e.g. `Enter`)  
 
-      **Note:** When using the PgUp feature, prefer **Manual mode** to avoid unwanted auto-switching <br><br>
+   **Note:** When using the PgUp feature, Manual mode is generally recommended to avoid unintended auto-switching  <br><br>
 
-3. **Choose Mode (Casino only)**
+4. **Choose Mode (Casino only)**
    - **Fingerprint** — Detects and solves the fingerprint puzzle  
-   - **Keypad** — Solves the keypad puzzle  
+   - **Keypad** — Detects and solves the keypad puzzle  
 
-      **Note:**  Switching to **Manual mode** disables auto-detection, preventing unintended mode changes  
-
-
+   **Note:** Switching to **Manual mode** disables automatic puzzle detection, preventing unintended mode changes  
 ### Hotkeys & Controls
 
 All hotkeys are customizable.
@@ -240,8 +247,6 @@ All hotkeys are customizable.
 Don't want the full toolkit? Use any of these standalone packages to run individual solvers.
 
 > Note: Each of these standalone solvers includes the **NoSave** script, so you do not need to download the **NoSave Standalone** script separately if you use any of the three solvers.
->
-> If you're on an unsupported resolution, consider using the **NoSave Standalone** script to avoid repeated unsupported-resolution warnings.
 
 - **[Casino Fingerprint Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)** — Standalone solver for the casino fingerprint scanner
 - **[Casino Keypad Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)** — Standalone solver for the casino keypad cracker
@@ -270,7 +275,7 @@ Want to verify the source code or build the executable yourself? See [BUILD.md](
 ```
 _src/
 │
-├─ 1920x1080/, 1600x900/, 1366x768/   # Resolution-specific images for the solver 
+├─ 1920x1080/, 1600x900/, 1366x768/   # Legacy AHK template assets for supported 16:9 resolutions
 │
 ├─ lib/
 │  ├─ build_scripts/
@@ -279,10 +284,19 @@ _src/
 │  │  └─ inno_setup.iss               # Inno Setup installer config
 │  │
 │  ├─ gui/
-│  │  ├─ windowHelpers.ahk            # Window focus + activation handling
+│  │  ├─ anchorDetection.ahk          # Anchor detection logic for AHK mode
 │  │  ├─ hotkeyHelpers.ahk            # Hotkey event callbacks
+│  │  ├─ instructionFieldHelpers.ahk  # GUI field text management
 │  │  ├─ tooltipsHelpers.ahk          # Status tooltip updates
-│  │  └─ instructionFieldHelpers.ahk  # GUI field text management
+│  │  └─ windowHelpers.ahk            # Window focus + activation handling
+│  │
+│  ├─ py_helpers/                     # Python/OpenCV helpers
+│  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV mode
+│  │  ├─ casinofingerprint.py         # Casino fingerprint detection logic for OpenCV mode
+│  │  ├─ casinokeypad.py              # Casino keypad detection logic for OpenCV mode
+│  │  ├─ cayofingerprint.py           # Cayo Perico fingerprint detection logic for OpenCV mode
+│  │  ├─ OpenCV_Engine.py             # OpenCV backend + IPC listener
+│  │  └─ requirements.txt             # Python deps for OpenCV mode
 │  │
 │  ├─ scripts/
 │  │  ├─ CasinoFingerprint.ahk        # Casino fingerprint detection + solving
@@ -290,7 +304,7 @@ _src/
 │  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
 │  │  └─ NoSave.ahk                   # Handles NoSave usage
 │  │
-│  ├─ standalone scripts/             # Pre-built standalone solver executables
+│  ├─ standalone scripts/             # Standalone version of each solver, with shared logic extracted to helpers
 │  │
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
 │  ├─ checkResolution.ahk             # Resolution detection and fallback handling
@@ -309,31 +323,36 @@ _src/
 
 ### Key Components
 
-**Entry Point:**
-- `vaultOps.ahk` — GUI initialization, mode selection, hotkey binding, solver lifecycle
+**Entry Point**
+- `vaultOps.ahk` — Main GUI, mode control, engine selection, and solver lifecycle
 
-**Core Utilities:**
-- `autoUpdate.ahk` — Downloads and launches minor patch updates automatically
-- `checkResolution.ahk` — Resolves the correct asset folder and handles supported-resolution warnings
-- `commonFuncs.ahk` — Shared helpers: centered tooltips, click-through tooltip styling, hotkey display formatting
-- `initHotkeys.ahk` — Registers all hotkey bindings and attaches event handlers; runs on startup
-- `sharedCanonicalHelpers.ahk` — Converts and normalizes canonical hotkeys
-- `standaloneHelpers.ahk` — Shared logic used by standalone solver builds
-- `updateCheck.ahk` — Checks for newer releases; handles version comparison and user notifications
+**Core Utilities**
+- `autoUpdate.ahk` — Minor patch updater
+- `checkResolution.ahk` — Resolution/aspect-ratio checks and engine availability
+- `commonFuncs.ahk` — Shared helpers and tooltip utilities
+- `initHotkeys.ahk` — Hotkey registration and callbacks
+- `sharedCanonicalHelpers.ahk` — Canonical hotkey formatting/helpers
+- `standaloneHelpers.ahk` — Shared helpers for standalone builds
+- `updateCheck.ahk` — Version checking and update notifications
 
-**Solvers** (independent classes):
-- `Fingerprint-Standalone.ahk` — Solver for the casino fingerprint puzzle
-- `Keypad-Standalone.ahk` — Solver for the casino keypad puzzle
-- `ElRubio-Standalone.ahk` — Solver for the Cayo Perico fingerprint cloner puzzle
+**AHK Solvers**
+- `CasinoFingerprint.ahk` — Casino fingerprint solver
+- `CasinoKeypad.ahk` — Casino keypad solver
+- `ElRubio.ahk` — Cayo fingerprint cloner solver
+- `NoSave.ahk` — NoSave handling and firewall automation
 
-> `NoSave-Standalone.ahk` — Standalone script for the NoSave replay glitch, included in all builds
+**OpenCV Backend (`lib/py_helpers/`)**
+- `OpenCV_Engine.py` — IPC listener/backend entry point
+- `anchorDetection.py` — Puzzle anchor detection
+- `casinofingerprint.py` — Casino fingerprint detection
+- `casinokeypad.py` — Casino keypad detection
+- `cayofingerprint.py` — Cayo fingerprint detection
+- `requirements.txt` — Python dependencies for development mode
 
-**Build System:**
-- `dist.ahk` — Orchestrates compilation, packaging, and deployment
-- `virusTotalScan.ahk` — Optional post-build security scanning
-
-**GUI Helpers:**
-- Modular utilities for window management, tooltips, and UI field handling
+**Build System**
+- `dist.ahk` — Build/package automation
+- `virusTotalScan.ahk` — Optional VirusTotal scan helper
+- `inno_setup.iss` — Inno Setup installer config
 
 Each solver operates independently with its own detection logic, state handling, and reset behavior. Solvers are instantiated on mode change and destroyed on exit to avoid conflicts.
 
@@ -347,6 +366,8 @@ This project builds upon existing ideas and implementations in the community:
 
 - **Fingerprint / Keypad detection:** Inspired by  
   https://github.com/gbs0/gta_casino_solver
+
+- **OpenCV:** Inspired by VKit (https://github.com/ItsCEED/vkit-toolbox)
 
 This project extends those implementations with:
 - Automatic solving algorithms  

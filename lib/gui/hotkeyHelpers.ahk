@@ -396,9 +396,34 @@ TryRegisterPgUpHotkey(oldKey := "") {
     }
 }
 
-isGtaFocused() {
-    global guiApp
-    return (WinActive("Grand Theft Auto") || WinActive("ahk_id " guiApp.Hwnd))
+; Checks if GTA or the script's GUI is currently focused,
+; used to prevent sending inputs when the user is actively using another window.
+isGtaFocused(excludeGui := false) {
+    global guiApp, debug
+
+    return (debug ||
+        WinActive("ahk_exe GTA5.exe")
+        || WinActive("ahk_exe GTA5_Enhanced.exe")
+        || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd))
+    )
+}
+
+getGtaHwnd() {
+    static gtaMatchers := [
+        "ahk_exe GTA5_Enhanced.exe",
+        "ahk_exe GTA5_Enhanced",
+        "GTA5_Enhanced",
+        "GTA5"
+    ]
+
+    for matcher in gtaMatchers {
+        hwnd := WinExist(matcher)
+        if hwnd {
+            return hwnd
+        }
+    }
+
+    return 0
 }
 
 PgUpDown(*) {
@@ -452,5 +477,30 @@ UnregisterPgUpHotkey(keyToRemove := "") {
         }
     }
 }
+
+; Toggle debug mode with Alt+F12.
+ToggleDebugChord(*) {
+    global debug
+    if (!IsSet(debug))
+        debug := false
+
+    debug := !debug
+
+    if (debug) {
+        Hotkey("F2", (*) => Reload(), "On")
+        Hotkey("F3", (*) => ExitApp(), "On")
+        ShowCenteredToolTip "Debug mode enabled", 17
+        sleep 1000
+    } else {
+        try Hotkey("F2", "Off")
+        try Hotkey("F3", "Off")
+        ShowCenteredToolTip "Debug mode disabled", 17
+        sleep 1000
+    }
+
+    SetTimer(() => (debug ? ToolTip("", , , 17) : clearAllToolTips()), -1200)
+}
+
+Hotkey("!F10", ToggleDebugChord)
 
 ; ⏐==========================================================================================================⏐

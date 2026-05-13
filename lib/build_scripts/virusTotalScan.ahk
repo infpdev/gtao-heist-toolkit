@@ -34,16 +34,18 @@ RunScan(filePath := "..\..\dist\vaultOps-Setup.exe") {
         ExitApp
     }
 
-    uploadResponse := UploadFile(targetFile, apiKey)
+    ; uploadResponse := UploadFile(targetFile, apiKey)
 
-    try obj := Jxon_Load(&uploadResponse)
+    ; obj := 0
 
-    if IsObject(obj) && obj.Has("error") {
-        if (obj["error"]["code"] != "AlreadySubmittedError") {
-            MsgBox("Upload failed:`n" uploadResponse)
-            ExitApp
-        }
-    }
+    ; try obj := Jxon_Load(&uploadResponse)
+
+    ; if (IsObject(obj) && obj.Has("error")) {
+    ;     if (obj["error"]["code"] != "AlreadySubmittedError") {
+    ;         MsgBox("Upload failed:`n" uploadResponse)
+    ;         ExitApp
+    ;     }
+    ; }
 
     ; Update README.md with latest VirusTotal link
     UpdateReadmeLink(fileHash)
