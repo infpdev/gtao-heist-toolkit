@@ -189,7 +189,7 @@ class FingerprintSolver {
      * Checks for false positives and resets if anchor is lost during auto-start.
      */
     CheckFalsePositive() {
-        if (this.isShuttingDown || this.mode != "manual")
+        if (this.isShuttingDown || this.mode != "manual" || !this.autoStarted)
             return
 
         if (!this.foundAnchor) {

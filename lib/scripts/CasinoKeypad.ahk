@@ -200,7 +200,6 @@ class KeypadSolver {
     CheckFalsePositive() {
         if (this.isShuttingDown || this.mode != "manual" || !this.autoStarted)
             return
-        MsgBox this.autoStarted
         if (!this.foundAnchor) {
             ResetHackMode()
             this.Idle()
@@ -801,7 +800,7 @@ class KeypadSolver {
     SelectCurrentCol(col, ringRow) {
         SetKeyDelay(this.delay, this.delay)
 
-        if !this.cols.Has(col) {
+        if !this.cols.Has(col) && debug {
             MsgBox "error in selectCurrentCol"
             sleep 1000
             return

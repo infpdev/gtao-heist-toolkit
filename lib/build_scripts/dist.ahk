@@ -76,10 +76,6 @@ buildVaultOps() {
     ; Build the OpenCV helper exe that the compiled app loads from lib/.
     BuildOpenCVEngine(parentDir)
 
-    ; === Compile standalone scripts if option is selected ===
-    if (compileStandalone)
-        createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
-
     ; === Compile and package the main vaultOps executable ===
     ToolTip "", , , 1
     ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
@@ -95,6 +91,10 @@ buildVaultOps() {
             ShowCenteredToolTip "Scanning vaultOps.exe with VirusTotal..."
             RunScan(vaultOpsInstaller)
         }
+
+        ; === Compile standalone scripts if option is selected ===
+        if (compileStandalone)
+            createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
 
         OpenFolderAsUser(parentDir "\dist")
 
