@@ -33,6 +33,7 @@ buildOpts := buildGUI(isDev)
 if !IsObject(buildOpts)
     ExitApp
 
+buildVaultOpsExe := buildOpts.buildVaultOps
 compileStandalone := buildOpts.compileStandalone
 packageBuilds := buildOpts.packageBuilds
 useOriginalClasses := buildOpts.useOriginalClasses
@@ -54,9 +55,8 @@ if (compileStandalone && packageBuilds && !FileExist(rarExe)) {
 buildVaultOps()
 
 buildVaultOps() {
-    global parentDir, compileStandalone, packageBuilds, useOriginalClasses, scanVirusTotal, baseExe, AHK2EXEPath,
-        iconPath, isccExe,
-        issScript
+    global parentDir, buildVaultOpsExe, compileStandalone, packageBuilds, useOriginalClasses, scanVirusTotal,
+        baseExe, AHK2EXEPath, iconPath, isccExe, issScript
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
     outFile := parentDir "\vaultOps.exe"
@@ -68,40 +68,45 @@ buildVaultOps() {
     updaterCmd := '"' AHK2EXEPath '" /in "' updaterInFile '" /out "' updaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     innoCmd := '"' isccExe '" "' issScript '"'
 
-    ; delete old package if it exists
-    try DirDelete(parentDir "\dist", true)
-
     sleep 20
 
-    ; Build the OpenCV helper exe that the compiled app loads from lib/.
-    BuildOpenCVEngine(parentDir)
+    if (buildVaultOpsExe) {
+        ; Build the OpenCV helper exe that the compiled app loads from lib/.
 
-    ; === Compile and package the main vaultOps executable ===
-    ToolTip "", , , 1
-    ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
-    RunWait cmd, , "Hide"
-    RunWait updaterCmd, , "Hide"
-    RunWait innoCmd, , "Hide"
+        ; delete old package if it exists
+        try DirDelete(parentDir "\dist", true)
 
-    if RequireExistingFile(vaultOpsInstaller, "Installer") {
-        ShowCenteredToolTip "Distribution build and Inno Setup installer complete!"
-        ; Scan with VirusTotal if option selected
-        if (scanVirusTotal) {
-            sleep 1000
-            ShowCenteredToolTip "Scanning vaultOps.exe with VirusTotal..."
-            RunScan(vaultOpsInstaller)
+        BuildOpenCVEngine(parentDir)
+
+        ; === Compile and package the main vaultOps executable ===
+        ToolTip "", , , 1
+        ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
+        RunWait cmd, , "Hide"
+        RunWait updaterCmd, , "Hide"
+        RunWait innoCmd, , "Hide"
+
+        if RequireExistingFile(vaultOpsInstaller, "Installer") {
+            ShowCenteredToolTip "Distribution build and Inno Setup installer complete!"
+            ; Scan with VirusTotal if option selected
+            if (scanVirusTotal) {
+                sleep 1000
+                ShowCenteredToolTip "Scanning vaultOps.exe with VirusTotal..."
+                RunScan(vaultOpsInstaller)
+            }
+        } else {
+            ShowCenteredToolTip "Build complete but installer not found!"
         }
-
-        ; === Compile standalone scripts if option is selected ===
-        if (compileStandalone)
-            createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
-
-        OpenFolderAsUser(parentDir "\dist")
-
+        sleep 2000
     } else {
-        ShowCenteredToolTip "Build complete but installer not found!"
+        RequireExistingFile(parentDir "\lib\py_helpers\OpenCV_Engine.exe", "Existing OpenCV helper")
+        ShowCenteredToolTip "Skipping vaultOps build; reusing existing OpenCV helper and standalone assets."
+        sleep 1200
     }
-    sleep 2000
+
+    if (compileStandalone)
+        createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses, buildVaultOpsExe)
+
+    OpenFolderAsUser(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled
     if !A_IsCompiled {
@@ -121,7 +126,6 @@ buildVaultOps() {
             }
         }
     }
-
     sleep 2000
     ExitApp
 }
@@ -154,7 +158,8 @@ BuildOpenCVEngine(parentDir) {
     ShowCenteredToolTip "Compiling OpenCV_Engine.py with Nuitka..."
 
     quotedPython := '"' pythonExe '"'
-    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
+    quotedBuildDir := '"' buildDir '"'
+    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --windows-onefile-tempdir-spec=' quotedBuildDir '\nuitka_temp --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
     ; nuitkaCmd := 'cmd /k ""' pythonExe '" -m nuitka --onefile --follow-imports --nofollow-import-to=PIL.ImageShow --assume-yes-for-downloads --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '""'
 
     RunWait nuitkaCmd, , "Hide"
@@ -169,7 +174,7 @@ BuildOpenCVEngine(parentDir) {
 
     FileCopy builtExe, outputFile, true
 
-    ; try DirDelete(buildDir, true)
+    try DirDelete(buildDir "\nuitka_temp", true)
 
     if !FileExist(outputFile) {
         MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
@@ -197,7 +202,8 @@ FindPythonExe() {
 }
 
 ; --- Standalone script packaging using WinRAR SFX ---
-createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOriginalClasses := false) {
+createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOriginalClasses := false, buildVaultOpsExe :=
+    true) {
     global rarExe, AHK2EXEPath, iconPath
     standaloneDir := parentDir "\lib\standalone scripts"
     distStandaloneDir := parentDir "\dist\standalone"
@@ -220,6 +226,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         }
 
         ; Copy the compiled OpenCV helper into the standalone lib folder so OpenCV mode works there too.
+        ; When vaultOps build is skipped, this reuses the existing helper instead of rebuilding it with Nuitka.
         ocvSource := parentDir "\lib\py_helpers\OpenCV_Engine.exe"
 
         ocvDestDir := distStandaloneDir "\lib"
@@ -347,12 +354,13 @@ buildGUI(isDev := false) {
 
     dlg.AddText("xm+9 ym", "Choose build options:")
 
-    dlg.AddGroupBox("xm yp w360 h50", "Compile and package vaultOps")
-    rStandaloneYes := dlg.AddRadio("xp+14 yp+23 Checked Disabled", "Yes")
+    dlg.AddGroupBox("xm yp+25 w360 h50", "Build vaultOps.exe")
+    rBuildYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
+    rBuildNo := dlg.AddRadio("x+60 yp ", "No (reuse existing OpenCV helper)")
 
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
-    rScanYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
-    rScanNo := dlg.AddRadio("x+80 yp ", "No")
+    rScanYes := dlg.AddRadio("xp+14 yp+23 Group", "Yes")
+    rScanNo := dlg.AddRadio("x+80 yp Checked", "No")
 
     apiKey := ""
 
@@ -371,8 +379,8 @@ buildGUI(isDev := false) {
     rScanYes.OnEvent("Click", validateApiKey)
 
     dlg.AddGroupBox("xm y+12 w360 h50", "Compile standalone scripts")
-    rStandaloneYes := dlg.AddRadio("xp+14 yp+23  Group", "Yes")
-    rStandaloneNo := dlg.AddRadio("x+80 yp Checked ", "No")
+    rStandaloneYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
+    rStandaloneNo := dlg.AddRadio("x+80 yp", "No")
 
     ; Package standalone option (only for dev mode)
     packageGroupBox := ""
@@ -408,9 +416,26 @@ buildGUI(isDev := false) {
         }
     }
 
+    UpdateFastBuildPreset(*) {
+        if (rBuildNo.Value == 1) {
+            rScanYes.Value := 0
+            rScanNo.Value := 1
+            rStandaloneYes.Value := 1
+            rStandaloneNo.Value := 0
+            if (isDev && rPackageYes != "") {
+                rPackageYes.Value := 1
+                rPackageNo.Value := 0
+            }
+        }
+        UpdatePackageOptions()
+    }
+
     rStandaloneYes.OnEvent("Click", UpdatePackageOptions)
     rStandaloneNo.OnEvent("Click", UpdatePackageOptions)
+    rBuildYes.OnEvent("Click", UpdateFastBuildPreset)
+    rBuildNo.OnEvent("Click", UpdateFastBuildPreset)
     UpdatePackageOptions()
+    UpdateFastBuildPreset()
 
     btnOk := dlg.AddButton("x85 y+17 w90 Default", "OK")
     btnCancel := dlg.AddButton("x+10 w90", "Cancel")
@@ -418,6 +443,7 @@ buildGUI(isDev := false) {
     selected := ""
     btnOk.OnEvent("Click", (*) => (
         selected := {
+            buildVaultOps: rBuildYes.Value == 1,
             compileStandalone: rStandaloneYes.Value == 1,
             packageBuilds: isDev && rPackageYes != "" ? (rPackageYes.Value == 1 && rStandaloneYes.Value == 1) : false,
             useOriginalClasses: rClassYes.Value == 1,

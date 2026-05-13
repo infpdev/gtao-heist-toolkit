@@ -63,7 +63,11 @@ SetTimer(() => (isFirewallEnabled()), -100)
  * Side effects: Updates global heistInstance.
  */
 resetSolver(*) {
-    global fingerprintMode, heistInstance, scriptsEnabled
+    global fingerprintMode, heistInstance, scriptsEnabled, hackMode
+
+    hackMode := "idle"
+    clearAllToolTips()
+
     if (heistInstance) {
         try heistInstance.Destroy()
         heistInstance := ""
@@ -90,10 +94,6 @@ OnExitSaveCache(*) {
 }
 
 ResetHackMode() {
-    global hackMode
-    hackMode := "idle"
-    clearAllToolTips()
-
     resetSolver()
 }
 
