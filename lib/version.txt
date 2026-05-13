@@ -1,2 +1,3 @@
-3.9.7
-Added OpenCV detection for users with high resolutions.
+4.0.0
+Added OpenCV-based solvers
+VaultOps now works on all 16:9 and 21:9 resolutions

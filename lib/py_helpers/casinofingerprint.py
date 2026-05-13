@@ -53,7 +53,7 @@ def dump_debug_scan_image(image, found_slots, searched_slots, brightness_map, sc
 
 
 def is_in(img, subimg, threshold=0.65):
-    """Optimized template matching with early exit using minMaxLoc"""
+    """Return True when template match score is above threshold."""
     subimg_gray = cv2.cvtColor(np.array(subimg), cv2.COLOR_BGR2GRAY)
     res = cv2.matchTemplate(img, subimg_gray, cv2.TM_CCOEFF_NORMED)
     
@@ -63,9 +63,12 @@ def is_in(img, subimg, threshold=0.65):
 
 
 def scan_fingerprint_slots(img=None, threshold=0.65, debug=False):
-    """Helper scan routine used by CasinoFingerprint.ahk.
+    """Detect candidate fingerprint slots from the prepared game frame.
 
-    Returns detected slot indices and elapsed milliseconds.
+    Returns:
+        str: Comma-separated slot indices (for example, "1,3,4") when accepted matches exist.
+        int: 100 when matches exist but all are already selected.
+        int: 0 when no slot matches are found.
     """
     t0 = time.perf_counter()
 
@@ -159,7 +162,7 @@ def scan_fingerprint_slots(img=None, threshold=0.65, debug=False):
 
 
 def main(debug=False):
-    """Helper-facing entry point that returns sorted detected slots."""
+    """Run fingerprint scan against live capture and return solver payload."""
     result = scan_fingerprint_slots(None, debug=debug)
     return result
 

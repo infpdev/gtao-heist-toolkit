@@ -31,6 +31,7 @@ _MODE_WIN_MARGIN = 0.03
 
 
 def _clamp_region(img: np.ndarray, region: tuple) -> tuple:
+    """Clamp (x1, y1, x2, y2) to valid image bounds."""
     h_img, w_img = img.shape[:2]
     x1, y1, x2, y2 = region
     x1 = max(0, min(w_img - 1, int(x1)))
@@ -41,6 +42,7 @@ def _clamp_region(img: np.ndarray, region: tuple) -> tuple:
 
 
 def _color_ratio_in_region(img: np.ndarray, region: tuple, lower: np.ndarray, upper: np.ndarray) -> float:
+    """Return ratio of pixels in region within a single HSV range."""
     if img is None:
         return 0.0
     x1, y1, x2, y2 = _clamp_region(img, region)
@@ -60,6 +62,7 @@ def _color_ratio_in_region(img: np.ndarray, region: tuple, lower: np.ndarray, up
 
 
 def _multi_color_ratio_in_region(img: np.ndarray, region: tuple, ranges: tuple) -> float:
+    """Return ratio of pixels in region matching any of multiple HSV ranges."""
     if img is None:
         return 0.0
     x1, y1, x2, y2 = _clamp_region(img, region)
@@ -82,6 +85,7 @@ def _multi_color_ratio_in_region(img: np.ndarray, region: tuple, ranges: tuple) 
 
 
 def _red_like_ratio_in_region(img: np.ndarray, region: tuple) -> float:
+    """Return warm-color ratio (red/pink/beige) used by casino anchor checks."""
     # Warm indicator can skew across red, pink/magenta, and beige under overlays.
     return _multi_color_ratio_in_region(
         img,
@@ -96,10 +100,12 @@ def _red_like_ratio_in_region(img: np.ndarray, region: tuple) -> float:
 
 
 def _green_ratio_in_region(img: np.ndarray, region: tuple) -> float:
+    """Return green pixel ratio in region for cayo anchor detection."""
     return _color_ratio_in_region(img, region, _GREEN_LOWER, _GREEN_UPPER)
 
 
 def _edge_density_in_region(img: np.ndarray, region: tuple) -> float:
+    """Estimate structure in region using Canny edge density."""
     if img is None:
         return 0.0
     x1, y1, x2, y2 = _clamp_region(img, region)
@@ -213,6 +219,7 @@ def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_sco
 
     ratio = _green_ratio_in_region(search_img, region)
     matched = ratio >= threshold
+    # print("matched? " + ("true" if matched else "false"), flush=True)
     
     matched = is_black_area_present_cayo(search_img=search_img, scale=scale) if matched else False
     
@@ -231,6 +238,7 @@ def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_sco
 
 
 def is_dark_uniform_region(img: np.ndarray, region: tuple) -> bool:
+    """Heuristic for dark uniform blocks used by false-positive filtering."""
     if img is None:
         return False
 
@@ -331,20 +339,20 @@ def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5
         search_img = prepare_detection_image(scale)
     
     regions = [
-        # 1666, 342, 1866, 547
+        # 1649, 437, 1891, 564
         (
-            int(1660 * scale),
-            int(340 * scale),
-            int(1870 * scale),
-            int(550 * scale),
+            int(1649 * scale),
+            int(437 * scale),
+            int(1891 * scale),
+            int(564 * scale),
         ),
 
-        # 68, 486, 285, 670
+        # 66, 430, 305, 576
         (
-            int(70 * scale),
-            int(480 * scale),
-            int(285 * scale),
-            int(670 * scale),
+            int(66 * scale),
+            int(430 * scale),
+            int(305 * scale),
+            int(576 * scale),
         ),
     ]
     
@@ -368,6 +376,19 @@ def run_anchor_detectors(
     return_details=False,
     image=None,
 ):
+    """Run enabled anchor detectors and return best mode or detailed scores.
+
+    Args:
+        forCasinoFP: Enable fingerprint detector.
+        forCasinoKP: Enable keypad detector.
+        forRubio: Enable cayo detector.
+        thresholds: Optional per-mode threshold overrides.
+        debug: If true, writes annotated debug image.
+        debug_path: Reserved for compatibility; currently unused.
+        processing_scale: Screen/image scaling factor used during detection.
+        return_details: If true, return score payload for each enabled mode.
+        image: Optional RGB image. If omitted, screen is captured.
+    """
     if image is None:
         img = prepare_detection_image(processing_scale)
     else:
@@ -479,19 +500,19 @@ def run_anchor_detectors(
 
 
 if __name__ == "__main__":
-    base_dir = os.path.dirname(__file__)
-    img_path = os.path.join(base_dir, "zkeypadwide.png")
+    # base_dir = os.path.dirname(__file__)
+    # img_path = os.path.join(base_dir, "zkeypadwide.png")
 
-    img = cv2.imread(img_path)
+    # img = cv2.imread(img_path)
 
-    if img is None:
-        raise FileNotFoundError(img_path)
+    # if img is None:
+    #     raise FileNotFoundError(img_path)
 
-    # convert BGR -> RGB BEFORE helper
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # # convert BGR -> RGB BEFORE helper
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    img = prepare_detection_image(0.5, img)
+    # img = prepare_detection_image(0.5, img)
 
-    result = run_anchor_detectors(True, True, True, debug=True, processing_scale=0.5, return_details=True, image=img)
+    result = run_anchor_detectors(True, True, True, debug=True, processing_scale=0.5, return_details=True)
 
     print(result)

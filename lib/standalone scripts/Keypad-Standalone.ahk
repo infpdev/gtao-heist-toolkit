@@ -3,23 +3,30 @@
 global fingerprintMode := 0
 
 init() {
+    global heistinstance
     try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
     try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
 
     standalone_switch_to_auto(*) {
         global hackMode := "auto"
         UpdateGlobalStatus(hackInProgress)
-        keypad.switchToAuto()
+        heistinstance.switchToAuto()
     }
 
     standalone_switch_to_manual(*) {
         global hackMode := "manual"
         UpdateGlobalStatus(hackInProgress)
-        keypad.switchToManual()
+        heistinstance.switchToManual()
     }
 
-    keypad := KeypadSolver(delay, ResetHackMode, UpdateGlobalStatus, cachedKeypadAnchor, folder, higherRes,
+    CreateHeistInstance()
+}
+
+CreateHeistInstance() {
+    keypad := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, folder, higherRes,
         OPENCV_ENGINE)
+
+    global heistinstance := keypad
 }
 
 init()
@@ -90,6 +97,7 @@ class KeypadSolver {
     cvGridStableSince := 0
     cvGridSignature := ""
     cvNoCircleSince := 0
+    kpFails := 0
 
     timeOut := 10000
     primaryAnchorTolerance := 10
@@ -115,7 +123,7 @@ class KeypadSolver {
     base_x2_imgSearch := 0.29
     base_y2_imgSearch := 0.769
 
-    __New(delay, resetHackMode, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
+    __New(delay, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
         AHK_ENGINE) {
         global
 
@@ -158,6 +166,7 @@ class KeypadSolver {
      * @param engine 
      */
     setEngine(engine) {
+        this.kpFails := 0
         this.useOpenCv := engine == OPENCV_ENGINE
     }
 
@@ -171,7 +180,7 @@ class KeypadSolver {
         this.prevRingRow := 1
 
         this.clearAll()
-        updateGlobalStatus(false) ; ToolTip replacement
+        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; ToolTip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -224,7 +233,7 @@ class KeypadSolver {
     CheckFalsePositive() {
         if (this.isShuttingDown || this.mode != "manual" || !this.autoStarted)
             return
-
+        MsgBox this.autoStarted
         if (!this.foundAnchor) {
             ResetHackMode()
             this.Idle()
@@ -245,7 +254,7 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToAuto()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -265,10 +274,12 @@ class KeypadSolver {
         if (this.mode == "manual")
             return
 
+        this.ShowRingMap() ; Show row mapping during handoff
+
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor)
+        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToManual()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -303,15 +314,18 @@ class KeypadSolver {
             ; Detect all columns and rows using OpenCV
             gridResult := GetResFromOpenCV(REQ_KEYPAD)
             if (gridResult = ERRMSG) {
-                MsgBox "grid threw"
+                if (debug)
+                    MsgBox "grid threw"
                 this.foundAnchor := false
                 this.needStatusUpdate := true
                 return false
             }
-            ; MsgBox gridResult
 
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.autoStarted)
+                this.autoStarted := false
+
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.tryOpenCV()")
                 this.needStatusUpdate := false
             }
 
@@ -345,6 +359,9 @@ class KeypadSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
+
+        if (!isGtaFocused(true))
+            ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -382,13 +399,26 @@ class KeypadSolver {
 
             if (this.mode == "manual") {
                 if (this.handoffPending) {
-                    this.ShowRingMap("", true) ; Switch mapping tooltip to show manual selection guidance during handoff
+                    this.ShowRingMap() ; Show row mapping during handoff
                     this.handoffPending := false
                 }
 
                 if (!this.stabilized) {
                     this.GridDetect()
                     this.StabilizationCheck()
+                    if (!this.cols.Count == 6) {
+                        this.kpFails++
+                        if (this.kpFails >= 3) {
+                            if (!isGtaFocused()) {
+                                ResetHackMode()
+                                return
+                            }
+                            this.kpFails := 0
+                            UseOpenCVEngineCallback()
+                        }
+                    } else {
+                        this.kpFails := 0
+                    }
                 } else {
                     this.isCurrentColSelected()
                 }
@@ -418,8 +448,8 @@ class KeypadSolver {
             return false
 
         if this.findAnchor() {
-            if (this.needStatusUpdate) {
-                updateGlobalStatus(true)
+            if (this.needStatusUpdate && this.foundAnchor) {
+                updateGlobalStatus(true, , , "CasinoKeypad.validateAnchor()")
 
                 this.needStatusUpdate := false
             }
@@ -445,7 +475,7 @@ class KeypadSolver {
         if (this.anchorLastSeen != 0) {
             this.clearAll()
             timeLeft := Integer((this.timeOut - (A_TickCount - this.anchorLastSeen)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft) ; Inform the main script about the anchor loss and remaining time before reset
+            updateGlobalStatus(false, true, timeLeft, "CasinoKeypad.checkTimeout()")
             this.needStatusUpdate := true
             if (this.anchorLastSeen != 0 && (A_TickCount - this.anchorLastSeen > this.timeOut)) {
                 ResetHackMode()
@@ -662,6 +692,9 @@ class KeypadSolver {
         }
 
         if allDetected {
+            if (this.autoStarted)
+                this.autoStarted := false
+
             this.gridFilledOnce := true
             if newDetection {
                 this.lastDetectionTime := A_TickCount
@@ -776,10 +809,7 @@ class KeypadSolver {
             this.prevRingRow := ringRow
             ; Update state and select col as in RingDetect
             if (force || ringRow != "" || ringCol != "") {
-                if (this.mode == "auto")
-                    this.ShowRingMap(ringRow)
-                else
-                    this.ShowRingMap("", true)
+                this.ShowRingMap()
 
                 if (debug)
                     ToolTip "Ring: Row " ringRow ", Col " ringCol, px, py, 18
@@ -942,7 +972,7 @@ class KeypadSolver {
                 return false
 
             this.prevRingRow := ringRow
-            this.ShowRingMap(ringRow)
+            this.ShowRingMap()
 
             ; Auto-select: find first column and select it
             for col in this.cols {
@@ -970,7 +1000,6 @@ class KeypadSolver {
                 if !(c.HasOwnProp("row"))
                     continue
                 targetCol := col
-                ; ShowCenteredToolTip "Checking column " col, 15
                 break
             }
         }
@@ -983,8 +1012,10 @@ class KeypadSolver {
             ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
-            this.ShowRingMap("", true)
-            this.showkeys()
+            if (this.mode == "auto") {
+                this.ShowRingMap()
+                this.showkeys()
+            }
             if (this.cols.Count = 0 || targetCol == 6) {
                 this.ResetState()
             }
@@ -1003,7 +1034,7 @@ class KeypadSolver {
 
         for col in this.cols {
             if (this.isColSelected(col))
-                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
+                this.ShowRingMap() ; Update row mapping after a column is selected
             break
         }
     }
@@ -1071,39 +1102,22 @@ class KeypadSolver {
         if (!this.cols.Has(6))
             return
 
-        if (this.mode == "auto")
-            this.ShowRingMap(this.prevRingRow)
-        else
-            this.ShowRingMap("", true)
+        this.ShowRingMap()
     }
 
     /**
-     * Shows the ring map tooltip based on the detected ring position for auto-mode and static row-col 
-     * map for manual mode.
-     * @param {number|string} [ringRow] - Map for auto-mode if present, omit for manual mode.
-     * @param {boolean} [forManual=false] - Show map for manual mode.
+     * Shows a unified row map tooltip for all active columns.
      */
-    ShowRingMap(ringRow := "", forManual := false) {
+    ShowRingMap() {
         if (!this.cols.Has(6))
             return
         out := ""
-        if (!forManual && ringRow = "") {
-            out := "No ring detected."
-            ToolTip out, this.scrW * 0.105, this.scrH / 2, 17
-            return
-        }
 
         for col in this.cols {
             c := this.cols[col]
             if !c.HasOwnProp("row")
                 continue
-            if (forManual) {
-                out .= "Col " col ": Row " c.row "`n"
-                continue
-            }
-            diff := c.row - ringRow
-            dir := diff >= 0 ? "Down" : "Up"
-            out .= "Col " col ": " dir " " Abs(diff) "`n"
+            out .= "Col " col ": Row " c.row "`n"
         }
         if (out = "")
             out := "No mapping found."

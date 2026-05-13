@@ -310,6 +310,9 @@ class FingerprintSolver {
      */
     MainLoop() {
 
+        if (!isGtaFocused(true))
+            ResetHackMode()
+
         if (this.isShuttingDown || this.mode == "idle")
             return
 
@@ -374,6 +377,10 @@ class FingerprintSolver {
                 if (this.lastSeenGroupTick) {
                     fallbackTimer := Integer((A_TickCount - this.lastSeenGroupTick) / 1000)
                     if (fallbackTimer >= 7) {
+                        if (!isGtaFocused(true)) {
+                            ResetHackMode()
+                            return
+                        }
                         this.ahkFailTimer := 0
                         UseOpenCVEngineCallback()
                     }
@@ -383,9 +390,13 @@ class FingerprintSolver {
 
                 } else {
                     if (!this.ahkFailTimer && this.lastFoundTick)
-                        this.ahkFailTimer := this.lastFoundTick
+                        this.ahkFailTimer := A_TickCount
                     fallbackTimer := Integer((A_TickCount - this.ahkFailTimer) / 1000)
                     if (fallbackTimer >= 7) {
+                        if (!isGtaFocused(true)) {
+                            ResetHackMode()
+                            return
+                        }
                         this.ahkFailTimer := 0
                         UseOpenCVEngineCallback()
                     }

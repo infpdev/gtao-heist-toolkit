@@ -39,7 +39,7 @@ try {
     MsgBox "Failed to register NoSave hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
 try {
-    Hotkey "~*" CanonicalToRegistration(resetKey), ReloadScript
+    Hotkey "~*" CanonicalToRegistration(resetKey), resetSolver
 } catch {
     MsgBox "Failed to register Reset hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
@@ -50,16 +50,32 @@ try {
 }
 
 LoadCache()
+initPython()
 
 SetTimer(() => (isFirewallEnabled()), -100)
 
 ; --- Common Functions ---
 
-ReloadScript(*) {
-    Reload
+/**
+ * Destroys the current heist instance (if any) and creates a new one based on current settings.
+ * Used for switching between fingerprint/keypad modes or heists.
+ * 
+ * Side effects: Updates global heistInstance.
+ */
+resetSolver(*) {
+    global fingerprintMode, heistInstance, scriptsEnabled
+    if (heistInstance) {
+        try heistInstance.Destroy()
+        heistInstance := ""
+    }
+
+    CreateHeistInstance()
 }
 
 ExitScript(*) {
+    if (IsObject(heistinstance))
+        heistinstance.Destroy()
+
     OnExitSaveCache()
     ExitApp
 }
@@ -77,6 +93,8 @@ ResetHackMode() {
     global hackMode
     hackMode := "idle"
     clearAllToolTips()
+
+    resetSolver()
 }
 
 /**
@@ -171,7 +189,6 @@ ToggleEngineMode(params := "", info := "", to := "") {
     } else
         engine := !engine
 
-
     if (heistinstance && heistInstance != "") {
         heistInstance.setEngine(engine)
     }
@@ -213,9 +230,9 @@ clearAllToolTips() {
         ToolTip "", , , A_Index
 }
 
-isGtaFocused() {
+isGtaFocused(excludeGui := true) {
     return (WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe"))
+    || WinActive("ahk_exe GTA5_Enhanced.exe") || debug)
 }
 
 PgUpDown(*) {
@@ -253,3 +270,28 @@ PgUpUp(*) {
     pgUpSent := false
     UpdateGlobalStatus(hackInProgress)
 }
+
+; Toggle debug mode with Alt+F12.
+ToggleDebugChord(*) {
+    global debug
+    if (!IsSet(debug))
+        debug := false
+
+    debug := !debug
+
+    if (debug) {
+        Hotkey("F2", (*) => Reload(), "On")
+        Hotkey("F3", (*) => ExitApp(), "On")
+        ShowCenteredToolTip "Debug mode enabled", 17
+        sleep 1000
+    } else {
+        try Hotkey("F2", "Off")
+        try Hotkey("F3", "Off")
+        ShowCenteredToolTip "Debug mode disabled", 17
+        sleep 1000
+    }
+
+    SetTimer(() => (debug ? ToolTip("", , , 17) : clearAllToolTips()), -1200)
+}
+
+Hotkey("!F10", ToggleDebugChord)

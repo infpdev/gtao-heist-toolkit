@@ -286,11 +286,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode, hackInProgress
         hackMode := "idle"
         hackInProgress := false
-        SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
-        if (IsObject(heistInstance))
+        SetTimer(findAnchorsAndCreateInstance, 0) ; Restart anchor detection timer
+        if (IsObject(heistInstance)) {
             if (heistInstance) {
-                try heistInstance.Destroy()
                 ToolTip "Resetting script", scrW, 0, 20
+                try heistInstance.Destroy()
                 sleep 500
                 CreateHeistInstance()
             }
@@ -298,6 +298,9 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                 ToolTip "Reset hotkey triggered!"
                 SetTimer () => ToolTip(), -700
             }
+        }
+
+        SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
 
     }
 }
@@ -326,7 +329,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode
         hackMode := "idle"
 
-        clearAllToolTips(scriptsEnabled)
+        SwitchCasinoInstance() ; Restart the heist instance to reset state
+        clearAllToolTips(0)
         UpdateGlobalStatus(false)
         if (scriptsEnabled) {
             SetTimer () => (
@@ -553,7 +557,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     }
 
     ; Callback for using the OpenCV engine, used by solvers to switch
-    ; to OpenCV mode when AHK detection fails for more than 2 consecutive attempts.
+    ; to OpenCV mode when AHK detection fails several times
     UseOpenCVEngineCallback() {
         ToggleEngineMode("", "", OpenCV_ENGINE)
     }
@@ -660,7 +664,7 @@ Init() {
 
     ; ==== TEMP DEBUG BUILD ====
     ; higherRes := true
-    debug := true
+    ; debug := true
 
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
@@ -985,10 +989,22 @@ Init() {
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
 
+    gtaHwnd := getGtaHwnd()
+
     ForceForeground(guiApp)
 
     guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
+
+    if (gtaHwnd) {
+        try {
+            sleep 100
+            WinActivate "ahk_id " gtaHwnd
+            WinWaitActive "ahk_id " gtaHwnd, , 2
+        } catch {
+            return
+        }
+    }
 
     if (!scriptsEnabled)
         UpdateGlobalStatus(false)

@@ -11,6 +11,11 @@ if (!IsSet(OPENCV_ENGINE))
     global OPENCV_ENGINE := 1
 
 checkResolution() {
+
+    global unsupportedResolution := false
+    global higherRes := false
+    global wideScreen := false
+
     supportedResolutions := [[1366, 768], [1600, 900], [1920, 1080]]
     nearestRes := supportedResolutions[1]
     bestDiff := Abs(A_ScreenWidth - nearestRes[1])
@@ -33,6 +38,14 @@ checkResolution() {
     ; folder for resolution-specific templates
     global folder := dir "\" targetW "x" targetH "\"
 
+    iniFile := dir "\zSettings.ini"
+    if (FileExist(iniFile)) {
+        disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
+        if (disableWarningFlag = "1") {
+            return
+        }
+    }
+
     ; Check if exact match
     isExactMatch := false
     for _, res in supportedResolutions {
@@ -43,8 +56,8 @@ checkResolution() {
     }
 
     if (isExactMatch) {
-        global unsupportedResolution := false
-        global higherRes := false
+        unsupportedResolution := false
+        higherRes := false
         return
     }
 
@@ -56,26 +69,23 @@ checkResolution() {
 
     global wideScreen := is21to9
 
-    if ((is16to9 || is21to9) && A_ScreenWidth > 1920) {
+    if ((is16to9 || is21to9) && (A_ScreenWidth > 1920 || wideScreen)) {
         ; Higher resolution 16:9 screen - use fallback to nearest supported
-        global unsupportedResolution := false
-        global higherRes := true
+        unsupportedResolution := false
+        higherRes := true
         global engine := OPENCV_ENGINE
+        if (wideScreen)
+            ShowResolutionWarning(targetW, targetH, iniFile, true)
         return
     }
 
     ; Not exact match, not 16:9 and higher - unsupported
-    global unsupportedResolution := true
-    global higherRes := false
-
-    iniFile := dir "\zSettings.ini"
-    if (FileExist(iniFile)) {
-        disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
-        if (disableWarningFlag = "1") {
-            return
-        }
+    if (!is16to9 && !is21to9) {
+        unsupportedResolution := true
+        higherRes := false
     }
-    ShowResolutionWarning(targetW, targetH, iniFile, wideScreen)
+
+    ShowResolutionWarning(targetW, targetH, iniFile)
     return
 }
 

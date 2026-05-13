@@ -2,8 +2,8 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
-*An upgraded version of the standalone script **"GTA Casino Solver v2"**.
-A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0. Runs entirely locally, no data is sent anywhere.
+>A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2. An upgraded version of the standalone script **"GTA Casino Solver v2"**
+>Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine.
 
 
 <br>
@@ -42,7 +42,7 @@ A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2.0
 - Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
 - Supports both **AHK-based** and **OpenCV-based** detection methods  
-- Improved support for higher **16:9 resolutions**  
+- Supports all common **16:9** and **21:9 ultrawide** resolutions  
 - Cayo Perico **PgUp** bug fix  
 - Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit  
 - Manual and auto solving modes  
@@ -92,10 +92,8 @@ Everything runs externally, similar to a macro tool, with a GUI designed for eas
 - **Windows** (tested on Windows 11)  
 - **GTA Online** — tested on E&E, may also work on Legacy  
 - The game should be running in **Borderless Fullscreen** or **Borderless Windowed** mode  
-- **16:9 resolution required**  
-  - The toolkit is designed for standard 16:9 aspect ratios  
-  - OpenCV mode supports a wider range of 16:9 resolutions compared to the legacy AHK detection method  
-  - Some unsupported or unusual resolutions may still produce inaccurate detections  
+- **Supported resolutions**
+  - Supports common **16:9** and **21:9 ultrawide** resolutions
 - **Internet connection** *(optional)*  
   - Used only for update checks  
   - No data is collected or sent externally  
@@ -114,7 +112,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/2c51a45ee73d96fe4e46ec07bbcea5f0500738cc3b100af008a5f14d239e175e
+> https://www.virustotal.com/gui/file/7f6a64f46ce716f4923da3cd596096db9d9ba3d3056c9a49e35329b5fd040309
 
 
 <p align="center">
@@ -177,11 +175,11 @@ Provided as-is, with no guarantees.
      - Fast and battle-tested  
      - Available only on supported lower 16:9 resolutions  
 
-   - **OpenCV** **(BETA)**
+   - **OpenCV**
      - More flexible image-based detection  
-     - Default for higher 16:9 resolutions  
-     - Automatically selected on unsupported higher resolutions  
-     - Resolutions higher than **1920x1080** will only show the OpenCV option  <br><br>
+     - Recommended for higher resolutions and ultrawide displays
+     - Automatically selected on unsupported resolutions/aspect ratios
+     - Higher resolutions and 21:9 setups will use OpenCV automatically  <br><br>
 
 3. **Select Heist**
    - **Casino**
@@ -249,8 +247,6 @@ All hotkeys are customizable.
 Don't want the full toolkit? Use any of these standalone packages to run individual solvers.
 
 > Note: Each of these standalone solvers includes the **NoSave** script, so you do not need to download the **NoSave Standalone** script separately if you use any of the three solvers.
->
-> If you're on an unsupported resolution, consider using the **NoSave Standalone** script to avoid repeated unsupported-resolution warnings.
 
 - **[Casino Fingerprint Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)** — Standalone solver for the casino fingerprint scanner
 - **[Casino Keypad Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)** — Standalone solver for the casino keypad cracker
@@ -279,7 +275,7 @@ Want to verify the source code or build the executable yourself? See [BUILD.md](
 ```
 _src/
 │
-├─ 1920x1080/, 1600x900/, 1366x768/   # Resolution-specific images for the solver 
+├─ 1920x1080/, 1600x900/, 1366x768/   # Legacy AHK template assets for supported 16:9 resolutions
 │
 ├─ lib/
 │  ├─ build_scripts/

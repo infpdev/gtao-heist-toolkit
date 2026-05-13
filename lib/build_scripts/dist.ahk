@@ -81,6 +81,7 @@ buildVaultOps() {
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses)
 
     ; === Compile and package the main vaultOps executable ===
+    ToolTip "", , , 1
     ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
     RunWait cmd, , "Hide"
     RunWait updaterCmd, , "Hide"
@@ -350,8 +351,8 @@ buildGUI(isDev := false) {
     rStandaloneYes := dlg.AddRadio("xp+14 yp+23 Checked Disabled", "Yes")
 
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
-    rScanYes := dlg.AddRadio("xp+14 yp+23 Group", "Yes")
-    rScanNo := dlg.AddRadio("x+80 yp Checked", "No")
+    rScanYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
+    rScanNo := dlg.AddRadio("x+80 yp ", "No")
 
     apiKey := ""
 

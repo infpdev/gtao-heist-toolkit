@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import ImageGrab, Image
+from PIL import Image
 from helpers import resolve_dump_dir, prepare_detection_image
 import os
 
@@ -28,7 +28,7 @@ SCAN = [
 
 
 def _find_match_index(scan_part: np.ndarray, target_parts: list) -> int:
-    """Find which target part matches the scan part. Return -1 if no match."""
+    """Return the index of the best matching target part, or -1 if none."""
     
     threshold = 0.88
 
@@ -42,7 +42,7 @@ def _find_match_index(scan_part: np.ndarray, target_parts: list) -> int:
 
 
 def _dump_debug_image(image, debug_overlay, filename):
-    """Dump debug overlay image to lib/dump directory."""
+    """Save an annotated debug overlay into the dump directory."""
     dump_dir = resolve_dump_dir()
     os.makedirs(dump_dir, exist_ok=True)
     filepath = os.path.join(dump_dir, filename)
@@ -56,12 +56,11 @@ def _dump_debug_image(image, debug_overlay, filename):
 
 
 def detect_fingerprint(image=None, debug=False):
-    """Detect Cayo Perico fingerprint parts.
+    """Detect the Cayo fingerprint solution and cursor row.
 
-    Returns:
-      dict with:
-        - solution: list of signed integers (positive=right, negative=left, 0=none)
-        - cursor_row: 1-based row index of the brightest matched scan row, or -1 if unknown
+    Returns a dict with:
+    - solution: signed click offsets for each row
+    - cursor_row: 1-based selected row, or -1 if unknown
     """
     if image is None:
         image = prepare_detection_image(1.0)
@@ -164,7 +163,7 @@ def detect_fingerprint(image=None, debug=False):
 
 
 def main(image=None):
-    """Main entry point for direct execution."""
+    """Run the detector directly and print a quick human-readable summary."""
     result = detect_fingerprint(image, True)
     print("[*] Cayo Perico Fingerprint Detection")
     print(result["solution"])

@@ -25,11 +25,13 @@ RING_DEBUG_PATH = os.path.join(DEBUG_DUMP_DIR, "ring_debug.png")
 
 
 def _dump_debug_image(image: np.ndarray, filename: str):
+    """Write an RGB debug image into the configured dump directory."""
     os.makedirs(DEBUG_DUMP_DIR, exist_ok=True)
     Image.fromarray(image.astype(np.uint8), mode="RGB").save(os.path.join(DEBUG_DUMP_DIR, filename))
 
 
 def _prepare_image(image=None, scale: float = 0.5):
+    """Normalize input frame into RGB numpy array at requested scale."""
     if image is None:
         image = prepare_detection_image(scale)
     else:
@@ -54,6 +56,7 @@ def _prepare_image(image=None, scale: float = 0.5):
     return image
 
 def _grid_metrics(scale: float):
+    """Return scaled keypad grid coordinates and spacing constants."""
     base_x1 = int(KEY_BASE_X1_RATIO * SCREEN_W * scale)
     base_y1 = int(KEY_BASE_Y1_RATIO * SCREEN_H * scale)
     base_x2 = int(KEY_BASE_X2_RATIO * SCREEN_W * scale)
@@ -171,6 +174,18 @@ def detect_keypad(image=None, scale=0.5, debug=False):
 
 
 def detect_ring(image=None, scale=0.3, debug=False, col=None):
+    """Detect the keypad ring position and map it to row 1..5.
+
+    Args:
+        image: Optional RGB frame. If omitted, captures screen via helper pipeline.
+        scale: Downscale factor used for circle search.
+        debug: If true, dumps annotated ring debug image.
+        col: Optional 1-based target column. If omitted, scans all columns.
+
+    Returns:
+        dict: {"found": True, "circle": (x, y, r), "row": int} when found.
+        bool: False when no ring is detected.
+    """
     image = _prepare_image(image, 1.0)
 
     if image is None:
@@ -287,8 +302,8 @@ def detect_ring(image=None, scale=0.3, debug=False, col=None):
         cx = base_x + int((col - 0.5) * col_spacing)
         half_w = int(col_spacing)
 
-        x1 = cx - half_w
-        x2 = cx + half_w
+        x1 = int(cx - half_w * 3/4)
+        x2 = int(cx + half_w * 3/4)
 
         x1 = max(0, min(img_small.shape[1] - 1, x1))
         x2 = max(x1 + 1, min(img_small.shape[1], x2))
@@ -432,6 +447,6 @@ if __name__ == "__main__":
     # BGR -> RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    result = detect_keypad(image=img, debug=True)
+    result = detect_ring(image=img, debug=True, col=4)
 
     print(result)

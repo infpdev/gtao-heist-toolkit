@@ -89,8 +89,8 @@ foundAnchor() {
     ; El Rubio: try cached area first, then fallback to full region.
     if (debug) {
         ToolTip "Searching for El Rubio anchor", 0, 0, 18
-        ToolTip "⇲", rb_x1, rb_y1, 15 ; Debug: show search area
-        ToolTip "⇱", rb_x2, rb_y2, 16 ; Debug: show search area
+        ; ToolTip "⇲", rb_x1, rb_y1, 15 ; Debug: show search area
+        ; ToolTip "⇱", rb_x2, rb_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
 
@@ -186,20 +186,29 @@ findAnchorsAndCreateInstance() {
         anchorFound := false
         return
     }
-    if (!debug && !isGtaFocused(true))
+
+    if (!isGtaFocused(true))
         return
 
     anchor := (engine == AHK_ENGINE)
         ? foundAnchor()
         : foundAnchorOpenCV()
 
+    if (!anchor)
+        anchor := foundAnchorOpenCV()
+
     if (!anchor) {
-        ShowCenteredToolTip "No anchors found", 17
+        if (debug)
+            ShowCenteredToolTip "No anchors found", 17
         anchorFound := false
+
         return
     } else {
-        ShowCenteredToolTip "Anchor found: " anchor.mode (engine == OPENCV_ENGINE ? " (OpenCV)" : ""), 17
-        sleep 500
+        if (debug) {
+            ShowCenteredToolTip "Anchor found: " anchor.mode (engine == OPENCV_ENGINE ? " (OpenCV)" : ""), 17
+            sleep 500
+        }
+
     }
 
     anchorFound := true

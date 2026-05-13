@@ -241,6 +241,8 @@ class KeypadSolver {
         if (this.mode == "manual")
             return
 
+        this.ShowRingMap() ; Show row mapping during handoff
+
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
         SetTimer this.fnMainLoop, 0
@@ -325,6 +327,9 @@ class KeypadSolver {
      */
     MainLoop() {
 
+        if (!isGtaFocused(true))
+            ResetHackMode()
+
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
             return
@@ -361,7 +366,7 @@ class KeypadSolver {
 
             if (this.mode == "manual") {
                 if (this.handoffPending) {
-                    this.ShowRingMap("", true) ; Switch mapping tooltip to show manual selection guidance during handoff
+                    this.ShowRingMap() ; Show row mapping during handoff
                     this.handoffPending := false
                 }
 
@@ -371,7 +376,12 @@ class KeypadSolver {
                     if (!this.cols.Count == 6) {
                         this.kpFails++
                         if (this.kpFails >= 3) {
+                            if (!isGtaFocused()) {
+                                ResetHackMode()
+                                return
+                            }
                             this.kpFails := 0
+                            UseOpenCVEngineCallback()
                         }
                     } else {
                         this.kpFails := 0
@@ -766,10 +776,7 @@ class KeypadSolver {
             this.prevRingRow := ringRow
             ; Update state and select col as in RingDetect
             if (force || ringRow != "" || ringCol != "") {
-                if (this.mode == "auto")
-                    this.ShowRingMap(ringRow)
-                else
-                    this.ShowRingMap("", true)
+                this.ShowRingMap()
 
                 if (debug)
                     ToolTip "Ring: Row " ringRow ", Col " ringCol, px, py, 18
@@ -932,7 +939,7 @@ class KeypadSolver {
                 return false
 
             this.prevRingRow := ringRow
-            this.ShowRingMap(ringRow)
+            this.ShowRingMap()
 
             ; Auto-select: find first column and select it
             for col in this.cols {
@@ -960,7 +967,6 @@ class KeypadSolver {
                 if !(c.HasOwnProp("row"))
                     continue
                 targetCol := col
-                ; ShowCenteredToolTip "Checking column " col, 15
                 break
             }
         }
@@ -973,9 +979,10 @@ class KeypadSolver {
             ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
-            if (this.mode == "manual")
-                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
-            this.showkeys()
+            if (this.mode == "auto") {
+                this.ShowRingMap()
+                this.showkeys()
+            }
             if (this.cols.Count = 0 || targetCol == 6) {
                 this.ResetState()
             }
@@ -994,7 +1001,7 @@ class KeypadSolver {
 
         for col in this.cols {
             if (this.isColSelected(col))
-                this.ShowRingMap("", true) ; Update tooltip to show manual selection guidance after a column is selected
+                this.ShowRingMap() ; Update row mapping after a column is selected
             break
         }
     }
@@ -1062,39 +1069,22 @@ class KeypadSolver {
         if (!this.cols.Has(6))
             return
 
-        if (this.mode == "auto")
-            this.ShowRingMap(this.prevRingRow)
-        else
-            this.ShowRingMap("", true)
+        this.ShowRingMap()
     }
 
     /**
-     * Shows the ring map tooltip based on the detected ring position for auto-mode and static row-col 
-     * map for manual mode.
-     * @param {number|string} [ringRow] - Map for auto-mode if present, omit for manual mode.
-     * @param {boolean} [forManual=false] - Show map for manual mode.
+     * Shows a unified row map tooltip for all active columns.
      */
-    ShowRingMap(ringRow := "", forManual := false) {
+    ShowRingMap() {
         if (!this.cols.Has(6))
             return
         out := ""
-        if (!forManual && ringRow = "") {
-            out := "No ring detected."
-            ToolTip out, this.scrW * 0.105, this.scrH / 2, 17
-            return
-        }
 
         for col in this.cols {
             c := this.cols[col]
             if !c.HasOwnProp("row")
                 continue
-            if (forManual) {
-                out .= "Col " col ": Row " c.row "`n"
-                continue
-            }
-            diff := c.row - ringRow
-            dir := diff >= 0 ? "Down" : "Up"
-            out .= "Col " col ": " dir " " Abs(diff) "`n"
+            out .= "Col " col ": Row " c.row "`n"
         }
         if (out = "")
             out := "No mapping found."

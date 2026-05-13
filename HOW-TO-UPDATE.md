@@ -7,5 +7,5 @@ Done!
 
 > Your settings will be preserved.
 
-> ### OpenCV Engine released
+> ### High-resolution / Ultrawide support added in v4.0.0
 > Please read the [v4 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.0.0) for information about the new OpenCV engine, higher-resolution support, and the new detection engine selector.

@@ -117,7 +117,13 @@ def handle_request(data):
 
         if t == "detect_ring":
             touch_heartbeat()
-            result = detect_ring(debug=False)
+            col_raw = data.get("col", None)
+            try:
+                col = int(col_raw) if col_raw is not None else None
+            except (TypeError, ValueError):
+                col = None
+
+            result = detect_ring(debug=False, col=col)
             if result and result.get("found"):
                 return json.dumps(result["row"], ensure_ascii=True)
             return json.dumps(0, ensure_ascii=True)
