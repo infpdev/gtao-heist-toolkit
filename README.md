@@ -2,8 +2,7 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
->A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2. An upgraded version of the standalone script **"GTA Casino Solver v2"**
->Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine.
+>A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2. An upgraded version of the standalone script **"GTA Casino Solver v2"**<br>Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine.
 
 
 <br>
@@ -306,6 +305,7 @@ _src/
 │  │
 │  ├─ standalone scripts/             # Standalone version of each solver, with shared logic extracted to helpers
 │  │
+│  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV Python backend
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
 │  ├─ checkResolution.ahk             # Resolution detection and fallback handling
 │  ├─ commonFuncs.ahk                 # Shared utilities for the Toolkit and Standalone scripts
