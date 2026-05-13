@@ -24,6 +24,8 @@ init() {
         return
     }
 
+    CreateHeistInstance()
+
 }
 
 CreateHeistInstance() {

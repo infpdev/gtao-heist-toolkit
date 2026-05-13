@@ -199,7 +199,7 @@ ToggleEngineMode(params := "", info := "", to := "") {
 
 ToggleNoSaveStatus(*) {
     global noSave
-    if (!isFirewallEnabled()) {
+    if (!isFirewallEnabled(true)) {
         MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
             . "Please check your firewall settings and try again.",
             "Firewall Access Error", 48
