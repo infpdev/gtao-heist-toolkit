@@ -1,7 +1,7 @@
 
 ; Inno Setup script for vaultOps
 #define MyAppName "vaultOps"
-#define MyAppVersion "4.1.0"
+#define MyAppVersion "4.1.1"
 #define MyAppPublisher "infpdev"
 #define MyAppURL "https://github.com/infpdev/gtao-heist-toolkit"
 #define MyAppExeName "vaultOps.exe"

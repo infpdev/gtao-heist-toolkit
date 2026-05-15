@@ -415,6 +415,7 @@ class FingerprintSolver {
                             return
                         }
                         this.ahkFailTimer := 0
+                        this.prevPrints := ""
                         UseOpenCVEngineCallback()
                     }
 
@@ -431,6 +432,7 @@ class FingerprintSolver {
                             return
                         }
                         this.ahkFailTimer := 0
+                        this.prevPrints := ""
                         UseOpenCVEngineCallback()
                     }
 

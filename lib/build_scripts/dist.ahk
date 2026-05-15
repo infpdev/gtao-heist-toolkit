@@ -136,6 +136,7 @@ BuildOpenCVEngine(parentDir) {
     sourceFile := pyHelpersDir "\OpenCV_Engine.py"
     outputFile := pyHelpersDir "\OpenCV_Engine.exe"
     buildDir := pyHelpersDir "\nuitka_build"
+    builtExe := buildDir "\OpenCV_Engine.exe"
 
     RequireExistingFile(sourceFile, "OpenCV engine helper")
 
@@ -145,6 +146,8 @@ BuildOpenCVEngine(parentDir) {
             "Error", 48
         ExitApp
     }
+
+    try CleanOldNuitkaTempFolders()
 
     if FileExist(outputFile)
         try FileDelete(outputFile)
@@ -159,14 +162,13 @@ BuildOpenCVEngine(parentDir) {
 
     quotedPython := '"' pythonExe '"'
     quotedBuildDir := '"' buildDir '"'
-    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --windows-onefile-tempdir-spec=' quotedBuildDir '\nuitka_temp --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
-    ; nuitkaCmd := 'cmd /k ""' pythonExe '" -m nuitka --onefile --follow-imports --nofollow-import-to=PIL.ImageShow --assume-yes-for-downloads --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '""'
+    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
+    ; nuitkaCmd := 'cmd /k ""' pythonExe '" -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '""'
 
     RunWait nuitkaCmd, , "Hide"
 
     sleep 3000
 
-    builtExe := buildDir "\OpenCV_Engine.exe"
     if !FileExist(builtExe) {
         MsgBox "Nuitka finished but OpenCV_Engine.exe was not created.`n`nCommand:`n" nuitkaCmd, "Error", 48
         ExitApp
@@ -179,6 +181,20 @@ BuildOpenCVEngine(parentDir) {
     if !FileExist(outputFile) {
         MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
         ExitApp
+    }
+}
+
+CleanOldNuitkaTempFolders() {
+    tempDir := A_Temp
+
+    loop files tempDir "\onefile_*", "D" {
+        try {
+            ; Skip folders modified within last 10 minutes
+            ageMinutes := DateDiff(A_Now, FileGetTime(A_LoopFileFullPath, "M"), "Minutes")
+
+            if (ageMinutes > 10)
+                DirDelete(A_LoopFileFullPath, true)
+        }
     }
 }
 

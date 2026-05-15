@@ -32,11 +32,11 @@ The cached settings are stored at:
 </details>
 
 <details>
-<summary><b>vaultOps v4.1.0 changes</b></summary>
+<summary><b>vaultOps v4.1.1 changes</b></summary>
 
 <br>
 
-Please read the [v4.1.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.1.0) for additional information about:
+Please read the [v4.1.1 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.1.1) for additional information about:
 
 * improved NoSave reliability checks
 * persistent settings support

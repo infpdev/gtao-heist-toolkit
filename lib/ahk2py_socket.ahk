@@ -100,14 +100,14 @@ StartPython() {
     }
 
     pyProc := shell.Exec(cmd)
-    SetTimer(() => HeartbeatOpenCVAsync(), 1000)
+    SetTimer(() => HeartbeatOpenCV(), 1000)
 }
 
 ; Stop the helper process if running and clear the `pyProc` handle.
 StopPython(*) {
     global pyProc
 
-    SetTimer(() => HeartbeatOpenCVAsync(), 0)
+    SetTimer(() => HeartbeatOpenCV(), 0)
 
     try pyProc.Terminate()
 
@@ -133,8 +133,13 @@ RestartPython(err := "") {
 
 ; Send a JSON request to the helper process and wait (short timeout) for reply.
 ; Returns the raw response line or empty string on timeout/failure.
-CallPython(puzzleType, params := 0) {
+CallPython(puzzleType, params := 0, waitForResponse := true) {
     global pyProc, ocvCallInProgress
+
+    if (ocvCallInProgress) {
+        ; Prevent flooding the helper with requests if one is already in progress
+        return ""
+    }
 
     if (!pyProc) {
         initPython()
@@ -155,6 +160,7 @@ CallPython(puzzleType, params := 0) {
     req .= "}"
 
     if (!IsObject(pyProc)) {
+        ocvCallInProgress := false
         RestartPython()
         return ""
     }
@@ -168,12 +174,18 @@ CallPython(puzzleType, params := 0) {
         return ""
     }
 
+    if (!waitForResponse) {
+        ocvCallInProgress := false
+        return ""
+    }
+
     ; wait for response (timeout)
     start := A_TickCount
     try {
         while (A_TickCount - start < 1000) {
             if (!pyProc.StdOut.AtEndOfStream) {
                 line := pyProc.StdOut.ReadLine()
+                ocvCallInProgress := false
                 return line
             }
             Sleep 10
@@ -207,21 +219,7 @@ HeartbeatOpenCV(*) {
     if (isShuttingDown || !IsObject(pyProc) || ocvCallInProgress)
         return
 
-    try CallPython(REQ_HEARTBEAT)
-}
-
-HeartbeatOpenCVAsync() {
-    global pyProc, ocvCallInProgress, isShuttingDown
-
-    if (isShuttingDown || !IsObject(pyProc) || ocvCallInProgress)
-        return
-
-    ; Fire heartbeat in background without waiting for response to avoid blocking UI thread
-    try {
-        pyProc.StdIn.WriteLine('{"type":"' REQ_HEARTBEAT '"}')
-    } catch {
-        ; Silent catch - heartbeat failure is non-critical
-    }
+    try CallPython(REQ_HEARTBEAT, , false) ; fire-and-forget heartbeat to keep helper alive
 }
 
 ; =========================
