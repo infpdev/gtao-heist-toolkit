@@ -100,14 +100,14 @@ StartPython() {
     }
 
     pyProc := shell.Exec(cmd)
-    SetTimer(HeartbeatOpenCV, 1000)
+    SetTimer(() => HeartbeatOpenCVAsync(), 1000)
 }
 
 ; Stop the helper process if running and clear the `pyProc` handle.
 StopPython(*) {
     global pyProc
 
-    SetTimer(HeartbeatOpenCV, 0)
+    SetTimer(() => HeartbeatOpenCVAsync(), 0)
 
     try pyProc.Terminate()
 
@@ -208,6 +208,20 @@ HeartbeatOpenCV(*) {
         return
 
     try CallPython(REQ_HEARTBEAT)
+}
+
+HeartbeatOpenCVAsync() {
+    global pyProc, ocvCallInProgress, isShuttingDown
+
+    if (isShuttingDown || !IsObject(pyProc) || ocvCallInProgress)
+        return
+
+    ; Fire heartbeat in background without waiting for response to avoid blocking UI thread
+    try {
+        pyProc.StdIn.WriteLine('{"type":"' REQ_HEARTBEAT '"}')
+    } catch {
+        ; Silent catch - heartbeat failure is non-critical
+    }
 }
 
 ; =========================

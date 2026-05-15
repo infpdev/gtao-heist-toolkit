@@ -2,17 +2,44 @@
 
 1. Download the latest version of the standalone script you use:
 
-   - [Fingerprint-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)
-   - [Keypad-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)
-   - [ElRubio-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)
-   - [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)
+   * [Fingerprint-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)
+   * [Keypad-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)
+   * [ElRubio-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)
+   * [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)
 
-2. Run the downloaded executable. It will extract a folder with the same name as the executable into the **current directory**.
+2. Run the downloaded executable
 
-> For your settings to be preserved, it is recommended to run/extract it in the same folder where you previously extracted that standalone script.  
-> 
-> For example, if you previously ran `Fingerprint-Standalone-SFX.exe` in the `C:\GTAO-Tools` folder, it would extract to the `Fingerprint-Standalone` folder.  
-> To update it while preserving your settings, run the new `Fingerprint-Standalone-SFX.exe` in the `C:\GTAO-Tools` folder itself — **not** inside the `Fingerprint-Standalone` folder.
+3. The standalone script will extract to the current folder as usual
 
-Done!  
->*Your settings will be preserved if extracted in the same folder*
+Done!
+
+> [!NOTE]
+> Standalone scripts now automatically preserve your settings and hotkeys through a cached settings file.
+>
+> This means you no longer need to extract updates into the same folder to keep your configuration.
+
+<details>
+<summary><b>Where are the settings stored?</b></summary>
+
+<br>
+
+The cached settings are stored at:
+
+`%appdata%\VaultOps`
+
+(after running the standalone script at least once)
+
+</details>
+
+<details>
+<summary><b>vaultOps v4.1.0 changes</b></summary>
+
+<br>
+
+Please read the [v4.1.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.1.0) for additional information about:
+
+* improved NoSave reliability checks
+* persistent settings support
+* installation behavior changes
+
+</details>

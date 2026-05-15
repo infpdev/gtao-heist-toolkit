@@ -1,4 +1,4 @@
-﻿# VaultOps Toolkit
+﻿# VaultOps ● GTA Online Heist Toolkit
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
@@ -15,7 +15,7 @@
 
 
 ## Contents
-- [VaultOps Toolkit](#vaultops-toolkit)
+- [VaultOps ● GTA Online Heist Toolkit](#vaultops--gta-online-heist-toolkit)
   - [Contents](#contents)
   - [Features](#features)
   - [What This Script Is (and Isn't)](#what-this-script-is-and-isnt)
@@ -92,7 +92,7 @@ Everything runs externally, similar to a macro tool, with a GUI designed for eas
 - **GTA Online** — tested on E&E, may also work on Legacy  
 - The game should be running in **Borderless Fullscreen** or **Borderless Windowed** mode  
 - **Supported resolutions**
-  - Supports common **16:9** and **21:9 ultrawide** resolutions
+  - Supports all common **16:9** and **21:9 ultrawide** resolutions
 - **Internet connection** *(optional)*  
   - Used only for update checks  
   - No data is collected or sent externally  
@@ -100,6 +100,10 @@ Everything runs externally, similar to a macro tool, with a GUI designed for eas
 - **Firewall enabled** *(optional)*  
   - Required for the NoSave feature  
   - The toolkit can automatically enable it when needed  
+- **Administrator privileges**
+  - Required for NoSave, firewall management and auto-updates.
+
+
 ## ⚠️ Disclaimer
 
 This is a hobby project built while learning AutoHotkey.
@@ -111,7 +115,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/2827a75e6da8543855a294de148e92378f2a7de560162d44d9e940c01c65c526
+> https://www.virustotal.com/gui/file/2c54be99b7089ec9f0d3537acb8e6702e5840bc0786c9a9827c76f4f731f527a
 
 
 <p align="center">
@@ -149,6 +153,7 @@ Provided as-is, with no guarantees.
 
 **Notes:**
 - The app will attempt to enable the firewall automatically if it's not enabled.
+- VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
 - The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
 - To verify it’s active, press `Alt + F4`. If you see a **“save failed”** message, it’s working.
 
@@ -290,12 +295,12 @@ _src/
 │  │  └─ windowHelpers.ahk            # Window focus + activation handling
 │  │
 │  ├─ py_helpers/                     # Python/OpenCV helpers
-│  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV mode
-│  │  ├─ casinofingerprint.py         # Casino fingerprint detection logic for OpenCV mode
-│  │  ├─ casinokeypad.py              # Casino keypad detection logic for OpenCV mode
-│  │  ├─ cayofingerprint.py           # Cayo Perico fingerprint detection logic for OpenCV mode
-│  │  ├─ OpenCV_Engine.py             # OpenCV backend + IPC listener
-│  │  └─ requirements.txt             # Python deps for OpenCV mode
+│  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV detection engine
+│  │  ├─ casinofingerprint.py         # Casino fingerprint detection logic for OpenCV detection engine
+│  │  ├─ casinokeypad.py              # Casino keypad detection logic for OpenCV detection engine
+│  │  ├─ cayofingerprint.py           # Cayo Perico fingerprint detection logic for OpenCV detection engine
+│  │  ├─ OpenCV_Engine.py             # OpenCV detection engine + IPC listener
+│  │  └─ requirements.txt             # Python deps for OpenCV detection engine
 │  │
 │  ├─ scripts/
 │  │  ├─ CasinoFingerprint.ahk        # Casino fingerprint detection + solving
@@ -305,7 +310,7 @@ _src/
 │  │
 │  ├─ standalone scripts/             # Standalone version of each solver, with shared logic extracted to helpers
 │  │
-│  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV Python backend
+│  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV detection engine
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
 │  ├─ checkResolution.ahk             # Resolution detection and fallback handling
 │  ├─ commonFuncs.ahk                 # Shared utilities for the Toolkit and Standalone scripts
@@ -341,7 +346,7 @@ _src/
 - `ElRubio.ahk` — Cayo fingerprint cloner solver
 - `NoSave.ahk` — NoSave handling and firewall automation
 
-**OpenCV Backend (`lib/py_helpers/`)**
+**OpenCV detection engine (`lib/py_helpers/`)**
 - `OpenCV_Engine.py` — IPC listener/backend entry point
 - `anchorDetection.py` — Puzzle anchor detection
 - `casinofingerprint.py` — Casino fingerprint detection

@@ -80,17 +80,18 @@ ExitScript(*) {
     if (IsObject(heistinstance))
         heistinstance.Destroy()
 
-    OnExitSaveCache()
+    OnExitCleanup()
     ExitApp
 }
 
-OnExit(OnExitSaveCache)
+OnExit(OnExitCleanup)
 
-OnExitSaveCache(*) {
+OnExitCleanup(*) {
     global isShuttingDown := true
     ShowCenteredToolTip "Terminating " A_ScriptName, 15
-    try StopPython()
     try SaveCache()
+    try PersistSettingsToAppData()
+    try StopPython()
 }
 
 ResetHackMode() {

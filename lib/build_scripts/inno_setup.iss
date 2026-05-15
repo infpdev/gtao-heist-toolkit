@@ -1,7 +1,7 @@
 
 ; Inno Setup script for vaultOps
 #define MyAppName "vaultOps"
-#define MyAppVersion "4.0.0"
+#define MyAppVersion "4.1.0"
 #define MyAppPublisher "infpdev"
 #define MyAppURL "https://github.com/infpdev/gtao-heist-toolkit"
 #define MyAppExeName "vaultOps.exe"
@@ -16,28 +16,19 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={code:GetMyCurrentDir}\{#MyAppName}
+DefaultDirName={autopf}\{#MyAppName}
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName}
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
 DisableDirPage=yes
+UsePreviousAppDir=no
+DirExistsWarning=no
 OutputDir=..\..\dist
 OutputBaseFilename="vaultOps-Setup"
 SetupIconFile=gta.ico
 WizardStyle=modern
-
-
-[Code]
-function GetMyCurrentDir(Param: String): String;
-begin
-	Result := ExpandConstant('{pf}');
-	try
-		Result := GetCurrentDir();
-	except
-	end;
-end;
 
 
 [Languages]

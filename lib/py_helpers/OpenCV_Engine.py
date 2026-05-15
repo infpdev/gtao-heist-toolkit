@@ -43,7 +43,7 @@ def handle_request(data):
 
         if t == "heartbeat":
             touch_heartbeat()
-            return "1"
+            return None
 
         if t == "fingerprint":
             touch_heartbeat()
@@ -170,8 +170,9 @@ def run():
             busy = True
             try:
                 response = handle_request(data)
-                sys.stdout.write(str(response) + "\n")
-                sys.stdout.flush()
+                if response is not None:
+                    sys.stdout.write(str(response) + "\n")
+                    sys.stdout.flush()
             finally:
                 busy = False
         except Exception as e:

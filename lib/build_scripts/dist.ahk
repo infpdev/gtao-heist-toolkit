@@ -359,8 +359,8 @@ buildGUI(isDev := false) {
     rBuildNo := dlg.AddRadio("x+60 yp ", "No (reuse existing OpenCV helper)")
 
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
-    rScanYes := dlg.AddRadio("xp+14 yp+23 Group", "Yes")
-    rScanNo := dlg.AddRadio("x+80 yp Checked", "No")
+    rScanYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
+    rScanNo := dlg.AddRadio("x+80 yp", "No")
 
     apiKey := ""
 
@@ -413,6 +413,9 @@ buildGUI(isDev := false) {
             }
             rClassYes.Value := 1
             rClassNo.Value := 0
+        } else {
+            rPackageYes.Value := 1
+            rPackageNo.Value := 0
         }
     }
 

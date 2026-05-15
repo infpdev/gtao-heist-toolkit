@@ -1,5 +1,14 @@
 #Requires AutoHotkey v2.0
 
+if !A_IsAdmin {
+    try Run('*RunAs "' A_ScriptFullPath '"')
+    if (A_LastError != 0) {
+        MsgBox "This script requires administrator privileges! Please click YES when prompted.",
+            "Error", 48
+    }
+    ExitApp
+}
+
 SendMode("Event")
 SetWorkingDir A_ScriptDir
 CoordMode "ToolTip", "Screen"
@@ -1020,5 +1029,6 @@ SaveCacheOnExit(*) {
     global isShuttingDown := true
     ShowCenteredToolTip "Terminating vaultOps"
     try SaveCache()
+    try PersistSettingsToAppData()
     try StopPython()
 }

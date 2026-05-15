@@ -1,53 +1,12 @@
 #Include "sharedCanonicalHelpers.ahk"
 
+; VaultOps app data directory and settings backup path
+global AppDataDir := A_AppData "\vaultOps"
+global settingsBackup := AppDataDir "\zSettings.ini"
 global iniFile := "zSettings.ini"
-if !FileExist(iniFile) {
-    FileAppend(
-        "; ---------------------------`n"
-        . "; Hotkey notation reference:`n"
-        . "; ^ = Ctrl   → e.g. ^h means Ctrl + H`n"
-        . "; ! = Alt    → e.g. !h means Alt + H`n"
-        . "; + = Shift  → e.g. +h means Shift + H`n"
-        . "; # = Win    → e.g. #h means Win + H`n; `n"
-        . "; LButton / RButton / MButton for mouse buttons`n"
-        . "; ---------------------------`n`n"
-        . "; === vaultOps options.. Ignore if your script is standalone === `n"
-        . "[Options]`n"
-        . "heist=1`n"
-        . "FingerprintMode=1`n"
-        . "Engine=0`n"
-        . "Delay=40`n`n"
-        . "; ---------------------------`n"
-        . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
-        . "; Please use the vaultOps GUI to change these hotkeys,`n"
-        . "; or refer to the documentation for how to customize them in the INI file. `n"
-        . "; The default hotkeys are mentioned above each setting for reference. `n"
-        . "; ---------------------------`n`n"
-        . "; Below are the vaultOps hotkeys.. Ignore if your script is standalone `n"
-        . "[ToolHotkeys]`n`n"
-        . "; (vkDDsc01B) Physical key: ] (Right Bracket)`n"
-        . "NoSave=vkDDsc01B`n`n"
-        . "; (vkDBsc01A) Physical key: [ (Left Bracket)`n"
-        . "ToggleScripts=vkDBsc01A`n`n"
-        . "; Send the PgUp key, used for the Cayo Perico heist.`n"
-        . "; Can be set to any key or mouse button based on the notation reference above.`n"
-        . "SendPgUp=LButton`n`n"
-        . "[Hotkeys]`n`n"
-        . "; Enter manual mode for fingerprint/keypad.`n"
-        . "; (vk4Dsc032) Physical key: M`n"
-        . "Manual=vk4Dsc032`n`n"
-        . "; Instantly solve fingerprint/keypad (auto mode).`n"
-        . "; (vk48sc023) Physical key: H`n"
-        . "AutoHack=vk48sc023`n`n"
-        . "; Reset the script's progress and state.`n"
-        . "; (vk52sc013) Physical key: R`n"
-        . "Reset=vk52sc013`n`n"
-        . "; Terminate the script completely (For standalone scripts only).`n"
-        . "; (vk54sc014) Physical key: T`n"
-        . "Terminate=vk54sc014",
-        iniFile
-    )
-}
+
+EnsureSettingsFile()
+
 /** @vaultOps
  *  Boolean state for noSave mode, can be toggled with the assigned hotkey.<br>
  * Resets to false on exit.
@@ -144,3 +103,81 @@ global terminateKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Termina
 "Hotkeys")
 
 global debug := !A_IsCompiled
+
+CreateDefaultSettings() {
+
+    FileAppend(
+        "; ---------------------------`n"
+        . "; Hotkey notation reference:`n"
+        . "; ^ = Ctrl   → e.g. ^h means Ctrl + H`n"
+        . "; ! = Alt    → e.g. !h means Alt + H`n"
+        . "; + = Shift  → e.g. +h means Shift + H`n"
+        . "; # = Win    → e.g. #h means Win + H`n; `n"
+        . "; LButton / RButton / MButton for mouse buttons`n"
+        . "; ---------------------------`n`n"
+        . "; === vaultOps options.. Ignore if your script is standalone === `n"
+        . "[Options]`n"
+        . "heist=1`n"
+        . "FingerprintMode=1`n"
+        . "Engine=0`n"
+        . "Delay=40`n`n"
+        . "; ---------------------------`n"
+        . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
+        . "; Please use the vaultOps GUI to change these hotkeys,`n"
+        . "; or refer to the documentation for how to customize them in the INI file. `n"
+        . "; The default hotkeys are mentioned above each setting for reference. `n"
+        . "; ---------------------------`n`n"
+        . "; Below are the vaultOps hotkeys.. Ignore if your script is standalone `n"
+        . "[ToolHotkeys]`n`n"
+        . "; (vkDDsc01B) Physical key: ] (Right Bracket)`n"
+        . "NoSave=vkDDsc01B`n`n"
+        . "; (vkDBsc01A) Physical key: [ (Left Bracket)`n"
+        . "ToggleScripts=vkDBsc01A`n`n"
+        . "; Send the PgUp key, used for the Cayo Perico heist.`n"
+        . "; Can be set to any key or mouse button based on the notation reference above.`n"
+        . "SendPgUp=LButton`n`n"
+        . "[Hotkeys]`n`n"
+        . "; Enter manual mode for fingerprint/keypad.`n"
+        . "; (vk4Dsc032) Physical key: M`n"
+        . "Manual=vk4Dsc032`n`n"
+        . "; Instantly solve fingerprint/keypad (auto mode).`n"
+        . "; (vk48sc023) Physical key: H`n"
+        . "AutoHack=vk48sc023`n`n"
+        . "; Reset the script's progress and state.`n"
+        . "; (vk52sc013) Physical key: R`n"
+        . "Reset=vk52sc013`n`n"
+        . "; Terminate the script completely (For standalone scripts only).`n"
+        . "; (vk54sc014) Physical key: T`n"
+        . "Terminate=vk54sc014",
+        iniFile
+    )
+}
+
+EnsureSettingsFile() {
+    global iniFile, AppDataDir, settingsBackup
+
+    ; local file already exists
+    if FileExist(iniFile)
+        return
+
+    ; restore from AppData backup
+    if FileExist(settingsBackup) {
+        FileCopy(settingsBackup, iniFile, true)
+        return
+    }
+
+    ; create fresh defaults
+    CreateDefaultSettings()
+}
+
+PersistSettingsToAppData(*) {
+    global iniFile, AppDataDir, settingsBackup
+
+    try {
+        if !DirExist(AppDataDir)
+            DirCreate(AppDataDir)
+
+        if FileExist(iniFile)
+            FileCopy(iniFile, settingsBackup, true)
+    }
+}

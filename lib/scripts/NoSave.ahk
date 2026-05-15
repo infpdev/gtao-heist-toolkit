@@ -58,6 +58,9 @@ if !A_IsAdmin {
         enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
             ShowCenteredToolTip("NoSave enabled [Works]", 17)
+
+            try isRockstarServerBlocked()
+
             SetTimer () => clearNoSaveToolTip("enabled"), -2000
             forMode := "enabled"
             return true
@@ -70,6 +73,61 @@ if !A_IsAdmin {
         errMsg() {
             MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
                 "FIREWALL WARNING", 48
+        }
+
+        isRockstarServerBlocked() {
+            ip := NOSAVE_REMOTE_IP
+
+            ; Create ICMP handle
+            hPort := DllCall("Icmp.dll\IcmpCreateFile", "Ptr")
+            if (!hPort)
+                return false
+
+            ; Convert IP string -> uint
+            addr := DllCall("Ws2_32\inet_addr", "AStr", ip, "UInt")
+
+            ; Reply buffer
+            replySize := 1024
+            replyBuf := Buffer(replySize, 0)
+
+            ; Send ICMP echo
+            result := DllCall(
+                "Icmp.dll\IcmpSendEcho",
+                "Ptr", hPort,
+                "UInt", addr,
+                "Ptr", 0,
+                "UShort", 0,
+                "Ptr", 0,
+                "Ptr", replyBuf,
+                "UInt", replySize,
+                "UInt", 1000,
+                "UInt"
+            )
+
+            ; Read returned status code from ICMP_ECHO_REPLY
+            ; Status is at offset 4
+            status := NumGet(replyBuf, 4, "UInt")
+
+            DllCall("Icmp.dll\IcmpCloseHandle", "Ptr", hPort)
+
+            ; 11050 = IP_GENERAL_FAILURE
+            ; Means Windows/network stack blocked locally
+            if (status = 11050)
+                return true
+
+            ; anything else = traffic probably escaped
+            MsgBox(
+                "Warning: VaultOps detected that NoSave may not be working correctly.`n`n"
+                .
+                "This is usually caused by third-party antivirus or firewall apps overriding Windows Firewall settings."
+                .
+                "`n`nIf you use apps like Kaspersky, BitDefender, SimpleWall, etc., try temporarily disabling them or checking their firewall settings."
+                .
+                "`n`nYou can verify whether NoSave is working by pressing Alt + F4 in GTA Online."
+                .
+                "`nIf the game does not show a 'Save Failed' message, then NoSave is likely not active."
+                , "FIREWALL WARNING", 48
+            )
         }
 
     }
