@@ -66,7 +66,7 @@ def handle_request(data):
                 "row": cursor_row,
                 "clicks": [int(v) for v in solution],
             }
-            return json.dumps(payload, ensure_ascii=True)
+            return payload
 
         if t == "detect_anchor":
             touch_heartbeat()
@@ -80,40 +80,40 @@ def handle_request(data):
             try:
                 touch_heartbeat()
                 res = is_black_area_present_fingerprint()
-                return json.dumps(1, ensure_ascii=True) if res else json.dumps(0, ensure_ascii=True)
+                return 1 if res else 0
             except Exception:
-                return json.dumps(0, ensure_ascii=True)
+                return 0
 
         if t == "is_black_area_present_keypad":
             try:
                 touch_heartbeat()
                 res = is_black_area_present_keypad()
-                return json.dumps(1, ensure_ascii=True) if res else json.dumps(0, ensure_ascii=True)
+                return 1 if res else 0
             except Exception:
-                return json.dumps(0, ensure_ascii=True)
+                return 0
 
         if t == "is_black_area_present_cayo":
             try:
                 touch_heartbeat()
                 res = is_black_area_present_cayo()
-                return json.dumps(1, ensure_ascii=True) if res else json.dumps(0, ensure_ascii=True)
+                return 1 if res else 0
             except Exception:
-                return json.dumps(0, ensure_ascii=True)
+                return 0
         
         if t == "fpAnchor":
             touch_heartbeat()
             result = fingerprintAnchor()
-            return json.dumps(1, ensure_ascii=True) if result else json.dumps(0, ensure_ascii=True)
+            return 1 if result else 0
         
         if t == "kpAnchor":
             touch_heartbeat()
             result = keypadAnchor()
-            return json.dumps(1, ensure_ascii=True) if result else json.dumps(0, ensure_ascii=True)
+            return 1 if result else 0
         
         if t == "cayoAnchor":
             touch_heartbeat()
             result = cayoAnchor()
-            return json.dumps(1, ensure_ascii=True) if result else json.dumps(0, ensure_ascii=True)
+            return 1 if result else 0
 
         if t == "detect_ring":
             touch_heartbeat()
@@ -125,14 +125,14 @@ def handle_request(data):
 
             result = detect_ring(debug=False, col=col)
             if result and result.get("found"):
-                return json.dumps(result["row"], ensure_ascii=True)
-            return json.dumps(0, ensure_ascii=True)
+                return result["row"]
+            return 0
 
         if t == "is_column_selected":
             touch_heartbeat()
             col = int(data.get("col", 1))
             result = detect_column_selected(col=col, debug=False)
-            return json.dumps(int(result), ensure_ascii=True)
+            return int(result)
 
         if t == "detect_keypad":
             touch_heartbeat()
@@ -162,7 +162,7 @@ def run():
             try:
                 data = json.loads(line)
             except:
-                sys.stdout.write("ERR(Exception)\n")
+                sys.stdout.write(json.dumps("ERR(Exception)", ensure_ascii=True) + "\n")
                 sys.stdout.flush()
                 continue
 
@@ -171,7 +171,10 @@ def run():
             try:
                 response = handle_request(data)
                 if response is not None:
-                    sys.stdout.write(str(response) + "\n")
+                    if isinstance(response, str):
+                        sys.stdout.write(str(response) + "\n")
+                    else:
+                        sys.stdout.write(json.dumps(response, ensure_ascii=True) + "\n")
                     sys.stdout.flush()
             finally:
                 busy = False

@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "4.1.0"
+ver := "4.1.1"
 global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -54,7 +54,7 @@ CheckForUpdate() {
                     fetchedNews .= Trim(lines[A_Index]) "`n"
             }
             if (fetchedNews != "")
-                fetchedNews := "What's new:`n" fetchedNews "`n"
+                fetchedNews := "What's new:`n`n" fetchedNews "`n"
 
             UPDATE_PRIORITY := VersionCompare(fetchedVersion, ver, fetchedPatch, currentPatch)
 
