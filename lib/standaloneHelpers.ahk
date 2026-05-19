@@ -32,6 +32,16 @@ global readableManualKey := CanonicalToDisplay(manualKey)
 global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
 global readableResetKey := CanonicalToDisplay(resetKey)
 
+gtaHwnd := getGtaHwnd()
+
+if (gtaHwnd) {
+    try {
+        sleep 100
+        WinActivate "ahk_id " gtaHwnd
+        WinWaitActive "ahk_id " gtaHwnd, , 2
+    }
+}
+
 ; Register hotkeys with error handling.
 try {
     Hotkey "~*" CanonicalToRegistration(noSaveKey), ToggleNoSaveStatus
@@ -231,14 +241,14 @@ clearAllToolTips() {
         ToolTip "", , , A_Index
 }
 
-isGtaFocused(excludeGui := true) {
+isGtaFocused(excludeGui := true, strict := false) {
     return (WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe") || debug)
+    || WinActive("ahk_exe GTA5_Enhanced.exe") || (debug && !strict))
 }
 
 PgUpDown(*) {
     global pgUpSent, sendPgUpKey
-    if !isGtaFocused() {
+    if !isGtaFocused(, true) {
         ToolTip "[PgUp] GTA not focused", scrW, 0, 20
         return
     }

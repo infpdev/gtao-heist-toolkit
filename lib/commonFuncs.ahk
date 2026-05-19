@@ -29,14 +29,13 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
 }
 
 /**
- * @description Makes all tooltip windows click-through, layered, always-on-top, and optionally adjusts opacity
+ * @description Make all tooltip windows click-through (transparent to mouse) and optionally adjusts opacity
  * @param {boolean} isIdle - If true, reduces opacity to 180 for idle state; otherwise uses provided opacity
  * @param {number} [opacity=230] - Opacity value (0-255), clamped automatically
  * @returns {void}
  * @note Applied globally to all tooltips_class32 windows owned by the process
- * @note Tooltips are forced into the topmost z-order to prevent them from appearing behind fullscreen games
  * @example
- * MakeAllToolTipsClickThrough(false, 200)  ; Makes tooltips click-through, topmost, at 200 opacity
+ * MakeAllToolTipsClickThrough(false, 200)  ; Make tooltips click-through at 200 opacity
  */
 MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
     alpha := Integer(opacity) ? opacity : 255
@@ -45,57 +44,31 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
     if (isIdle)
         alpha := 180
 
-    tooltips := []
-
     hwnd := 0
-    while (hwnd := DllCall(
-        "FindWindowEx",
-        "ptr", 0,
-        "ptr", hwnd,
-        "str", "tooltips_class32",
-        "ptr", 0,
-        "ptr"
-    )) {
-        tooltips.Push(hwnd)
-    }
-
-    for _, hwnd in tooltips {
-
-        exStyle := DllCall(
-            "GetWindowLongPtr",
-            "ptr", hwnd,
-            "int", -20,
-            "ptr"
-        )
-
+    while (hwnd := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "tooltips_class32", "ptr", 0, "ptr")) {
+        exStyle := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr")
         exStyle |= 0x20 | 0x80000
-
-        DllCall(
-            "SetWindowLongPtr",
-            "ptr", hwnd,
-            "int", -20,
-            "ptr", exStyle
-        )
-
-        DllCall(
-            "SetLayeredWindowAttributes",
-            "ptr", hwnd,
-            "uint", 0,
-            "uchar", alpha,
-            "uint", 0x2
-        )
-
-        DllCall(
-            "SetWindowPos",
-            "ptr", hwnd,
-            "ptr", -1,
-            "int", 0,
-            "int", 0,
-            "int", 0,
-            "int", 0,
-            "uint", 0x0001 | 0x0002 | 0x0010
-        )
+        DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr", exStyle)
+        DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
     }
+}
+
+getGtaHwnd() {
+    static gtaMatchers := [
+        "ahk_exe GTA5_Enhanced.exe",
+        "ahk_exe GTA5_Enhanced",
+        "GTA5_Enhanced",
+        "GTA5"
+    ]
+
+    for matcher in gtaMatchers {
+        hwnd := WinExist(matcher)
+        if hwnd {
+            return hwnd
+        }
+    }
+
+    return 0
 }
 
 /**

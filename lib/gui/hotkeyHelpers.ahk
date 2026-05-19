@@ -408,24 +408,6 @@ isGtaFocused(excludeGui := false) {
     )
 }
 
-getGtaHwnd() {
-    static gtaMatchers := [
-        "ahk_exe GTA5_Enhanced.exe",
-        "ahk_exe GTA5_Enhanced",
-        "GTA5_Enhanced",
-        "GTA5"
-    ]
-
-    for matcher in gtaMatchers {
-        hwnd := WinExist(matcher)
-        if hwnd {
-            return hwnd
-        }
-    }
-
-    return 0
-}
-
 PgUpDown(*) {
     global txtPgUpLabel, pgUpSent, sendPgUpKey
 
