@@ -326,7 +326,10 @@ class KeypadSolver {
      */
     MainLoop() {
 
-        if (!isGtaFocused(true))
+        if (this.mode == "idle" || this.isShuttingDown)
+            return
+
+        if (!this.mode == "manual" && !isGtaFocused(true))
             ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown) {
@@ -358,7 +361,7 @@ class KeypadSolver {
 
             this.validateAnchor()
 
-            if (this.mode == "idle" || !this.foundAnchor) {
+            if (!this.foundAnchor) {
                 this.isBusy := false
                 return
             }

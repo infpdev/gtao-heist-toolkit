@@ -62,10 +62,13 @@ buildVaultOps() {
     outFile := parentDir "\vaultOps.exe"
     updaterInFile := parentDir "\lib\autoUpdate.ahk"
     updaterOutFile := parentDir "\lib\vaultOpsUpdater.exe"
+    standaloneUpdaterInFile := parentDir "\lib\standaloneUpdate.ahk"
+    standaloneUpdaterOutFile := parentDir "\lib\standaloneUpdater.exe"
     vaultOpsInstaller := parentDir "\dist\vaultOps-Setup.exe"
 
     cmd := '"' AHK2EXEPath '" /in "' inFile '" /out "' outFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     updaterCmd := '"' AHK2EXEPath '" /in "' updaterInFile '" /out "' updaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
+    standaloneUpdaterCmd := '"' AHK2EXEPath '" /in "' standaloneUpdaterInFile '" /out "' standaloneUpdaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     innoCmd := '"' isccExe '" "' issScript '"'
 
     sleep 20
@@ -100,8 +103,12 @@ buildVaultOps() {
     } else {
         RequireExistingFile(parentDir "\lib\py_helpers\OpenCV_Engine.exe", "Existing OpenCV helper")
         ShowCenteredToolTip "Skipping vaultOps build; reusing existing OpenCV helper and standalone assets."
-        sleep 1200
+        SetTimer () => (ToolTip("", , , 10)), -1000
     }
+
+    ShowCenteredToolTip "Compiling standalone updater"
+    if (compileStandalone)
+        RunWait standaloneUpdaterCmd, , "Hide"
 
     if (compileStandalone)
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses, buildVaultOpsExe)
@@ -221,11 +228,15 @@ FindPythonExe() {
 createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOriginalClasses := false, buildVaultOpsExe :=
     true) {
     global rarExe, AHK2EXEPath, iconPath
+
     standaloneDir := parentDir "\lib\standalone scripts"
-    distStandaloneDir := parentDir "\dist\standalone"
+    distFolder := parentDir "\dist\"
+    distStandaloneDir := distFolder "standalone"
+    bundleFile := distFolder "vaultOps-Standalone-Pack.exe"
+    standaloneExtractionFolder := "vaultOps-Standalone-Pack"
+
     imageFolders := ["1366x768", "1600x900", "1920x1080"]
 
-    ; Explicit mapping: standalone script filename => original script path
     standaloneClassMap := Map(
         "Fingerprint-Standalone.ahk", parentDir "\lib\scripts\CasinoFingerprint.ahk",
         "Keypad-Standalone.ahk", parentDir "\lib\scripts\CasinoKeypad.ahk",
@@ -234,17 +245,28 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 
     if !DirExist(distStandaloneDir)
         DirCreate(distStandaloneDir)
+    else {
+        try DirDelete(distStandaloneDir, true)
+        DirCreate(distStandaloneDir)
+    }
+
+    if (DirExist(distFolder standaloneExtractionFolder))
+        try DirDelete(distFolder standaloneExtractionFolder, true)
+
+    ; Clean previous bundle
+    if FileExist(bundleFile)
+        try FileDelete(bundleFile)
 
     if (!packageBuilds || FileExist(rarExe)) {
-        ; Clean up any leftover temp files from previous builds before starting
+
+        ; cleanup temp ahks
         loop files, standaloneDir "\temp_*.ahk", "F" {
             try FileDelete(A_LoopFilePath)
         }
 
-        ; Copy the compiled OpenCV helper into the standalone lib folder so OpenCV mode works there too.
-        ; When vaultOps build is skipped, this reuses the existing helper instead of rebuilding it with Nuitka.
+        ; shared OpenCV helper
         ocvSource := parentDir "\lib\py_helpers\OpenCV_Engine.exe"
-
+        standaloneUpdaterSource := parentDir "\lib\standaloneUpdater.exe"
         ocvDestDir := distStandaloneDir "\lib"
 
         if FileExist(ocvSource) {
@@ -259,108 +281,163 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             )
         }
 
-        ; Copy image folders into dist/standalone regardless of packaging, since both compiled and SFX versions need them
+        if FileExist(standaloneUpdaterSource) {
+            if !DirExist(ocvDestDir)
+                DirCreate(ocvDestDir)
+
+            try FileCopy(
+                standaloneUpdaterSource,
+                ocvDestDir "\standaloneUpdater.exe",
+                true
+            )
+        }
+
+        ; copy image folders once
         for _, folder in imageFolders {
             src := parentDir "\" folder
             dest := distStandaloneDir "\" folder
-            if DirExist(src) {
+
+            if DirExist(src)
                 DirCopy(src, dest, true)
-            }
         }
 
+        compiledExeList := []
+
+        ; compile standalone scripts
         loop files, standaloneDir "\\*Standalone*.ahk", "F" {
+
             script := A_LoopFilePath
 
             SplitPath script, &scriptName
-            exeName := StrReplace(scriptName, ".ahk", ".exe")
-            outExe := distStandaloneDir "\\" exeName
 
-            ; Determine which script to compile: temp version (if mapped AND useOriginalClasses) or original
+            exeName := StrReplace(scriptName, ".ahk", ".exe")
+            outExe := distStandaloneDir "\" exeName
+
             scriptToCompile := script
             tempScript := ""
 
             if (useOriginalClasses && standaloneClassMap.Has(scriptName)) {
+
                 originalScript := standaloneClassMap[scriptName]
                 tempPath := standaloneDir "\temp_" scriptName
 
-                ToolTip "Preparing " scriptName " with latest class...", 0, 0, 1
+                ToolTip "Preparing " scriptName "...", 0, 0, 1
+
                 try {
-                    CreateTempScriptWithReplacedClass(script, originalScript, tempPath, parentDir)
+                    CreateTempScriptWithReplacedClass(
+                        script,
+                        originalScript,
+                        tempPath,
+                        parentDir
+                    )
+
                     scriptToCompile := tempPath
-                    tempScript := tempPath  ; Track for cleanup after compilation
+                    tempScript := tempPath
+
                 } catch as err {
-                    MsgBox "ERROR: Failed to prepare " scriptName ": " err.Message, "Error", 48
-                    sleep 2000
+
+                    MsgBox(
+                        "ERROR: Failed to prepare "
+                        scriptName
+                        ": "
+                        err.Message,
+                        "Error",
+                        48
+                    )
+
                     continue
                 }
-                ; msgBox "Waiting for review"
             }
 
-            ; Compile the script (either standalone original or temp with replaced class)
-            cmd := '"' AHK2EXEPath '" /in "' scriptToCompile '" /out "' outExe '" /icon "' iconPath '" /compress 0  /base ' quotedBase
+            cmd := '"' AHK2EXEPath '" /in "' scriptToCompile '" /out "' outExe '" /icon "' iconPath '" /compress 0 /base ' quotedBase
+
             ToolTip "Compiling: " exeName, 0, 0, 1
+
             RunWait cmd, , "Hide"
+
             ToolTip "Compiled: " exeName, 0, 0, 1
 
-            ; Cleanup temp file if one was created
-            if (tempScript != "") {
+            if (tempScript != "")
                 try FileDelete(tempScript)
-            }
 
-            if InStr(script, "NoSave")
-                continue
+            if InStr(scriptName, "NoSave") {
 
-            if (!packageBuilds)
-                continue
-
-            ; Prepare SFX comment
-            sfxComment :=
-                (
-                    "; The comment below contains SFX script commands`n"
-                    "Path=.\" StrReplace(exeName, ".exe", "") "`n"
-                    "Silent=1`n"
-                    "SavePath`n"
-                    "Overwrite=1`n"
-                    "Icon=gta.ico`n"
-                    "; End of SFX script commands"
+                try FileCopy(
+                    outExe,
+                    distFolder exeName,
+                    true
                 )
-            sfxCommentPath := distStandaloneDir "\\package.txt"
-            FileAppend(sfxComment, sfxCommentPath)
 
-            imgStr := ""
-            for _, folder in imageFolders
-                imgStr .= ' "' folder '"'
-
-            SetWorkingDir(distStandaloneDir)
-            sfxName := StrReplace(exeName, ".exe", "-SFX.exe")
-            ToolTip "Packaging SFX: " exeName, 0, 0, 1
-            rarCmd := '"' rarExe '" a -r -sfx "' sfxName '" "' exeName '" "lib"' imgStr ' -z"package.txt"'
-            RunWait rarCmd, , "Hide"
-            ToolTip "SFX created: " exeName, 0, 0, 1
-            SetWorkingDir(A_ScriptDir)
-            try FileDelete(sfxCommentPath)
-            try FileDelete(outExe) ; Delete the compiled exe after packaging
-
-        }
-
-        try DirDelete(ocvDestDir, true) ; Clean up copied OpenCV helper after packaging since SFX contains it
-
-        ; Delete the copied image folders from dist/standalone if
-        ; packaging was done, since the SFX packages contain the images and we don't need duplicates
-        if (packageBuilds) {
-            for _, folder in imageFolders {
-                dest := distStandaloneDir "\" folder
-                if DirExist(dest) {
-                    DirDelete(dest, true)
-                }
+                continue
             }
-            ShowCenteredToolTip "Standalone SFX packaging complete."
-        } else {
-            ShowCenteredToolTip "Standalone compile complete (SFX packaging skipped)."
+
+            ; track compiled exe
+            compiledExeList.Push(exeName)
         }
+
+        ; stop here if packaging disabled
+        if (!packageBuilds) {
+            ShowCenteredToolTip "Standalone compile complete."
+            return
+        }
+
+        ; build ONE combined SFX
+        sfxComment :=
+            (
+                "; The comment below contains SFX script commands`n"
+                "Path=.\" standaloneExtractionFolder "`n"
+                "Silent=1`n"
+                "SavePath`n"
+                "Overwrite=1`n"
+                "Icon=gta.ico`n"
+                "; End of SFX script commands"
+            )
+
+        sfxCommentPath := distStandaloneDir "\bundle.txt"
+
+        try FileDelete(sfxCommentPath)
+        FileAppend(sfxComment, sfxCommentPath)
+
+        ; explicit exe list
+        exeStr := ""
+
+        for _, exeName in compiledExeList
+            exeStr .= ' "' exeName '"'
+
+        ; image folders
+        imgStr := ""
+
+        for _, folder in imageFolders
+            imgStr .= ' "' folder '"'
+
+        SetWorkingDir(distStandaloneDir)
+
+        ToolTip "Packaging standalone bundle...", 0, 0, 1
+
+        ; IMPORTANT:
+        ; NO *.exe
+        ; NO recursive lib packaging madness
+        rarCmd := '"' rarExe '" a -r -sfx "' bundleFile '" ' exeStr ' "lib\OpenCV_Engine.exe" "lib\standaloneUpdater.exe"' imgStr ' -z"bundle.txt"'
+
+        RunWait rarCmd, , "Hide"
+
+        SetWorkingDir(A_ScriptDir)
+
+        ToolTip "Standalone bundle created", 0, 0, 1
+
+        ; cleanup temporary standalone staging folder
+        try DirDelete(distStandaloneDir, true)
+
+        ShowCenteredToolTip "Standalone bundle packaging complete."
+
         sleep 1000
+
     } else {
-        MsgBox("WinRAR not found at: " rarExe, "Error")
+
+        MsgBox(
+            "WinRAR not found at: " rarExe,
+            "Error"
+        )
     }
 }
 
@@ -437,6 +514,8 @@ buildGUI(isDev := false) {
 
     UpdateFastBuildPreset(*) {
         if (rBuildNo.Value == 1) {
+            rScanYes.Enabled := false
+            rScanNo.Enabled := false
             rScanYes.Value := 0
             rScanNo.Value := 1
             rStandaloneYes.Value := 1
@@ -445,6 +524,11 @@ buildGUI(isDev := false) {
                 rPackageYes.Value := 1
                 rPackageNo.Value := 0
             }
+        } else {
+            rScanYes.Enabled := true
+            rScanNo.Enabled := true
+            rScanYes.Value := 1
+            rScanNo.Value := 0
         }
         UpdatePackageOptions()
     }

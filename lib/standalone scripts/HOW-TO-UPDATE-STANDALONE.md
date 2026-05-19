@@ -1,33 +1,32 @@
 # Updating Standalone Scripts
 
-1. Download the latest version of the standalone script you use:
+1. Download the latest standalone package:
 
-   * [Fingerprint-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)
-   * [Keypad-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)
-   * [ElRubio-Standalone-SFX.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)
-   * [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)
+   * [vaultOps-Standalone-Pack.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe) (includes all standalone solvers)
+   * [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe) (not an SFX package, simply download and run)
 
 2. Run the downloaded executable
 
-3. The standalone script will extract to the current folder as usual
+3. The standalone package will automatically extract into a `vaultOps-Standalone-Pack` folder in the current directory
 
 Done!
 
 > [!NOTE]
-> Standalone scripts now automatically preserve your settings and hotkeys through a cached settings file.
+> Standalone scripts now automatically preserve your settings and hotkeys through a cached settings file at `%appdata%\vaultOps`
 >
 > This means you no longer need to extract updates into the same folder to keep your configuration.
 
 <details>
-<summary><b>Where are the settings stored?</b></summary>
+<summary><b>vaultOps v4.2.0 changes</b></summary>
 
 <br>
 
-The cached settings are stored at:
+Please read the [v4.2.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.2.0) for detailed information about:
 
-`%appdata%\VaultOps`
-
-(after running the standalone script at least once)
+* Improved puzzle detection reliability and reduced false detections
+* Standalone packaging and shared OpenCV engine changes
+* Automatic updates for standalone solvers
+* New Cayo Perico and Diamond Casino tutorial videos
 
 </details>
 
@@ -41,5 +40,6 @@ Please read the [v4.1.1 release notes](https://github.com/infpdev/gtao-heist-too
 * improved NoSave reliability checks
 * persistent settings support
 * installation behavior changes
+* standalone packaging changes
 
 </details>

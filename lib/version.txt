@@ -1,4 +1,5 @@
-4.1.1
-Improved NoSave: VaultOps now checks if Rockstar servers are still reachable after enabling NoSave
-VaultOps settings now persist after reinstalling / updating the app
-Fixed an issue in OpenCV engine
+4.2.0
+Improved puzzle detection reliability and reduced false detections
+Fixed a bug in the Cayo Perico Fingerprint Solver
+Added video tutorials for using vaultOps in the Diamond Casino and Cayo Perico heists
+Added automatic updates for standalone solvers
