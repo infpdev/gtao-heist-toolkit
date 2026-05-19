@@ -381,6 +381,12 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             return
         }
 
+        try FileCopy(
+            iconPath,
+            distStandaloneDir "\gta.ico",
+            true
+        )
+
         ; build ONE combined SFX
         sfxComment :=
             (

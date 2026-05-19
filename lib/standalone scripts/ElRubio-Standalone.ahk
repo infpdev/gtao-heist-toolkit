@@ -261,7 +261,7 @@ class ElRubioSolver {
         if (this.mode == "idle")
             return
 
-        if (!this.mode == "manual" && !isGtaFocused(true))
+        if (this.mode != "manual" && !isGtaFocused(true))
             ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown)

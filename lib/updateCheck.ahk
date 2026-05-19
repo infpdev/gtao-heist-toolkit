@@ -36,7 +36,7 @@ CheckForUpdate() {
         disableUpdates := IniRead(iniFile, "Options", "DisableUpdates", "0")
     }
 
-    ShowCenteredToolTip("checking for updates", 17)
+    ShowCenteredToolTip "checking for updates"
 
     raw := "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/main/lib/version.txt"
     Url := raw "?nocache=1"
@@ -111,9 +111,9 @@ CheckForUpdate() {
                     ExitApp
             }
             else {
-                ShowCenteredToolTip("No updates found. Enjoy :)", 17)
+                ShowCenteredToolTip("No updates found. Enjoy :)")
                 Sleep 1000
-                ToolTip("", , , 17)
+                ToolTip("", , , 10)
             }
         }
         else {

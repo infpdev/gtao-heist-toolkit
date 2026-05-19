@@ -6,7 +6,7 @@
 
 
 <br>
-<p align="center"><b>Video Tutorials</b><p>
+<p align="center"><b>Video Tutorials</b></p>
 
 <p align="center">
   <a href="https://youtu.be/j44mYY3tC10">
@@ -126,7 +126,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/0e6c7f356b87e9a3600ab78c77af6969201e99092dfe2244a72f7e9ff2b18416
+> https://www.virustotal.com/gui/file/e1818b63d79b5ec23ad87ef1bdf249af30890b13451105af86847331fc786cf7
 
 
 <p align="center">

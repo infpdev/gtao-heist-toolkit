@@ -265,7 +265,8 @@ def is_dark_uniform_region(img: np.ndarray, region: tuple) -> float:
 def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
     """Return True if the fingerprint anchor black-area is PRESENT.
 
-    Region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
+    Region: 1606, 441, 1882, 531 (normalized: 0.837, 0.218, 0.786, 0.267)
+    Region: 122, 596, 312, 744 (normalized: 0.064, 0.552, 0.163, 0.689)
     """
     if search_img is None:
         search_img = prepare_detection_image(scale)
@@ -274,14 +275,14 @@ def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: floa
 
     scores = [is_dark_uniform_region(search_img, r) for r in regions]
 
-    # Consider present if any region scores above threshold
     return all(s > 0.3 for s in scores)
 
 
 def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1.0) -> bool:
     """Return True if the keypad anchor black-area is PRESENT.
 
-    Region: 1606, 806, 1891, 943 (normalized: 0.837, 0.746, 0.985, 0.873)
+    Region: 1606, 441, 1882, 531 (normalized: 0.837, 0.218, 0.786, 0.267)
+    Region: 122, 596, 312, 744 (normalized: 0.064, 0.552, 0.163, 0.689)
     """
     if search_img is None:
         search_img = prepare_detection_image(scale)

@@ -329,7 +329,7 @@ class KeypadSolver {
         if (this.mode == "idle" || this.isShuttingDown)
             return
 
-        if (!this.mode == "manual" && !isGtaFocused(true))
+        if (this.mode != "manual" && !isGtaFocused(true))
             ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown) {
