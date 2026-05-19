@@ -10,6 +10,20 @@ Done!
 > Your settings and hotkeys now automatically persist across updates and reinstalls.
 
 <details>
+<summary><b>vaultOps v4.2.0 changes</b></summary>
+
+<br>
+
+Please read the [v4.2.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.2.0) for detailed information about:
+
+* Improved puzzle detection reliability and reduced false detections
+* Standalone packaging and shared OpenCV engine changes
+* Automatic updates for standalone solvers
+* New Cayo Perico and Diamond Casino tutorial videos
+
+</details>
+
+<details>
 <summary><b>vaultOps v4.1.1 changes</b></summary>
 
 <br>

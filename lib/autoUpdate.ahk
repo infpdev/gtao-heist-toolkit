@@ -109,7 +109,7 @@ IsRunningFromTempUpdater() {
 }
 
 BootstrapUpdaterToTemp(currentExePath) {
-    if (FileExist(updaterTempDir)) {
+    if DirExist(updaterTempDir) {
         try DirDelete(updaterTempDir, true)
     }
     DirCreate(updaterTempDir)

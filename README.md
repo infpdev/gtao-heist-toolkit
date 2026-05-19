@@ -6,10 +6,21 @@
 
 
 <br>
-<p align="center"><b>Watch tutorial</b><p>
+<p align="center"><b>Video Tutorials</b></p>
+
 <p align="center">
   <a href="https://youtu.be/j44mYY3tC10">
-    <img src="https://img.youtube.com/vi/j44mYY3tC10/maxresdefault.jpg" width="70%" style="max-width: 800px;" alt="VaultOps Demo Video">
+    <img src="https://img.youtube.com/vi/j44mYY3tC10/maxresdefault.jpg" width="70%" style="max-width: 800px;" alt="vaultOps Full Tutorial">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://youtu.be/Cd5V64UiiGY">
+    Cayo Perico Replay Guide (vaultOps + Standalone)
+  </a>
+  <br>
+  <a href="https://youtu.be/fBdukmCSDeA">
+    Diamond Casino Replay Guide (vaultOps + Standalone)
   </a>
 </p>
 
@@ -115,7 +126,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/9914209221091553c85a44f6729a4dff899f1bccbb0190e8ce78a8cca08a2cb2
+> https://www.virustotal.com/gui/file/e1818b63d79b5ec23ad87ef1bdf249af30890b13451105af86847331fc786cf7
 
 
 <p align="center">
@@ -133,7 +144,8 @@ Provided as-is, with no guarantees.
 - Press **Auto** `H` to solve instantly  
 - Or stay in **Manual** `M` to select prints yourself  
 
-> vaultOps runs in the system tray. Left-click the tray icon or right-click → **Exit** to close / terminate it.
+> [!NOTE]
+> vaultOps runs in the system tray. Left-click the tray icon to terminate it immediately, or right-click → **Exit** to close it.
 
 ## Detailed Toolkit Usage
 ### NoSave
@@ -151,12 +163,16 @@ Provided as-is, with no guarantees.
 - Works by temporarily blocking network communication  
 - Requires firewall to be enabled  
 
-**Notes:**
-- The app will attempt to enable the firewall automatically if it's not enabled.
-- VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
-- The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
-- To verify it’s active, press `Alt + F4`. If you see a **“save failed”** message, it’s working.
+> [!NOTE]
+> - The app will attempt to enable the firewall automatically if it's not enabled.
+> - VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
+> - The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
+> - To verify it’s active, press `Alt + F4`. If you see a **"save failed"** message, it’s working.
 
+> [!TIP]
+> Full replay tutorials:
+> - Cayo Perico: https://youtu.be/Cd5V64UiiGY
+> - Diamond Casino: https://youtu.be/fBdukmCSDeA
 
 ### Fingerprint / Keypad solvers
 
@@ -202,6 +218,8 @@ Provided as-is, with no guarantees.
    - **Keypad** — Detects and solves the keypad puzzle  
 
    **Note:** Switching to **Manual mode** disables automatic puzzle detection, preventing unintended mode changes  
+
+
 ### Hotkeys & Controls
 
 All hotkeys are customizable.
@@ -245,33 +263,37 @@ All hotkeys are customizable.
   - Default: **40 ms** (Recommended)
 
 
-
 ## Standalone Solvers
 
-Don't want the full toolkit? Use any of these standalone packages to run individual solvers.
+Don't want the full toolkit? Use the standalone package instead.
 
-> Note: Each of these standalone solvers includes the **NoSave** script, so you do not need to download the **NoSave Standalone** script separately if you use any of the three solvers.
+The standalone package includes:
+- Casino Fingerprint Solver
+- Casino Keypad Solver
+- Cayo Perico Fingerprint Solver
 
-- **[Casino Fingerprint Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Fingerprint-Standalone-SFX.exe)** — Standalone solver for the casino fingerprint scanner
-- **[Casino Keypad Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/Keypad-Standalone-SFX.exe)** — Standalone solver for the casino keypad cracker
-- **[Cayo Perico El Rubio Solver](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/ElRubio-Standalone-SFX.exe)** — Standalone solver for cayo perico fingerprint puzzle
-- **[NoSave Standalone](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — NoSave replay script only
+All standalone solvers share a single OpenCV engine and common resources to reduce package size and avoid duplicated files.
+
+- **[vaultOps-Standalone-Pack.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe)** — Includes all standalone puzzle solvers in a single package
+- **[NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — Standalone NoSave replay script only (not an SFX package — simply download and run)
 
 **Installation:**
-1. Download any SFX package
-2. Run the `.exe` — it will auto-extract to the current directory
-3. Launch the extracted `.exe` to use that solver independently
+1. Download and run `vaultOps-Standalone-Pack.exe`
+2. The package will automatically extract into a folder named `vaultOps-Standalone-Pack` in the current directory
+3. Launch any standalone solver independently
 
-> Note: **NoSave Standalone** is not an SFX package; just download and run to use it.
+> [!NOTE]
+> All standalone puzzle solvers already include built-in NoSave support, so the separate NoSave standalone is only needed if you want to use NoSave by itself.
 
-Each standalone includes all necessary resources (UI templates, detection logic) and can be used without the main toolkit.
-
+> [!WARNING]
+> Running multiple standalone solvers at the same time is not recommended, since they share the same default hotkeys and may trigger actions simultaneously.
+>
+> If you want to use multiple solvers together, using the full VaultOps toolkit is recommended instead, since it manages all solvers within a single unified app.
 
 
 ## Building from Source
 
 Want to verify the source code or build the executable yourself? See [BUILD.md](lib/build_scripts/BUILD.md) for complete build instructions, prerequisites, and configuration options.
-
 
 
 ## Architecture

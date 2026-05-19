@@ -1,7 +1,7 @@
 
 ; Inno Setup script for vaultOps
 #define MyAppName "vaultOps"
-#define MyAppVersion "4.1.1"
+#define MyAppVersion "4.2.0"
 #define MyAppPublisher "infpdev"
 #define MyAppURL "https://github.com/infpdev/gtao-heist-toolkit"
 #define MyAppExeName "vaultOps.exe"
@@ -34,11 +34,6 @@ WizardStyle=modern
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-
-
 [Files]
 Source: "..\..\vaultOps.exe"; DestDir: "{app}"; Flags: ignoreversion 
 Source: "..\..\lib\vaultOpsUpdater.exe"; DestDir: "{app}\lib"; Flags: ignoreversion
@@ -54,7 +49,7 @@ Source: "..\static\*"; DestDir: "{app}\lib\static"; Flags: ignoreversion recurse
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\gta.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\gta.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\gta.ico"
 
 
 [Run]

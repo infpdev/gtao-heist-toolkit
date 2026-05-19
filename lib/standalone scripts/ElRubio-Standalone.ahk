@@ -193,44 +193,6 @@ class ElRubioSolver {
     }
 
     /**
-     * Main solver loop. OpenCV-only flow.
-     */
-    MainLoop() {
-
-        if (!isGtaFocused(true))
-            ResetHackMode()
-
-        if (this.isBusy || this.isShuttingDown)
-            return
-
-        this.isBusy := true
-        try {
-            this.checkTimeout()
-            this.tryOpenCV()
-        } finally {
-            this.isBusy := false
-        }
-    }
-
-    /**
-     * Handles timeouts while the anchor is missing.
-     */
-    checkTimeout() {
-        if (this.foundAnchor)
-            return
-
-        if (this.lastSeenTick != 0) {
-            this.clearAll()
-            timeLeft := Integer((10000 - (A_TickCount - this.lastSeenTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft, "ElRubioSolver.checkTimeout()")
-            if (A_TickCount - this.lastSeenTick > 10000) {
-                ResetHackMode()
-                this.Idle()
-            }
-        }
-    }
-
-    /**
      * Attempts to detect the anchor and solve using OpenCV responses.
      * @returns {boolean}
      */
@@ -288,6 +250,47 @@ class ElRubioSolver {
             return true
         } catch {
             return false
+        }
+    }
+
+    /**
+     * Main solver loop. OpenCV-only flow.
+     */
+    MainLoop() {
+
+        if (this.mode == "idle")
+            return
+
+        if (this.mode != "manual" && !isGtaFocused(true))
+            ResetHackMode()
+
+        if (this.isBusy || this.isShuttingDown)
+            return
+
+        this.isBusy := true
+        try {
+            this.checkTimeout()
+            this.tryOpenCV()
+        } finally {
+            this.isBusy := false
+        }
+    }
+
+    /**
+     * Handles timeouts while the anchor is missing.
+     */
+    checkTimeout() {
+        if (this.foundAnchor)
+            return
+
+        if (this.lastSeenTick != 0) {
+            this.clearAll()
+            timeLeft := Integer((10000 - (A_TickCount - this.lastSeenTick)) / 1000) + 1
+            updateGlobalStatus(false, true, timeLeft, "ElRubioSolver.checkTimeout()")
+            if (A_TickCount - this.lastSeenTick > 10000) {
+                ResetHackMode()
+                this.Idle()
+            }
         }
     }
 

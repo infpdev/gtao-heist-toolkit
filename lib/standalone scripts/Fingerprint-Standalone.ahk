@@ -343,11 +343,11 @@ class FingerprintSolver {
      */
     MainLoop() {
 
-        if (!isGtaFocused(true))
-            ResetHackMode()
-
         if (this.isShuttingDown || this.mode == "idle")
             return
+
+        if (this.mode != "manual" && !isGtaFocused(true))
+            ResetHackMode()
 
         if (this.isBusy) {
             ; Skip overlapping timer ticks while a previous iteration is still running.

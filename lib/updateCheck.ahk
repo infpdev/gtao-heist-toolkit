@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-ver := "4.1.1"
+global ver := "4.2.0"
 global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -28,10 +28,15 @@ CheckForUpdate()
 checkResolution()
 
 CheckForUpdate() {
-    global ver
-    updateHttpTimeoutMs := 5000
+    global ver, iniFile
+    static updateHttpTimeoutMs := 5000
 
-    ShowCenteredToolTip("checking for updates", 17)
+    disableUpdates := false
+    if (IsSet(iniFile) && iniFile) {
+        disableUpdates := IniRead(iniFile, "Options", "DisableUpdates", "0")
+    }
+
+    ShowCenteredToolTip "checking for updates"
 
     raw := "https://raw.githubusercontent.com/infpdev/gtao-heist-toolkit/main/lib/version.txt"
     Url := raw "?nocache=1"
@@ -72,18 +77,33 @@ CheckForUpdate() {
                     msg .= mjrMsg . fetchedNews . updInstrMsg
                 else if (UPDATE_PRIORITY = PARTIAL_UPDATE_REQUIRED)
                     msg .= patchMsg . fetchedNews
-                        . (!isStandaloneScript ? "Would you like to auto-update now?" : updInstrMsg)
+                        . (!isNoSaveStandalone ? "Would you like to auto-update now?" : updInstrMsg)
                 else if (UPDATE_PRIORITY = PARTIAL_BUT_MANDATORY)
                     msg .= patchVer . "This update is required to continue using the app.`n`n" . fetchedNews
-                        . (!isStandaloneScript ? "Would you like to auto-update now?" : updInstrMsg)
+                        . (!isNoSaveStandalone ? "Would you like to auto-update now?" : updInstrMsg)
+
+                if (disableUpdates) {
+
+                    ShowCenteredToolTip "v" fetchedVersion " available • updates disabled"
+
+                    Sleep 2000
+
+                    ShowCenteredToolTip "Running outdated builds may cause issues"
+
+                    Sleep 1000
+
+                    ToolTip "", , , 10
+
+                    return
+                }
 
                 result := MsgBox(msg, "Update Check", 0x4) ; 0x4 = Yes/No
                 if (result = "Yes") {
                     if ((UPDATE_PRIORITY = PARTIAL_UPDATE_REQUIRED || UPDATE_PRIORITY = PARTIAL_BUT_MANDATORY) &&
-                    A_IsCompiled && !isStandaloneScript)
+                    A_IsCompiled && !isNoSaveStandalone)
                         autoUpdate()
                     else
-                        Run "https://infpdev.netlify.app?vaultOps=" . (isStandaloneScript ? "3" : "2")
+                        Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone ? "3" : "2")
                     ExitApp
                 }
 
@@ -91,9 +111,9 @@ CheckForUpdate() {
                     ExitApp
             }
             else {
-                ShowCenteredToolTip("No updates found. Enjoy :)", 17)
+                ShowCenteredToolTip("No updates found. Enjoy :)")
                 Sleep 1000
-                ToolTip("", , , 17)
+                ToolTip("", , , 10)
             }
         }
         else {
@@ -103,12 +123,18 @@ CheckForUpdate() {
 
     }
     catch {
+        if (disableUpdates) {
+            ShowCenteredToolTip "Failed to check for updates • updates disabled"
+            Sleep 2000
+            ToolTip "", , , 10
+            return
+        }
         msg := "v" ver "`n`nFailed to check for updates.`n`n"
             . "If you think this is an error, please download the latest version manually.`n`n"
             . "Do you want to see the update instructions?"
         res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
         if (res = "Yes") {
-            Run "https://infpdev.netlify.app?vaultOps=" . (isStandaloneScript ? "3" : "2")
+            Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone ? "3" : "2")
         }
         ExitApp
     }
@@ -147,7 +173,10 @@ GetPatchFromVersion(versionText) {
 }
 
 autoUpdate() {
-    updaterPath := A_ScriptDir "\lib\vaultOpsUpdater.exe"
+    global isStandaloneScript
+    updaterPath := isStandaloneScript
+        ? A_ScriptDir "\lib\standaloneUpdater.exe"
+            : A_ScriptDir "\lib\vaultOpsUpdater.exe"
     if FileExist(updaterPath)
         Run('*RunAs "' updaterPath '" "' A_ScriptFullPath '"', , "Hide")
     else
