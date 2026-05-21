@@ -126,7 +126,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency):  
-> https://www.virustotal.com/gui/file/f2082165a529501ddbf909c23a77b3283882fe3f9e1979c41407cf86497e84ab
+> https://www.virustotal.com/gui/file/d440fc0f124197f358a604c122a0b56e7de24f390d61e4fbcb77e346ed5a15c9
 
 
 <p align="center">
@@ -224,43 +224,21 @@ Provided as-is, with no guarantees.
 
 All hotkeys are customizable.
 
-- **Enable Scripts** `[`
-  - Enables / disables automation  
-  - Recommended: Disable when not solving puzzles  
-
-- **NoSave** `]`
-  - Temporarily blocks saving to replay the heist  
-  - Requires firewall to be enabled  
-  - The app attempts to enable firewall automatically  
-
-- **Manual** `M`
-  - Detects patterns without selecting them  
-  - Useful when you want full control  
-  - Prevents incorrect auto switching  
-
-- **Auto Hack** `H`
-  - Automatically solves detected puzzles  
-  - Can be enabled before starting for smoother flow  
-
-- **Reset** `R`
-  - Stops current solving and resets state  
-  - Sets solver to **(idle)** and re-enables auto detection  
-  - Use if detection behaves incorrectly  
-
-- **Send PgUp** `LMB` (Cayo Perico only)
-  - Allows plasma cutter usage  
-  - Forwards another key as PgUp  
-  - Default: **Left Mouse Button (LMB)**  
-  - Fully customizable  
+| Action | Default | Description | Notes |
+|---|---|---|---|
+| Enable Scripts | `[` | Enables / disables automation | Recommended: disable when not solving puzzles |
+| NoSave | `]` | Temporarily blocks saving the progress to replay the heist | Requires Windows Firewall to be enabled |
+| Manual | `M` | Detects patterns without selecting them | Useful for full manual control |
+| Auto Hack | `H` | Automatically solves detected puzzles | Can be enabled before starting for smoother flow |
+| Reset | `R` | Stops current solving and resets state | Re-enables auto detection and sets solver to `(idle)` |
+| Send PgUp *(Cayo Perico only)* | `LMB` | Forwards another key as `PgUp` | Default: Left Mouse Button (`LMB`) |
 
 
 ### Options
 
-- **Delay** (30–200 ms)
-  - Controls auto-mode solving speed  
-  - Lower = faster (may be unstable)  
-  - Higher = slower (more stable)  
-  - Default: **40 ms** (Recommended)
+| Option | Description | Notes |
+|---|---|---|
+| Delay (30 – 200 ms) | Controls auto-mode solving speed | Lower = faster but unstable<br>Higher = slower but stable<br>Recommended / Default: `40 ms` |
 
 
 ## Standalone Solvers

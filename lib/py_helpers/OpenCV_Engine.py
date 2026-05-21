@@ -2,20 +2,52 @@ import sys
 import json
 import traceback
 import os
+import faulthandler
 import threading
 import time
-from casinofingerprint import scan_fingerprint_slots
-from cayofingerprint import detect_fingerprint
-from anchorDetection import (
-    run_anchor_detectors,
-    keypadAnchor,
-    fingerprintAnchor,
-    cayoAnchor,
-    is_black_area_present_fingerprint,
-    is_black_area_present_keypad,
-    is_black_area_present_cayo,
-)
-from casinokeypad import detect_ring, detect_column_selected, detect_keypad
+
+
+crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
+
+
+def write_crash_log(message):
+    try:
+        with open(crash_log_path, "a", encoding="utf-8") as log_file:
+            log_file.write(message)
+            if not message.endswith("\n"):
+                log_file.write("\n")
+    except Exception:
+        pass
+
+
+def log_exception(exc_type, exc_value, exc_tb):
+    write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
+
+
+try:
+    faulthandler.enable(all_threads=True)
+except Exception:
+    pass
+
+
+sys.excepthook = log_exception
+
+try:
+    from casinofingerprint import scan_fingerprint_slots
+    from cayofingerprint import detect_fingerprint
+    from anchorDetection import (
+        run_anchor_detectors,
+        keypadAnchor,
+        fingerprintAnchor,
+        cayoAnchor,
+        is_black_area_present_fingerprint,
+        is_black_area_present_keypad,
+        is_black_area_present_cayo,
+    )
+    from casinokeypad import detect_ring, detect_column_selected, detect_keypad
+except Exception:
+    write_crash_log(traceback.format_exc())
+    raise
 
 last_heartbeat = time.monotonic()
 busy = False
@@ -144,6 +176,8 @@ def handle_request(data):
         return "ERR"
 
     except Exception:
+        write_crash_log("REQUEST: " + json.dumps(data, ensure_ascii=True))
+        write_crash_log(traceback.format_exc())
         return "ERR(Exception)"
 
 
@@ -162,6 +196,7 @@ def run():
             try:
                 data = json.loads(line)
             except:
+                write_crash_log("BAD_JSON: " + line)
                 sys.stdout.write(json.dumps("ERR(Exception)", ensure_ascii=True) + "\n")
                 sys.stdout.flush()
                 continue
@@ -179,6 +214,8 @@ def run():
             finally:
                 busy = False
         except Exception as e:
+            write_crash_log("RUN_LOOP: " + traceback.format_exc())
+            write_crash_log(traceback.format_exc())
             print("FATAL:", e, flush=True)
             traceback.print_exc()
 

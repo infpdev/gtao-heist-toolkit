@@ -83,7 +83,7 @@ buildVaultOps() {
 
         ; === Compile and package the main vaultOps executable ===
         ToolTip "", , , 1
-        ShowCenteredToolTip "Packaging vaultOps.exe and updater..."
+        ShowCenteredToolTip "Packaging vaultOps"
         RunWait cmd, , "Hide"
         RunWait updaterCmd, , "Hide"
         RunWait innoCmd, , "Hide"
@@ -147,11 +147,22 @@ BuildOpenCVEngine(parentDir) {
 
     RequireExistingFile(sourceFile, "OpenCV engine helper")
 
-    pythonExe := FindPythonExe()
-    if (pythonExe = "") {
-        MsgBox "No Python executable was found for the Nuitka build step. Please ensure Python is installed or on PATH.",
-            "Error", 48
-        ExitApp
+    ; Prefer a project-local venv at the repository root (.venv-helper) so Nuitka
+    ; freezes only the locally installed packages. Fall back to system Python.
+    projectRoot := DirGetParent(parentDir)
+    venvPython := projectRoot "\.venv-helper\Scripts\python.exe"
+    venvActivate := projectRoot "\.venv-helper\Scripts\Activate.ps1"
+
+    if FileExist(venvPython) {
+        pythonExe := venvPython
+        ShowCenteredToolTip "Using project venv for Nuitka build: " venvPython
+    } else {
+        pythonExe := FindPythonExe()
+        if (pythonExe = "") {
+            MsgBox "No Python executable was found for the Nuitka build step. Please ensure Python is installed or on PATH.",
+                "Error", 48
+            ExitApp
+        }
     }
 
     try CleanOldNuitkaTempFolders()
@@ -169,10 +180,33 @@ BuildOpenCVEngine(parentDir) {
 
     quotedPython := '"' pythonExe '"'
     quotedBuildDir := '"' buildDir '"'
-    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
-    ; nuitkaCmd := 'cmd /k ""' pythonExe '" -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads --nofollow-import-to=PIL.ImageShow --nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest --windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '""'
+    nuitkaCmd := quotedPython ' -m nuitka --onefile --windows-console-mode=disable --assume-yes-for-downloads '
+        . '--nofollow-import-to=PIL.ImageShow '
+        . '--nofollow-import-to=PIL.ImageTk '
+        . '--nofollow-import-to=PIL.ImageWin '
+        . '--nofollow-import-to=PIL._avif '
+        . '--nofollow-import-to=PIL._webp '
+        . '--nofollow-import-to=PIL.*ImagePlugin '
+        . '--nofollow-import-to=PIL.*StubImagePlugin '
+        .
+        '--nofollow-import-to=tkinter --nofollow-import-to=matplotlib --nofollow-import-to=scipy --nofollow-import-to=pytest --nofollow-import-to=unittest '
+        . '--nofollow-import-to=email --nofollow-import-to=http --nofollow-import-to=urllib '
+        . '--nofollow-import-to=numpy.ma --nofollow-import-to=numpy.random --nofollow-import-to=numpy.fft '
+        . '--nofollow-import-to=numpy.polynomial --nofollow-import-to=numpy.matlib '
+        . '--nofollow-import-to=numpy.rec --nofollow-import-to=numpy.char '
+        . '--nofollow-import-to=numpy.f2py --nofollow-import-to=numpy.testing '
+        . '--nofollow-import-to=cv2.aruco --nofollow-import-to=cv2.barcode --nofollow-import-to=cv2.cuda '
+        . '--nofollow-import-to=cv2.detail --nofollow-import-to=cv2.dnn --nofollow-import-to=cv2.fisheye '
+        . '--nofollow-import-to=cv2.flann --nofollow-import-to=cv2.gapi --nofollow-import-to=cv2.instr '
+        . '--nofollow-import-to=cv2.mat_wrapper --nofollow-import-to=cv2.ml --nofollow-import-to=cv2.ocl '
+        . '--nofollow-import-to=cv2.ogl --nofollow-import-to=cv2.parallel --nofollow-import-to=cv2.samples '
+        .
+        '--nofollow-import-to=cv2.segmentation --nofollow-import-to=cv2.typing --nofollow-import-to=cv2.videoio_registry '
+        . '--windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
 
     RunWait nuitkaCmd, , "Hide"
+
+    ; RunWait nuitkaCmd
 
     sleep 3000
 
@@ -395,7 +429,6 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
                 "Silent=1`n"
                 "SavePath`n"
                 "Overwrite=1`n"
-                "Icon=gta.ico`n"
                 "; End of SFX script commands"
             )
 
@@ -423,7 +456,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         ; IMPORTANT:
         ; NO *.exe
         ; NO recursive lib packaging madness
-        rarCmd := '"' rarExe '" a -r -sfx "' bundleFile '" ' exeStr ' "lib\OpenCV_Engine.exe" "lib\standaloneUpdater.exe"' imgStr ' -z"bundle.txt"'
+        rarCmd := '"' rarExe '" a -r -sfx -iicon"' distStandaloneDir '\gta.ico" "' bundleFile '" ' exeStr ' "lib\OpenCV_Engine.exe" "lib\standaloneUpdater.exe"' imgStr ' -z"bundle.txt"'
 
         RunWait rarCmd, , "Hide"
 
