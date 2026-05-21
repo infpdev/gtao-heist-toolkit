@@ -24,9 +24,18 @@
   </a>
 </p>
 
+## Overview
+
+This repository includes:
+
+* **[VaultOps](#plug-and-play-tldr)**: Main all-in-one toolkit with GUI support, multi-heist automation, and both AHK/OpenCV detection engines
+* **[Standalone Scripts](#standalone-scripts)**: Independent puzzle solvers for specific heists (Fingerprint, Keypad, etc.)
+* **[NoSave Replay Script](#standalone-scripts)**: Standalone replay script without the full toolkit
+* **[AFK Key Holder](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)**: Holds or periodically sends a selected key to avoid AFK kicks during jobs, races, freeroam activities, or other long idle sessions in GTA Online
 
 ## Contents
 - [VaultOps ● GTA Online Heist Toolkit](#vaultops--gta-online-heist-toolkit)
+  - [Overview](#overview)
   - [Contents](#contents)
   - [Features](#features)
   - [What This Script Is (and Isn't)](#what-this-script-is-and-isnt)
@@ -39,8 +48,8 @@
     - [Fingerprint / Keypad solvers](#fingerprint--keypad-solvers)
     - [Hotkeys \& Controls](#hotkeys--controls)
     - [Options](#options)
-  - [Standalone Solvers](#standalone-solvers)
-  - [Building from Source](#building-from-source)
+  - [Standalone Scripts](#standalone-scripts)
+  - [Run Locally](#run-locally)
   - [Architecture](#architecture)
     - [Key Components](#key-components)
   - [License \& Attribution](#license--attribution)
@@ -140,9 +149,9 @@ Provided as-is, with no guarantees.
 3. Click **Enable Scripts**  
 4. Start a heist puzzle → the tool will detect it automatically → marks the prints for Casino hacks and auto-solves in case of  Cayo Perico fingerprints.
 
-(Optional)  
-- Press **Auto** `H` to solve instantly  
-- Or stay in **Manual** `M` to select prints yourself  
+**Optional:**
+- Press **Auto** `H` to solve instantly
+- Or stay in **Manual** `M` to select prints yourself
 
 > [!NOTE]
 > vaultOps runs in the system tray. Left-click the tray icon to terminate it immediately, or right-click → **Exit** to close it.
@@ -241,7 +250,7 @@ All hotkeys are customizable.
 | Delay (30 – 200 ms) | Controls auto-mode solving speed | Lower = faster but unstable<br>Higher = slower but stable<br>Recommended / Default: `40 ms` |
 
 
-## Standalone Solvers
+## Standalone Scripts
 
 Don't want the full toolkit? Use the standalone package instead.
 
@@ -253,15 +262,17 @@ The standalone package includes:
 All standalone solvers share a single OpenCV engine and common resources to reduce package size and avoid duplicated files.
 
 - **[vaultOps-Standalone-Pack.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe)** — Includes all standalone puzzle solvers in a single package
-- **[NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — Standalone NoSave replay script only (not an SFX package — simply download and run)
+- **[NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — Standalone NoSave replay script only
+- **[AFK-Key-Holder](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)** — Holds or periodically sends a selected key to avoid AFK kicks during jobs, races, freeroam activities, or other long idle sessions in GTA Online
 
-**Installation:**
+**Installation:** (vaultOps Standalone Pack)
 1. Download and run `vaultOps-Standalone-Pack.exe`
 2. The package will automatically extract into a folder named `vaultOps-Standalone-Pack` in the current directory
-3. Launch any standalone solver independently
+3. Launch any standalone solver separately as needed
 
 > [!NOTE]
-> All standalone puzzle solvers already include built-in NoSave support, so the separate NoSave standalone is only needed if you want to use NoSave by itself.
+> * The standalone pack already includes built-in **NoSave** support for all puzzle solvers, so the separate **NoSave** standalone is only needed if you want to use NoSave separately.<br><br>
+> * The **NoSave** and **AFK Key Holder** downloads are not SFX packages. Simply download and run the `.exe` file to launch the script.
 
 > [!WARNING]
 > Running multiple standalone solvers at the same time is not recommended, since they share the same default hotkeys and may trigger actions simultaneously.
@@ -269,9 +280,22 @@ All standalone solvers share a single OpenCV engine and common resources to redu
 > If you want to use multiple solvers together, using the full VaultOps toolkit is recommended instead, since it manages all solvers within a single unified app.
 
 
-## Building from Source
+## Run Locally
 
-Want to verify the source code or build the executable yourself? See [BUILD.md](lib/build_scripts/BUILD.md) for complete build instructions, prerequisites, and configuration options.
+Want to run or modify the project locally? Follow these steps:
+
+1. Clone the repository:
+   `git clone https://github.com/infpdev/gtao-heist-toolkit.git`
+
+2. Navigate to the project directory:
+   `cd gtao-heist-toolkit`
+
+3. Install the Python dependencies required for the OpenCV engine:
+   `pip install -r ./lib/py_helpers/requirements.txt`
+
+   This requires Python to be installed and added to your system PATH.
+
+4. Launch `vaultOps.ahk` or any standalone script to run the project locally.
 
 
 ## Architecture
@@ -308,7 +332,7 @@ _src/
 │  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
 │  │  └─ NoSave.ahk                   # Handles NoSave usage
 │  │
-│  ├─ standalone scripts/             # Standalone version of each solver, with shared logic extracted to helpers
+│  ├─ standalone scripts/             # Individual scripts - Solvers, NoSave and AFK key holder
 │  │
 │  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV detection engine
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
@@ -317,6 +341,7 @@ _src/
 │  ├─ initHotkeys.ahk                 # Hotkey registration + event binding
 │  ├─ sharedCanonicalHelpers.ahk      # Canonical hotkey conversion helpers
 │  ├─ standaloneHelpers.ahk           # Shared helpers for standalone builds
+│  ├─ standaloneUpdate.ahk            # Auto-updater for standalone scripts
 │  └─ updateCheck.ahk                 # Version checking
 │
 ├─ vaultOps.ahk                       # Entry point (main GUI + mode control)
@@ -339,14 +364,16 @@ _src/
 - `sharedCanonicalHelpers.ahk` — Canonical hotkey formatting/helpers
 - `standaloneHelpers.ahk` — Shared helpers for standalone builds
 - `updateCheck.ahk` — Version checking and update notifications
+- `standaloneUpdate.ahk` — Auto-updater for standalone scripts
 
-**AHK Solvers**
+**AHK Scripts**
 - `CasinoFingerprint.ahk` — Casino fingerprint solver
 - `CasinoKeypad.ahk` — Casino keypad solver
 - `ElRubio.ahk` — Cayo fingerprint cloner solver
 - `NoSave.ahk` — NoSave handling and firewall automation
+- `AFK-Key-Holder-Standalone.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
 
-**OpenCV detection engine (`lib/py_helpers/`)**
+**OpenCV Detection Engine (`lib/py_helpers/`)**
 - `OpenCV_Engine.py` — IPC listener/backend entry point
 - `anchorDetection.py` — Puzzle anchor detection
 - `casinofingerprint.py` — Casino fingerprint detection

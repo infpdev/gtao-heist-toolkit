@@ -3,7 +3,11 @@
 ; VaultOps app data directory and settings backup path
 global AppDataDir := A_AppData "\vaultOps"
 global settingsBackup := AppDataDir "\zSettings.ini"
-global iniFile := "zSettings.ini"
+
+if (A_IsCompiled)
+    global iniFile := "zSettings.ini"
+else
+    global iniFile := A_ScriptDir "\..\..\zSettings.ini"
 
 EnsureSettingsFile()
 
@@ -102,6 +106,12 @@ global resetKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Reset", "vk
 global terminateKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Terminate", "vk54sc014"), "Terminate",
 "Hotkeys")
 
+; Hotkey used by the AFK helper script to hold a user-chosen movement key.
+global afkKey := NormalizeHotkeyValue(IniRead(iniFile, "Other", "afkKey", ""), "afkKey", "Other")
+
+; Delay in seconds for the AFK helper script to send the anti-AFK key, can be set in the INI file.
+global afkDelay := IniRead(iniFile, "Other", "afkDelay", -1)
+
 global debug := !A_IsCompiled
 
 CreateDefaultSettings() {
@@ -124,10 +134,10 @@ CreateDefaultSettings() {
         . "; ---------------------------`n"
         . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
         . "; Please use the vaultOps GUI to change these hotkeys,`n"
-        . "; or refer to the documentation for how to customize them in the INI file. `n"
-        . "; The default hotkeys are mentioned above each setting for reference. `n"
+        . "; or refer to the documentation for how to customize them in the INI file.`n"
+        . "; The default hotkeys are mentioned above each setting for reference.`n"
         . "; ---------------------------`n`n"
-        . "; Below are the vaultOps hotkeys.. Ignore if your script is standalone `n"
+        . "; Below are the vaultOps hotkeys.. Ignore if your script is standalone`n"
         . "[ToolHotkeys]`n`n"
         . "; (vkDDsc01B) Physical key: ] (Right Bracket)`n"
         . "NoSave=vkDDsc01B`n`n"
@@ -148,7 +158,13 @@ CreateDefaultSettings() {
         . "Reset=vk52sc013`n`n"
         . "; Terminate the script completely (For standalone scripts only).`n"
         . "; (vk54sc014) Physical key: T`n"
-        . "Terminate=vk54sc014",
+        . "Terminate=vk54sc014`n`n"
+        . "[Other]`n`n"
+        . "; AFK helper key used by the standalone AFK holder script.`n"
+        . "; Leave blank to be prompted on first launch.`n"
+        . "; Delay in seconds for the AFK helper script to send the anti-AFK key:`n"
+        . "afkDelay=60`n"
+        . "afkKey=",
         iniFile
     )
 }

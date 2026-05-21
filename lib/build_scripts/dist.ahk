@@ -116,23 +116,23 @@ buildVaultOps() {
     OpenFolderAsUser(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled
-    if !A_IsCompiled {
-        AHK2EXEPath := "AHK2EXE\Ahk2Exe.exe"
-        baseExe := "AHK_BASE\AutoHotkeyUX.exe"
+    ; if !A_IsCompiled {
+    ;     AHK2EXEPath := "AHK2EXE\Ahk2Exe.exe"
+    ;     baseExe := "AHK_BASE\AutoHotkeyUX.exe"
 
-        if FileExist(AHK2EXEPath) && FileExist(baseExe) {
-            scriptPath := A_ScriptFullPath
-            exePath := A_ScriptDir "\compile_scripts.exe"
-            quotedBase := '"' baseExe '"'
+    ;     if FileExist(AHK2EXEPath) && FileExist(baseExe) {
+    ;         scriptPath := A_ScriptFullPath
+    ;         exePath := A_ScriptDir "\compile_scripts.exe"
+    ;         quotedBase := '"' baseExe '"'
 
-            cmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
-            RunWait cmd, , "Hide"
+    ;         cmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
+    ;         RunWait cmd, , "Hide"
 
-            if FileExist(exePath) {
-                ShowCenteredToolTip "compiled dist.ahk"
-            }
-        }
-    }
+    ;         if FileExist(exePath) {
+    ;             ShowCenteredToolTip "compiled dist.ahk"
+    ;         }
+    ;     }
+    ; }
     sleep 2000
     ExitApp
 }
@@ -155,7 +155,7 @@ BuildOpenCVEngine(parentDir) {
 
     if FileExist(venvPython) {
         pythonExe := venvPython
-        ShowCenteredToolTip "Using project venv for Nuitka build: " venvPython
+        ShowCenteredToolTip "Using project venv for Nuitka build"
     } else {
         pythonExe := FindPythonExe()
         if (pythonExe = "") {
@@ -394,7 +394,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             if (tempScript != "")
                 try FileDelete(tempScript)
 
-            if InStr(scriptName, "NoSave") {
+            if RegExMatch(scriptName, "i)(NoSave|AFK-)") {
 
                 try FileCopy(
                     outExe,
@@ -486,10 +486,12 @@ buildGUI(isDev := false) {
 
     dlg.AddText("xm+9 ym", "Choose build options:")
 
+    ; ==== VaultOps build options ====
     dlg.AddGroupBox("xm yp+25 w360 h50", "Build vaultOps.exe")
-    rBuildYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
-    rBuildNo := dlg.AddRadio("x+60 yp ", "No (reuse existing OpenCV helper)")
+    rBuildYes := dlg.AddRadio("xp+14 yp+23 Group ", "Yes")
+    rBuildNo := dlg.AddRadio("x+60 yp Checked", "No (reuse existing OpenCV helper)")
 
+    ; ==== VirusTotal scan option ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
     rScanYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
     rScanNo := dlg.AddRadio("x+80 yp", "No")
@@ -510,6 +512,7 @@ buildGUI(isDev := false) {
 
     rScanYes.OnEvent("Click", validateApiKey)
 
+    ; ==== Standalone build and packaging options ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Compile standalone scripts")
     rStandaloneYes := dlg.AddRadio("xp+14 yp+23 Group Checked", "Yes")
     rStandaloneNo := dlg.AddRadio("x+80 yp", "No")
@@ -581,6 +584,8 @@ buildGUI(isDev := false) {
 
     btnOk := dlg.AddButton("x85 y+17 w90 Default", "OK")
     btnCancel := dlg.AddButton("x+10 w90", "Cancel")
+
+    btnOk.Focus()
 
     selected := ""
     btnOk.OnEvent("Click", (*) => (
