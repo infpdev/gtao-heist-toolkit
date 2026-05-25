@@ -29,13 +29,9 @@ ForceForeground(guiApp) {
 
 ; Center the gui since it's captionless
 CenterGui(guiApp, width, height, scale := 1, yOffset := 0) {
-    s := (IsNumber(scale) && scale > 0) ? scale : 1
 
-    screenW := SysGet(78) / s
-    screenH := SysGet(79) / s
-
-    x := Round((screenW - width) / 2)
-    y := Round((screenH - height) / 2 + yOffset)
+    x := Round((A_ScreenWidth - width) / 2)
+    y := Round((A_ScreenHeight - height) / 2 + yOffset)
 
     guiApp.Move(x, y, width, height)
 }
