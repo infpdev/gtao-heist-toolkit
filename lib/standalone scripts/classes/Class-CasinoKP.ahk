@@ -1,36 +1,3 @@
-#Include "../standaloneHelpers.ahk"
-
-global fingerprintMode := 0
-
-init() {
-    global heistinstance
-    try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
-    try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
-
-    standalone_switch_to_auto(*) {
-        global hackMode := "auto"
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.switchToAuto()
-    }
-
-    standalone_switch_to_manual(*) {
-        global hackMode := "manual"
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.switchToManual()
-    }
-
-    CreateHeistInstance()
-}
-
-CreateHeistInstance() {
-    keypad := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, folder, higherRes,
-        OPENCV_ENGINE)
-
-    global heistinstance := keypad
-}
-
-init()
-
 ; class start
 ; DO NOT REMOVE THE ABOVE LINE - REQUIRED TO AUTOMATE BUILDING OF CLASSES AS STANDALONE SCRIPTS
 /**
@@ -341,7 +308,7 @@ class KeypadSolver {
             ; If stabilized, detect ring and handle selection
             if (this.mode == "manual") {
                 this.isCurrentColSelectedOpenCV()
-            } else if (this.mode == "auto") {
+            } else if (this.mode == "auto" && isGtaFocused(true, true)) { ; Only auto-select if GTA is focused to avoid sending unintended inputs
                 this.ringDetected_AutoSelectOpenCV()
             }
 
@@ -361,9 +328,6 @@ class KeypadSolver {
 
         if (this.mode == "idle" || this.isShuttingDown)
             return
-
-        if (this.mode != "manual" && !isGtaFocused(true))
-            ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -411,7 +375,7 @@ class KeypadSolver {
                     if (!this.cols.Count == 6) {
                         this.kpFails++
                         if (this.kpFails >= 3) {
-                            if (!isGtaFocused()) {
+                            if (!isGtaFocused(true)) {
                                 ResetHackMode()
                                 return
                             }
@@ -431,7 +395,8 @@ class KeypadSolver {
                     this.GridDetect()
                     this.StabilizationCheck()
                 } else {
-                    this.ringDetected_AutoSelect()
+                    if (isGtaFocused(true, true)) ; Only auto-select if GTA is focused to avoid sending unintended inputs
+                        this.ringDetected_AutoSelect()
                 }
             }
         } finally {

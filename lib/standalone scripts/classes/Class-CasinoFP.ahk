@@ -1,36 +1,3 @@
-#Include "../standaloneHelpers.ahk"
-
-init() {
-    global heistinstance
-
-    try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
-    try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
-
-    standalone_switch_to_auto(*) {
-        global hackMode := "auto", heistinstance
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.AutoHack()
-    }
-
-    standalone_switch_to_manual(*) {
-        global hackMode := "manual", heistinstance
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.ManualMode()
-    }
-
-    CreateHeistInstance()
-
-}
-
-CreateHeistInstance() {
-    fingerPrint := FingerprintSolver(delay, UpdateGlobalStatus,
-        cachedFingerprintAnchor, folder, higherRes, OPENCV_ENGINE)
-
-    global heistinstance := fingerPrint
-}
-
-init()
-
 ; class start
 ; DO NOT REMOVE THE ABOVE LINE - REQUIRED TO AUTOMATE BUILDING OF CLASSES AS STANDALONE SCRIPTS
 /**
@@ -319,7 +286,7 @@ class FingerprintSolver {
 
                 this.markPrints(this.prevPrints, positions)
 
-                if (this.mode == "auto")
+                if (this.mode == "auto" && isGtaFocused(true, true)) ; Only auto-select if GTA is focused to avoid sending unintended inputs
                     this.openCVSelect(positions)
 
                 return true
@@ -345,9 +312,6 @@ class FingerprintSolver {
 
         if (this.isShuttingDown || this.mode == "idle")
             return
-
-        if (this.mode != "manual" && !isGtaFocused(true))
-            ResetHackMode()
 
         if (this.isBusy) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -386,11 +350,13 @@ class FingerprintSolver {
                         ; Sleep 1000
                     }
 
-                    this.Select()
-                    this.clearAll()
-                    Sleep 10
-                    if (this.counter == 0)
-                        Send "{Tab}"
+                    if (isGtaFocused(true, true)) { ; Only auto-select if GTA is focused to avoid sending unintended inputs
+                        this.Select()
+                        this.clearAll()
+                        Sleep 10
+                        if (this.counter == 0)
+                            Send "{Tab}"
+                    }
 
                     this.handoffPending := false
                     this.isBusy := false

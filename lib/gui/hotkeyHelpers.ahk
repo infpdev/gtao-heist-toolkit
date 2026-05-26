@@ -398,14 +398,14 @@ TryRegisterPgUpHotkey(oldKey := "") {
 
 ; Checks if GTA or the script's GUI is currently focused,
 ; used to prevent sending inputs when the user is actively using another window.
-isGtaFocused(excludeGui := false) {
+; When strict is true, the debug override is ignored to ensure accurate focus checks during testing.
+isGtaFocused(excludeGui := false, strict := false) {
     global guiApp, debug
 
-    return (debug ||
-        WinActive("ahk_exe GTA5.exe")
-        || WinActive("ahk_exe GTA5_Enhanced.exe")
-        || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd))
-    )
+    return ((!strict && debug) ||
+    WinActive("ahk_exe GTA5.exe")
+    || WinActive("ahk_exe GTA5_Enhanced.exe")
+    || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
 }
 
 PgUpDown(*) {

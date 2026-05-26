@@ -194,7 +194,7 @@ findAnchorsAndCreateInstance() {
         ? foundAnchor()
         : foundAnchorOpenCV()
 
-    if (!anchor)
+    if (!anchor && engine == AHK_ENGINE) ; If AHK engine fails to find an anchor, try OpenCV before giving up
         anchor := foundAnchorOpenCV()
 
     if (!anchor) {

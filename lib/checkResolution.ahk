@@ -10,41 +10,39 @@ if !A_IsAdmin {
 if (!IsSet(OPENCV_ENGINE))
     global OPENCV_ENGINE := 1
 
+global unsupportedResolution := false
+global higherRes := false
+global wideScreen := false
+
+supportedResolutions := [[1366, 768], [1600, 900], [1920, 1080]]
+nearestRes := supportedResolutions[1]
+bestDiff := Abs(A_ScreenWidth - nearestRes[1])
+for _, res in supportedResolutions {
+    diff := Abs(A_ScreenWidth - res[1])
+    if (diff < bestDiff) {
+        bestDiff := diff
+        nearestRes := res
+    }
+}
+
+targetW := nearestRes[1]
+targetH := nearestRes[2]
+
+; parent folder
+global dir := DirGetParent(A_ScriptDir)
+if (dir = "")
+    dir := A_ScriptDir
+
+; folder for resolution-specific templates
+global folder := dir "\" targetW "x" targetH "\"
+
+iniFile := dir "\zSettings.ini"
+if (FileExist(iniFile)) {
+    global disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
+}
+
 checkResolution() {
-
-    global unsupportedResolution := false
-    global higherRes := false
-    global wideScreen := false
-
-    supportedResolutions := [[1366, 768], [1600, 900], [1920, 1080]]
-    nearestRes := supportedResolutions[1]
-    bestDiff := Abs(A_ScreenWidth - nearestRes[1])
-    for _, res in supportedResolutions {
-        diff := Abs(A_ScreenWidth - res[1])
-        if (diff < bestDiff) {
-            bestDiff := diff
-            nearestRes := res
-        }
-    }
-
-    targetW := nearestRes[1]
-    targetH := nearestRes[2]
-
-    ; parent folder
-    global dir := DirGetParent(A_ScriptDir)
-    if (dir = "")
-        dir := A_ScriptDir
-
-    ; folder for resolution-specific templates
-    global folder := dir "\" targetW "x" targetH "\"
-
-    iniFile := dir "\zSettings.ini"
-    if (FileExist(iniFile)) {
-        disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
-        if (disableWarningFlag = "1") {
-            return
-        }
-    }
+    global unsupportedResolution, higherRes, wideScreen, targetW, targetH, iniFile, engine
 
     ; Check if exact match
     isExactMatch := false
@@ -67,13 +65,13 @@ checkResolution() {
     ; Check for ultrawide 21:9 aspect ratio (~2.333...)
     is21to9 := (aspectRatio > 2.05 && aspectRatio < 2.4)
 
-    global wideScreen := is21to9
+    wideScreen := is21to9
 
     if ((is16to9 || is21to9) && (A_ScreenWidth > 1920 || wideScreen)) {
         ; Higher resolution 16:9 screen - use fallback to nearest supported
         unsupportedResolution := false
         higherRes := true
-        global engine := OPENCV_ENGINE
+        engine := OPENCV_ENGINE
         if (wideScreen)
             ShowResolutionWarning(targetW, targetH, iniFile, true)
         return
@@ -120,6 +118,11 @@ HasVaultOpsMarkers(basePath) {
 }
 
 ShowResolutionWarning(targetW, targetH, iniFile, wideScreen := false) {
+    global disableWarningFlag
+
+    if (disableWarningFlag = "1")
+        return
+
     warningGui := Gui("-DPIScale")
     warningGui.SetFont("s10")
     warningGui.Title := "Unsupported Resolution"

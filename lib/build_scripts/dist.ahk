@@ -204,9 +204,9 @@ BuildOpenCVEngine(parentDir) {
         '--nofollow-import-to=cv2.segmentation --nofollow-import-to=cv2.typing --nofollow-import-to=cv2.videoio_registry '
         . '--windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
 
-    RunWait nuitkaCmd, , "Hide"
+    ; RunWait nuitkaCmd, , "Hide"
 
-    ; RunWait nuitkaCmd
+    RunWait nuitkaCmd
 
     sleep 3000
 
@@ -272,9 +272,9 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
     imageFolders := ["1366x768", "1600x900", "1920x1080"]
 
     standaloneClassMap := Map(
-        "Fingerprint-Standalone.ahk", parentDir "\lib\scripts\CasinoFingerprint.ahk",
-        "Keypad-Standalone.ahk", parentDir "\lib\scripts\CasinoKeypad.ahk",
-        "ElRubio-Standalone.ahk", parentDir "\lib\scripts\ElRubio.ahk"
+        "Standalone-Fingerprint.ahk", parentDir "\lib\scripts\CasinoFingerprint.ahk",
+        "Standalone-Keypad.ahk", parentDir "\lib\scripts\CasinoKeypad.ahk",
+        "Standalone-ElRubio.ahk", parentDir "\lib\scripts\ElRubio.ahk"
     )
 
     if !DirExist(distStandaloneDir)
@@ -344,7 +344,8 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 
             SplitPath script, &scriptName
 
-            exeName := StrReplace(scriptName, ".ahk", ".exe")
+            exeName := StrReplace(scriptName, "Standalone-", "")
+            exeName := StrReplace(exeName, ".ahk", "-Standalone.exe")
             outExe := distStandaloneDir "\" exeName
 
             scriptToCompile := script
@@ -358,12 +359,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
                 ToolTip "Preparing " scriptName "...", 0, 0, 1
 
                 try {
-                    CreateTempScriptWithReplacedClass(
-                        script,
-                        originalScript,
-                        tempPath,
-                        parentDir
-                    )
+                    CreateTempScriptWithReplacedInclude(script, originalScript, tempPath)
 
                     scriptToCompile := tempPath
                     tempScript := tempPath
@@ -613,31 +609,47 @@ buildGUI(isDev := false) {
     return selected
 }
 
-CreateTempScriptWithReplacedClass(standaloneScript, originalScript, tempPath, parentDir) {
-    ; Read the standalone template
+CreateTempScriptWithReplacedInclude(standaloneScript, originalScript, tempPath) {
     if !FileExist(standaloneScript)
         throw Error("Standalone script not found: " standaloneScript)
 
+    if !FileExist(originalScript)
+        throw Error("Original script not found: " originalScript)
+
     standaloneContent := FileRead(standaloneScript)
+    originalContent := FileRead(originalScript)
 
-    ; Extract the class from the original script (from "; class start" marker onwards)
-    newClass := ExtractClassFromScript(originalScript)
+    includeLine := ""
+    for _, line in StrSplit(standaloneContent, "`n", "`r") {
+        trimmedLine := Trim(line)
+        ; MsgBox trimmedLine
+        if (SubStr(trimmedLine, 1, StrLen('#Include "classes\')) = '#Include "classes\') {
+            includeLine := trimmedLine
+            break
+        }
+    }
 
-    ; Find where the class starts in the standalone
-    markerPos := InStr(standaloneContent, "; class start")
-    if (markerPos = 0)
-        throw Error("Marker '; class start' not found in standalone: " standaloneScript)
+    if (includeLine = "")
+        throw Error("Class include not found in standalone script: " standaloneScript)
 
-    ; Everything before "; class start" + the new class from original
-    beforeClass := SubStr(standaloneContent, 1, markerPos - 1)
-    mergedContent := beforeClass . newClass
+    count := 0
 
-    FileAppend(mergedContent, tempPath)
+    replacedContent := StrReplace(
+        standaloneContent,
+        includeLine,
+        originalContent,
+        ,
+        &count,
+        1
+    )
+
+    try FileDelete(tempPath)
+    FileAppend(replacedContent, tempPath)
 
     return true
 }
 
-; --- Helper functions for class extraction and temp file creation ---
+; --- Helper functions for temp file creation ---
 ExtractBuildFilesIfNeeded() {
     requiredFolders := ["AHK_BASE", "AHK2EXE", "Inno Setup 6"]
     buildFilesZip := A_ScriptDir "\build_files.zip"
@@ -667,21 +679,6 @@ ExtractBuildFilesIfNeeded() {
             "Error", 48)
         ExitApp
     }
-}
-
-ExtractClassFromScript(filePath) {
-    ; Read the original script and extract everything from "; class start" marker onwards
-    if !FileExist(filePath)
-        throw Error("Source script not found: " filePath)
-
-    content := FileRead(filePath)
-    markerPos := InStr(content, "; class start")
-
-    if (markerPos = 0)
-        throw Error("Marker '; class start' not found in: " filePath)
-
-    ; Return from "; class start" to end of file
-    return SubStr(content, markerPos)
 }
 
 RequireExistingFile(path, label) {

@@ -122,7 +122,13 @@ CanonicalToDisplay(canonical) {
     return mods keyPart
 }
 
-global cacheFile := A_ScriptDir "\zAnchorCache.ini" ; Global variable for cache file path, used in LoadCache and SaveCache functions
+; Global variable for cache file path, used in LoadCache and SaveCache functions
+
+if (IsSet(dir)) {
+    cacheFile := dir "\zAnchorCache.ini"
+} else {
+    cacheFile := A_ScriptDir "\zAnchorCache.ini"
+}
 
 /**
  * @description Loads cached anchor coordinates from anchorCache.ini into global cache variables.

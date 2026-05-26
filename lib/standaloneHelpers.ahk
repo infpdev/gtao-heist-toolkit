@@ -118,7 +118,8 @@ ResetHackMode() {
  * 
  * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
  */
-UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
+UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force := false, *) {
+    static previousStatus := ""
     static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
     global hackInProgress, readableNoSaveKey, readableScriptsKey, readableSendPgUpKey, readableManualKey,
@@ -179,9 +180,15 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, *) {
     keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
         "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-    ToolTip(unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
+    aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
 
-    MakeAllToolTipsClickThrough(hackMode == "idle")
+    if (force || aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
+        previousStatus := aggregatedStatus
+        ToolTip(aggregatedStatus, scrW, 0, 20)
+
+        MakeAllToolTipsClickThrough(hackMode == "idle")
+    }
+
 }
 
 ; Callback for using the OpenCV engine, used by solvers to switch
@@ -273,13 +280,13 @@ PgUpUp(*) {
     global pgUpSent, hackInProgress
 
     if !pgUpSent {
-        UpdateGlobalStatus(hackInProgress)
+        UpdateGlobalStatus(hackInProgress, , , true)
         return
     }
 
     Send "{PgUp up}"
     pgUpSent := false
-    UpdateGlobalStatus(hackInProgress)
+    UpdateGlobalStatus(hackInProgress, , , true)
 }
 
 ; Toggle debug mode with Alt+F12.

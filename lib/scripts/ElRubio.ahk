@@ -198,7 +198,7 @@ class ElRubioSolver {
             if (!IsObject(cayoResult))
                 return false
 
-            if (this.mode == "auto") {
+            if (this.mode == "auto" && isGtaFocused(true, true)) {
                 this.solveOpenCV(cayoResult.row, cayoResult.clicks)
             } else {
                 if (cayoResult.clicksKey != this.prevClicks) {
@@ -221,9 +221,6 @@ class ElRubioSolver {
 
         if (this.mode == "idle")
             return
-
-        if (this.mode != "manual" && !isGtaFocused(true))
-            ResetHackMode()
 
         if (this.isBusy || this.isShuttingDown)
             return

@@ -286,7 +286,7 @@ class FingerprintSolver {
 
                 this.markPrints(this.prevPrints, positions)
 
-                if (this.mode == "auto")
+                if (this.mode == "auto" && isGtaFocused(true, true)) ; Only auto-select if GTA is focused to avoid sending unintended inputs
                     this.openCVSelect(positions)
 
                 return true
@@ -312,9 +312,6 @@ class FingerprintSolver {
 
         if (this.isShuttingDown || this.mode == "idle")
             return
-
-        if (this.mode != "manual" && !isGtaFocused(true))
-            ResetHackMode()
 
         if (this.isBusy) {
             ; Skip overlapping timer ticks while a previous iteration is still running.
@@ -353,11 +350,13 @@ class FingerprintSolver {
                         ; Sleep 1000
                     }
 
-                    this.Select()
-                    this.clearAll()
-                    Sleep 10
-                    if (this.counter == 0)
-                        Send "{Tab}"
+                    if (isGtaFocused(true, true)) { ; Only auto-select if GTA is focused to avoid sending unintended inputs
+                        this.Select()
+                        this.clearAll()
+                        Sleep 10
+                        if (this.counter == 0)
+                            Send "{Tab}"
+                    }
 
                     this.handoffPending := false
                     this.isBusy := false

@@ -362,6 +362,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
      */
     UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, caller := "", *) {
+        static previousStatus := ""
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
         global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
@@ -448,9 +449,14 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
             indicator : "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-        ToolTip(unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys, scrW, 0, 20)
+        aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
 
-        MakeAllToolTipsClickThrough(hackMode == "idle")
+        if (aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
+            previousStatus := aggregatedStatus
+            ToolTip(aggregatedStatus, scrW, 0, 20)
+
+            MakeAllToolTipsClickThrough(hackMode == "idle")
+        }
     }
 
 }
