@@ -1,5 +1,5 @@
-#Include initHotkeys.ahk
 #Include updateCheck.ahk
+#Include initHotkeys.ahk
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
 #Include ahk2py_socket.ahk

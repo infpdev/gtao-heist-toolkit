@@ -24,8 +24,8 @@ global vaultOps := true
 
 ; --- IMPORTS SECTION ---
 ; common imports
-#Include <initHotkeys>
 #Include <updateCheck>
+#Include <initHotkeys>
 #Include <ahk2py_socket>
 
 ; vaultOps scripts
@@ -361,7 +361,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * 
      * Side effects: Updates tooltip and calls MakeAllToolTipsClickThrough().
      */
-    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, caller := "", *) {
+    UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, caller := "", force := false, *) {
         static previousStatus := ""
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
@@ -451,7 +451,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
 
-        if (aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
+        if (aggregatedStatus != previousStatus || force) { ; Only update tooltip if status has changed to reduce flickering
             previousStatus := aggregatedStatus
             ToolTip(aggregatedStatus, scrW, 0, 20)
 
@@ -518,7 +518,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global heist, picHeistToggle, txtCasinoLabel, txtCayoLabel, DIAMOND_CASINO, CAYO_PERICO, scriptsEnabled
         global txtModeLabel, txtFingerprintLabel, picFingerprintToggle, txtKeypadLabel, txtModeInstr, hackInProgress
         heist := (heist == DIAMOND_CASINO) ? CAYO_PERICO : DIAMOND_CASINO
-        picHeistToggle.Value := (heist == DIAMOND_CASINO) ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
+        picHeistToggle.Value := (heist == DIAMOND_CASINO) ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png"
         txtCasinoLabel.Opt("c" (heist == DIAMOND_CASINO ? "c648f64" : "White"))
         txtCayoLabel.Opt("c" (heist == CAYO_PERICO ? "c648f64" : "White"))
         SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
@@ -669,7 +669,7 @@ Init() {
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
 
     ; ======= GUI Styling and dimension variables =======
-    global width := 950, height := Max(540, (A_ScreenHeight // 2)), borderRadius := 20
+    global width := 960, height := 540, borderRadius := 20
     global scrW := A_ScreenWidth, scrH := A_ScreenHeight
     global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
 
@@ -684,8 +684,8 @@ Init() {
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
     guiApp.BackColor := "222222"
-    overallFontSize := Floor((11) / GetScreenScaling())
-    guiApp.SetFont("s" overallFontSize / GetScreenScaling() " cWhite")
+    overallFontSize := 11
+    guiApp.SetFont("s" overallFontSize " cWhite")
 
     ; ======= Top bar =======
     topbarH := 30 / scale, btnW := 17 / scale
@@ -716,10 +716,10 @@ Init() {
     rowH := (groupH - 65 / scale) / numSettings
 
     xLabel := 40 / scale
-    xField := xLabel + labelW + 30 / scale
+    xField := xLabel + labelW + 55 / scale
     xField2 := xField - 40 / scale
-    xInstr := xField + fieldW + 50 / scale
-    heistX := xField - 85 / scale
+    xInstr := xField + fieldW + 75 / scale
+    toggleX := xField - 87 / scale
     y := groupY + 30 / scale
     adjustmentYOffset := 4 / scale
 
@@ -744,7 +744,7 @@ Init() {
         inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
         ; Nosave instruction text
-        txtNoSaveInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtNoSaveInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
         ; Nosave event listeners
         picNoSave.OnEvent("Click", ToggleNoSaveStatus)
         inputNoSave.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputNoSave, "NoSave", noSaveKey))
@@ -768,7 +768,7 @@ Init() {
         inputToggleScripts := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(toggleScriptsKey))
         ; Scripts instruction text
-        txtScriptsInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtScriptsInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
         ; Scripts event listeners
         picScriptsEnabled.OnEvent("Click", ToggleScriptsEnabled)
         inputToggleScripts.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputToggleScripts, "ToggleScripts",
@@ -783,7 +783,7 @@ Init() {
     ; ⏐===================== ROW 3: Engine Selection (AHK / OpenCV) ======================⏐
     ; ⏐===================================================================================⏐
     {
-        engineX := xField - 85 / scale
+        engineX := toggleX
 
         txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
 
@@ -811,7 +811,7 @@ Init() {
             picEngineToggle.OnEvent("Click", ToggleEngineMode)
 
         }
-        txtEngineInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtEngineInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
 
         UpdateEngineInstrText()
         y += rowH
@@ -821,27 +821,27 @@ Init() {
     ; ⏐=============================== ROW 4: Heist Toggle ===============================⏐
     ; ⏐===================================================================================⏐
     {
+        heistX := toggleX
         ; Heist label 1
         txtHeistLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Heist:")
-        txtCasinoLabel := guiApp.AddText("x" (heistX + 20 / scale) " y" y " c" (heist == DIAMOND_CASINO ?
-            "c648f64" :
-                "White"),
-        "Casino")
+        txtCayoLabel := guiApp.AddText("x" (heistX - 10 / scale) " y" y " c" (heist == CAYO_PERICO ? "c648f64" :
+            "White"), "Cayo Perico")
         ; Heist toggle
         picHeistToggle := guiApp.AddPicture("x" (heistX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 /
-        scale " +0x4", heist == DIAMOND_CASINO ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
+        scale " +0x4", heist == DIAMOND_CASINO ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png")
         ; Heist label 2
-        txtCayoLabel := guiApp.AddText("x" (heistX + 125 / scale) " y" y " c" (heist == CAYO_PERICO ? "c648f64" :
-            "White"), "Cayo Perico")
+        txtCasinoLabel := guiApp.AddText("x" (heistX + 132 / scale) " y" y " c"
+        (heist == DIAMOND_CASINO ? "c648f64" : "White"), "Casino")
+
         ; Heist instruction text
-        txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9",
+        txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
             "Switch between Casino and Cayo Perico heists (Usually handled by the script).")
         ; Heist event listener
         picHeistToggle.OnEvent("Click", ToggleHeistMode)
         y += rowH
 
         ; --- Info Text: Enable scripts to toggle heist and mode ---
-        txtEnableScriptsInfo := guiApp.AddText("x" xLabel " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        txtEnableScriptsInfo := guiApp.AddText("x" xLabel + 25 " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
         "Enable scripts to toggle heist, engine, and mode")
         txtEnableScriptsInfo.SetFont("s12")
         txtEnableScriptsInfo.Opt("BackgroundTrans")
@@ -852,7 +852,7 @@ Init() {
     ; ⏐======================== ROW 5: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
     ; ⏐========================================================================================================⏐
     {
-        modeX := xLabel, modeY := y, modeW := labelW, fingerprintX := (xField - 85 / scale)
+        fingerprintX := toggleX, modeY := y, modeW := labelW
         ; --- Casino mode options ---
         ; Mode label (row header)
         txtModeLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Mode:")
@@ -860,13 +860,14 @@ Init() {
         txtFingerprintLabel := guiApp.AddText("x" fingerprintX " y" y
             " c" (fingerprintMode ? "c648f64" : "White"), "Fingerprint")
         ; Fingerprint mode toggle
-        picFingerprintToggle := guiApp.AddPicture("x" (fingerprintX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 /
-        scale " +0x4", fingerprintMode ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
-        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 125 / scale) " y" y
+        picFingerprintToggle := guiApp.AddPicture("x" (fingerprintX + 75 / scale) " y"
+        (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
+        fingerprintMode ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
+        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 127 / scale) " y" y
         ; Keypad mode label
         " c" (!fingerprintMode ? "c648f64" : "White"), "Keypad")
         ; Mode instruction text
-        txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
 
         ; --- Cayo Perico options ---
         ; label
@@ -874,8 +875,8 @@ Init() {
         ; hotkey field to send PgUp
         inputPgUp := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(sendPgUpKey))
-        ; instruction text
-        txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        ; cayo perico pgup instruction text
+        txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
 
         ; Casino / Cayo options event listeners
         picFingerprintToggle.OnEvent("Click", ToggleFingerprintMode)
@@ -896,7 +897,7 @@ Init() {
         inputManual := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(manualKey))
         ; Manual keybind instruction text
-        txtManualInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtManualInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
         ; Manual keybind event listeners
         inputManual.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputManual, "Manual", manualKey))
         inputManual.OnEvent("Change", (*) => AutoSaveKeybind(inputManual, "Manual"))
@@ -914,7 +915,7 @@ Init() {
         inputAuto := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(autoHackKey))
         ; AutoHack keybind instruction text
-        txtAutoInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtAutoInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
         ; AutoHack keybind event listeners
         inputAuto.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputAuto, "AutoHack", autoHackKey))
         inputAuto.OnEvent("Change", (*) => AutoSaveKeybind(inputAuto, "AutoHack"))
@@ -932,7 +933,7 @@ Init() {
         inputReset := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(resetKey))
         ; Reset keybind instruction text
-        txtResetInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9", "")
+        txtResetInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
         ; Reset keybind event listeners
         inputReset.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputReset, "Reset", resetKey))
         inputReset.OnEvent("Change", (*) => AutoSaveKeybind(inputReset, "Reset"))
@@ -950,7 +951,7 @@ Init() {
         inputDelay := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", delay)
         ; Delay instruction text
-        txtDelayInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9",
+        txtDelayInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
             "Adjusts the speed of key-sending for automation (30-200 ms). 40ms is usually preferred.")
         ; Delay event listeners
         inputDelay.OnEvent("Focus", (*) => (

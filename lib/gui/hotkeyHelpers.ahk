@@ -414,7 +414,7 @@ PgUpDown(*) {
     if (pgUpDisabled || pgUpSent)
         return
 
-    if !isGtaFocused()
+    if !isGtaFocused(false, true)
         return
 
     if (sendPgUpKey == "LButton") {
@@ -444,7 +444,7 @@ PgUpUp(*) {
 
     Send "{PgUp up}"
     pgUpSent := false
-    UpdateGlobalStatus(hackInProgress)
+    UpdateGlobalStatus(hackInProgress, , , , true)
 
 }
 

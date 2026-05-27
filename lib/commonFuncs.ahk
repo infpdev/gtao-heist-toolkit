@@ -224,3 +224,33 @@ DeleteCache() {
         FileDelete(cacheFile)
     }
 }
+
+DirGetParent(path) {
+    currentPath := path
+    loop 10 {
+        SplitPath currentPath, , &parentPath
+
+        ; Find the app root by known markers.
+        if (HasVaultOpsMarkers(currentPath)) {
+            return currentPath
+        }
+
+        if (!parentPath || parentPath = currentPath) {
+            SplitPath path, , &parent1
+            SplitPath parent1, , &parent2
+            return parent2 ? parent2 : path
+        }
+        currentPath := parentPath
+    }
+    SplitPath path, , &parent1
+    SplitPath parent1, , &parent2
+    return parent2 ? parent2 : path
+}
+
+HasVaultOpsMarkers(basePath) {
+    hasExe := FileExist(basePath "\vaultOps.exe") != ""
+    has1920 := InStr(FileExist(basePath "\1920x1080"), "D")
+    has1600 := InStr(FileExist(basePath "\1600x900"), "D")
+    has1366 := InStr(FileExist(basePath "\1366x768"), "D")
+    return hasExe || has1920 || has1600 || has1366
+}

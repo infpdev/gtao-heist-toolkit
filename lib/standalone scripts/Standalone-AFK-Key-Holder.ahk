@@ -1,13 +1,6 @@
 #Requires AutoHotkey v2.0
-
-if !A_IsAdmin {
-    Run('*RunAs "' A_ScriptFullPath '"')
-    if (A_LastError != 0) {
-        MsgBox "This script requires administrator privileges! Please run it again with the correct privileges.",
-            "Error", 48
-    }
-    ExitApp
-}
+#Include "../initHotkeys.ahk"
+#Include "../commonFuncs.ahk"
 
 #SingleInstance Force
 #UseHook true
@@ -18,7 +11,14 @@ SetWinDelay 0
 SetControlDelay 0
 SetTitleMatchMode 2
 
-#Include "../initHotkeys.ahk"
+if !A_IsAdmin {
+    Run('*RunAs "' A_ScriptFullPath '"')
+    if (A_LastError != 0) {
+        MsgBox "This script requires administrator privileges! Please run it again with the correct privileges.",
+            "Error", 48
+    }
+    ExitApp
+}
 
 global afkHolding := false
 global terminateTimer := 2000 ; Time the terminate key must be held to exit, in milliseconds
@@ -289,22 +289,6 @@ Cleanup(*) {
         StopAfkHold()
 }
 
-getGtaHwnd() {
-    static gtaMatchers := [
-        "ahk_exe GTA5_Enhanced.exe",
-        "ahk_exe GTA5_Enhanced",
-        "ahk_exe GTA5.exe",
-        "ahk_exe GTA5"
-    ]
-
-    for matcher in gtaMatchers {
-        if hwnd := WinExist(matcher)
-            return hwnd
-    }
-
-    return 0
-}
-
 UpdateAfkTooltip(terminationStart := 0) {
     global afkHolding, afkKeyReg, terminateKeyReg, terminateTimer
 
@@ -354,43 +338,6 @@ ShowCountDown(counterMs) {
             Sleep 1000
 
     }
-}
-
-MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
-    alpha := Integer(opacity) ? opacity : 255
-    alpha := Max(0, Min(255, alpha))
-
-    if (isIdle)
-        alpha := 180
-
-    hwnd := 0
-    while (hwnd := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "tooltips_class32", "ptr", 0, "ptr")) {
-        exStyle := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr")
-        exStyle |= 0x20 | 0x80000
-        DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr", exStyle)
-        DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
-    }
-}
-
-ShowCenteredToolTip(text, id := 10, y := 0) {
-    ; Measure text width to center tooltip
-    hdc := DllCall("GetDC", "ptr", 0)
-
-    ; Create font (adjust if needed)
-    hfont := DllCall("GetStockObject", "int", 0)  ; DEFAULT_GUI_FONT
-    DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
-
-    size := Buffer(8)
-    DllCall("GetTextExtentPoint32", "ptr", hdc, "str", text, "int", StrLen(text), "ptr", size)
-    width := NumGet(size, 0, "int")
-
-    DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
-
-    ; Center horizontally, position Y at parameter or top
-    centerX := (A_ScreenWidth // 2) - 0.9 * (width // 2)  ; Adjust for slight visual centering
-    centerY := y > 0 ? y : 0
-
-    ToolTip(text, centerX, centerY, id)
 }
 
 GetAfkDisplayKey() {

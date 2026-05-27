@@ -204,9 +204,9 @@ BuildOpenCVEngine(parentDir) {
         '--nofollow-import-to=cv2.segmentation --nofollow-import-to=cv2.typing --nofollow-import-to=cv2.videoio_registry '
         . '--windows-icon-from-ico="' iconPath '" --output-filename="OpenCV_Engine.exe" --output-dir="' buildDir '" "' sourceFile '"'
 
-    ; RunWait nuitkaCmd, , "Hide"
+    RunWait nuitkaCmd, , "Hide"
 
-    RunWait nuitkaCmd
+    ; RunWait nuitkaCmd
 
     sleep 3000
 
@@ -685,29 +685,6 @@ RequireExistingFile(path, label) {
     if !FileExist(path)
         throw Error(label " not found: " path)
     return true
-}
-
-DirGetParent(path) {
-    currentPath := path
-    loop 10 {  ; Reasonable limit to prevent infinite loops
-        SplitPath currentPath, &folderName, &parentPath
-        ; Check if current folder is _src
-        if (folderName = "_src") {
-            return currentPath
-        }
-        ; If no parent or we've reached root, use fallback
-        if (!parentPath || parentPath = currentPath) {
-            ; Fallback: go up two levels from original path
-            SplitPath path, , &parent1
-            SplitPath parent1, , &parent2
-            return parent2 ? parent2 : path
-        }
-        currentPath := parentPath
-    }
-    ; If loop limit reached, use fallback
-    SplitPath path, , &parent1
-    SplitPath parent1, , &parent2
-    return parent2 ? parent2 : path
 }
 
 OpenFolderAsUser(path) {
