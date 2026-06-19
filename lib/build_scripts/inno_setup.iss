@@ -59,3 +59,4 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 [UninstallDelete]
 Type: files; Name: "{app}\zSettings.ini"
 Type: files; Name: "{app}\zAnchorCache.ini"
+Type: files; Name: "{app}\zCrash.log"

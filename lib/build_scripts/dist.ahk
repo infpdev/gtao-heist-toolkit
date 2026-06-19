@@ -264,6 +264,8 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
     global rarExe, AHK2EXEPath, iconPath
 
     standaloneDir := parentDir "\lib\standalone scripts"
+    utilsDir := parentDir "\lib\utils"
+
     distFolder := parentDir "\dist\"
     distStandaloneDir := distFolder "standalone"
     bundleFile := distFolder "vaultOps-Standalone-Pack.exe"
@@ -403,6 +405,37 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 
             ; track compiled exe
             compiledExeList.Push(exeName)
+        }
+
+        utilRenameMap := Map(
+            "Util-TB.ahk", "Util-TriggerBot.exe"
+        )
+
+        loop files, utilsDir "\Util-*.ahk", "F" {
+
+            script := A_LoopFilePath
+
+            SplitPath script, &scriptName
+
+            if utilRenameMap.Has(scriptName)
+                exeName := utilRenameMap[scriptName]
+            else
+                exeName := StrReplace(scriptName, ".ahk", ".exe")
+
+            outExe := distStandaloneDir "\" exeName
+
+            cmd := '"' AHK2EXEPath '" /in "' script '" /out "' outExe '" /icon "' iconPath '" /compress 0 /base ' quotedBase
+
+            RunWait cmd, , "Hide"
+
+            ; copy directly to dist root
+            try FileCopy(
+                outExe,
+                distFolder exeName,
+                true
+            )
+
+            ; don't add to compiledExeList
         }
 
         ; stop here if packaging disabled

@@ -103,12 +103,6 @@ global resetKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Reset", "vk
 global terminateKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "Terminate", "vk54sc014"), "Terminate",
 "Hotkeys")
 
-; Hotkey used by the AFK helper script to hold a user-chosen movement key.
-global afkKey := NormalizeHotkeyValue(IniRead(iniFile, "Other", "afkKey", ""), "afkKey", "Other")
-
-; Delay in seconds for the AFK helper script to send the anti-AFK key, can be set in the INI file.
-global afkDelay := IniRead(iniFile, "Other", "afkDelay", -1)
-
 global debug := !A_IsCompiled
 
 CreateDefaultSettings() {
@@ -155,13 +149,7 @@ CreateDefaultSettings() {
         . "Reset=vk52sc013`n`n"
         . "; Terminate the script completely (For standalone scripts only).`n"
         . "; (vk54sc014) Physical key: T`n"
-        . "Terminate=vk54sc014`n`n"
-        . "[Other]`n`n"
-        . "; AFK helper key used by the standalone AFK holder script.`n"
-        . "; Leave blank to be prompted on first launch.`n"
-        . "; Delay in seconds for the AFK helper script to send the anti-AFK key:`n"
-        . "afkDelay=60`n"
-        . "afkKey=",
+        . "Terminate=vk54sc014`n`n",
         iniFile
     )
 }

@@ -446,8 +446,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         keys := (heist == CAYO_PERICO && hackMode != "auto" ? "Send PgUp: " readableSendPgUpKey "`n" :
             "")
 
-        keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
-            indicator : "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
+        keys .= (hackMode == "manual" ? indicator : "") "Manual: " StrTitle(readableManualKey) "`n" (hackMode == "auto" ?
+            indicator : "") "Auto: " StrTitle(readableAutoHackKey) "`nReset: " StrTitle(readableResetKey)
 
         aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
 
