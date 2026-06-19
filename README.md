@@ -32,6 +32,9 @@ This repository includes:
 * **[Standalone Scripts](#standalone-scripts)**: Independent puzzle solvers for specific heists (Fingerprint, Keypad, etc.)
 * **[NoSave Replay Script](#standalone-scripts)**: Standalone replay script without the full toolkit
 * **[AFK Key Holder](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)**: Holds or periodically sends a selected key to avoid AFK kicks during jobs, races, freeroam activities, or other long idle sessions in GTA Online
+* **[Public to Solo Session Helper](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)**: Forces GTA Online to disconnect from the current session host, causing the lobby to be converted into a solo public session. Useful for heist preps, sell missions, and other activities without other players interfering.
+* **[Triggerbot](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)**: Automatically fires when the crosshair turns red. Useful for quickly and accurately shooting NPCs such as police officers, helicopter pilots, and mission enemies during heists, freemode, and other PvE activities.
+
 
 ## Contents
 - [VaultOps ● GTA Online Heist Toolkit](#vaultops--gta-online-heist-toolkit)
@@ -134,7 +137,7 @@ Provided as-is, with no guarantees.
 
 ## Quick Start
 
-> 🔍 VirusTotal scan (for transparency):  
+> 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
 > https://www.virustotal.com/gui/file/24c3b59135aedea47eee4c3f38b98f4e2b0a8252130922bcac36ee264201f689
 
 
@@ -264,6 +267,8 @@ All standalone solvers share a single OpenCV engine and common resources to redu
 - **[vaultOps-Standalone-Pack.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe)** — Includes all standalone puzzle solvers in a single package
 - **[NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe)** — Standalone NoSave replay script only
 - **[AFK-Key-Holder](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)** — Holds or periodically sends a selected key to avoid AFK kicks during jobs, races, freeroam activities, or other long idle sessions in GTA Online
+- **[Solo Session Helper](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)** — Forces GTA Online to disconnect from the current session host, causing the lobby to be converted into a solo public session. Useful for heist preps, sell missions, and other activities without other players interfering.
+- **[Triggerbot](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)** — Automatically fires when the crosshair turns red. Useful for quickly and accurately shooting NPCs such as police officers, helicopter pilots, and mission enemies during heists, freemode, and other PvE activities.
 
 **Installation:** (vaultOps Standalone Pack)
 1. Download and run `vaultOps-Standalone-Pack.exe`
@@ -271,13 +276,12 @@ All standalone solvers share a single OpenCV engine and common resources to redu
 3. Launch any standalone solver separately as needed
 
 > [!NOTE]
-> * The standalone pack already includes built-in **NoSave** support for all puzzle solvers, so the separate **NoSave** standalone is only needed if you want to use NoSave separately.<br><br>
-> * The **NoSave** and **AFK Key Holder** downloads are not SFX packages. Simply download and run the `.exe` file to launch the script.
+> * The standalone pack already includes built-in **NoSave** support for all puzzle solvers, so the separate **NoSave** standalone is only needed if you want to use NoSave by itself.<br><br>
+> * **NoSave** and the **Utility Scripts** are distributed as standalone executables and are not SFX packages. Simply download and run the `.exe` file to launch them.
 
 > [!WARNING]
-> Running multiple standalone solvers at the same time is not recommended, since they share the same default hotkeys and may trigger actions simultaneously.
->
-> If you want to use multiple solvers together, using the full VaultOps toolkit is recommended instead, since it manages all solvers within a single unified app.
+> * Running multiple standalone solvers at the same time is not recommended, since they share the same default hotkeys and may trigger actions simultaneously. <br><br>
+> * If you want to use multiple solvers together, using the full VaultOps toolkit is recommended instead, since it manages all solvers within a single unified app.
 
 
 ## Run Locally
@@ -332,7 +336,9 @@ _src/
 │  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
 │  │  └─ NoSave.ahk                   # Handles NoSave usage
 │  │
-│  ├─ standalone scripts/             # Individual scripts - Solvers, NoSave and AFK key holder
+│  ├─ standalone scripts/             # Individual scripts - Solvers and NoSave
+│  │
+│  ├─ utils/                          # Utility scripts (AFK Key Holder, Public to Solo Session Helper, Triggerbot)
 │  │
 │  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV detection engine
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
@@ -371,7 +377,9 @@ _src/
 - `CasinoKeypad.ahk` — Casino keypad solver
 - `ElRubio.ahk` — Cayo fingerprint cloner solver
 - `NoSave.ahk` — NoSave handling and firewall automation
-- `AFK-Key-Holder-Standalone.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
+- `Util-AFK-Key-Holder.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
+- `Util-Solo-Public-Session.ahk` — Public to solo session helper
+- `Util-TB.ahk` — Triggerbot with customizable hotkeys and configurable pixels
 
 **OpenCV Detection Engine (`lib/py_helpers/`)**
 - `OpenCV_Engine.py` — IPC listener/backend entry point
