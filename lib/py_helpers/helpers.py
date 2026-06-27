@@ -59,3 +59,24 @@ def _dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
         draw.text((x1 + 4, max(0, y1 - 12)), label, fill=color)
 
     canvas.save(output_path)
+    
+def is_black_area_present_ledge_grab(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
+
+    if search_img is None:
+        search_img = prepare_detection_image(scale)
+
+    h, w = search_img.shape[:2]
+
+    x1 = int(w * 0.35)
+    y1 = int(h * 0.35)
+    x2 = int(w * 0.65)
+    y2 = int(h * 0.65)
+
+    roi = search_img[y1:y2, x1:x2]
+
+    # Must be very dark
+    if np.mean(roi) > 15:
+        return False
+
+    # Must be essentially a single color
+    return np.max(roi) - np.min(roi) < 3

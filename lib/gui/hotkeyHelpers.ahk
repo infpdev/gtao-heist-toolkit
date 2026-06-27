@@ -214,6 +214,9 @@ global inputPgUp := "", txtPgUpLabel := ""
             case "ToggleScripts":
                 global toggleScriptsKey
                 prevKey := toggleScriptsKey
+            case "LedgeGrab":
+                global ledgeGrabKey
+                prevKey := ledgeGrabKey
             case "SendPgUp":
                 global sendPgUpKey
                 prevKey := sendPgUpKey
@@ -221,6 +224,7 @@ global inputPgUp := "", txtPgUpLabel := ""
 
         ; Convert display value to canonical format for saving
         val := DisplayToCanonical(field.Text)
+        field.Text := StrTitle(field.Text) ; Ensure display format is title case
 
         if (val = "") {
             ; Revert when user input is empty or modifier-only.
@@ -248,6 +252,9 @@ global inputPgUp := "", txtPgUpLabel := ""
             case "ToggleScripts":
                 toggleScriptsKey := val
                 UpdateScriptsInstrText()
+            case "LedgeGrab":
+                ledgeGrabKey := val
+                UpdateLedgeGrabInstrText()
             case "SendPgUp":
                 sendPgUpKey := val
                 UpdatePgUpInstrText()
@@ -394,18 +401,6 @@ TryRegisterPgUpHotkey(oldKey := "") {
             MsgBox "Failed to register PgUp hotkey: " err.What, "PgUp Hotkey Registration Failed", 48
         }
     }
-}
-
-; Checks if GTA or the script's GUI is currently focused,
-; used to prevent sending inputs when the user is actively using another window.
-; When strict is true, the debug override is ignored to ensure accurate focus checks during testing.
-isGtaFocused(excludeGui := false, strict := false) {
-    global guiApp, debug
-
-    return ((!strict && debug) ||
-    WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe")
-    || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
 }
 
 PgUpDown(*) {

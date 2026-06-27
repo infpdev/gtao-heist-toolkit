@@ -85,7 +85,7 @@ PromptForAfkKey() {
 ChangeAfkKey(*) {
     global iniFile, afkHolding
 
-    if (!isGtaFocused(false)) {
+    if (!isGtaFocusedForUtilities(false)) {
         ShowCenteredToolTip("GTA must be focused to change the AFK key", 1)
         SetTimer UpdateTooltip, -5000
         return
@@ -125,7 +125,7 @@ StopAfkHold(*) {
     if (recallDelay = 0)
         Send "{" afkKeyReg " up}"
 
-    if (!isGtaFocused(false)) {
+    if (!isGtaFocusedForUtilities(false)) {
         ShowCenteredToolTip("GTA must be focused to disable the script", 1)
         SetTimer UpdateTooltip, -5000
         return
@@ -208,7 +208,7 @@ Terminate(*) {
     global terminateKeyReg, afkHolding
     ; global lastTerminateHeld := A_TickCount
 
-    if (isGtaFocused(false) || !afkHolding) {
+    if (isGtaFocusedForUtilities(false) || !afkHolding) {
         ExitApp
     }
     else {

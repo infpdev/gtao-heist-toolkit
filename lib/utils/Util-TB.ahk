@@ -57,7 +57,7 @@ CalibrateRedPixel(*) {
     global TriggerBotEnabled, isCalibrating
     DisableTriggerBot()
 
-    if (!isGtaFocused())
+    if (!isGtaFocusedForUtilities())
         return
 
     isCalibrating := true
@@ -69,7 +69,7 @@ CalibrateRedPixel(*) {
 EnableTriggerBot() {
     global TriggerBotEnabled, isCalibrating
 
-    if (!isGtaFocused())
+    if (!isGtaFocusedForUtilities())
         return
 
     if TriggerBotEnabled

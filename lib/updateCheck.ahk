@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 #Include checkResolution.ahk
-#Include commonFuncs.ahk
+#Include pureCommonFuncs.ahk
 
 if !A_IsAdmin {
     try Run('*RunAs "' A_ScriptFullPath '"')
@@ -11,7 +11,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-global ver := "4.2.0"
+global ver := "4.20.69"
 global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -103,7 +103,8 @@ CheckForUpdate() {
                     A_IsCompiled && !isNoSaveStandalone)
                         autoUpdate()
                     else
-                        Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone ? "3" : "2")
+                        Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone || isStandaloneScript ? "3" :
+                            "2")
                     ExitApp
                 }
 

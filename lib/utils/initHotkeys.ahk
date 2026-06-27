@@ -1,8 +1,9 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+CoordMode "ToolTip", "Screen"
 
-#include "../sharedCanonicalHelpers.ahk"
-#Include "../commonFuncs.ahk"
+#include ../sharedCanonicalHelpers.ahk
+#Include ../pureCommonFuncs.ahk
 
 if !A_IsAdmin {
     Run('*RunAs "' A_ScriptFullPath '"')
@@ -17,6 +18,7 @@ global AppDataDir := A_AppData "\vaultOps"
 global settingsBackup := AppDataDir "\zUtilSettings.ini"
 global dir := A_ScriptDir
 global iniFile := dir "\zUtilSettings.ini"
+global debug := !A_IsCompiled
 
 EnsureSettingsFile()
 
@@ -116,15 +118,6 @@ ReloadScript(*) {
     Reload
 }
 
-FocusGtaIfRunning() {
-    if (hwnd := getGtaHwnd()) {
-        try {
-            WinActivate "ahk_id " hwnd
-            WinWaitActive "ahk_id " hwnd, , 2
-        }
-    }
-}
-
 GtaNotRunning() {
     if !getGtaHwnd() {
         ShowCenteredToolTip "GTA not detected. Script can only be used when GTA is running", 1
@@ -134,7 +127,7 @@ GtaNotRunning() {
     return false
 }
 
-isGtaFocused(showWarning := true) {
+isGtaFocusedForUtilities(showWarning := true) {
     if (GtaNotRunning()) {
         return false
     }

@@ -25,6 +25,34 @@
         if IsSet(txtScriptsInstr)
             txtScriptsInstr.Text := instrScripts hotKeyTextScripts
     }
+
+    UpdateLedgeGrabInstrText(pos := 0, offset := 0) {
+        static instrPos := 0, instrOffset := 0
+        global instrLedgeGrab, ledgeGrabKey, txtLedgeGrabInstr, inputLedgeGrabText
+
+        if (pos != 0)
+            instrPos := pos
+        if (offset != 0)
+            instrOffset := offset
+
+        if (!ledgeGrabEnabled) {
+            inputLedgeGrabText.Visible := false
+            hotKeyTextLedgeGrab := " Enable to allow automation."
+            finalText := instrLedgeGrab hotKeyTextLedgeGrab
+            txtLedgeGrabInstr.Move(instrPos)
+        } else {
+            inputLedgeGrabText.Visible := true
+            enabledInstrText := "Ledge grab automation enabled."
+            hotKeyTextLedgeGrab := " Press " CanonicalToDisplay(ledgeGrabKey) " in game to automate ledge-grab."
+            finalText := enabledInstrText hotKeyTextLedgeGrab
+            txtLedgeGrabInstr.Move(instrPos + instrOffset)
+
+        }
+
+        if IsSet(txtLedgeGrabInstr)
+            txtLedgeGrabInstr.Text := finalText
+    }
+
     UpdateModeInstrText() {
         global instrMode, txtModeInstr
         hotKeyTextMode := ""

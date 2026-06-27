@@ -6,6 +6,8 @@ import faulthandler
 import threading
 import time
 
+from helpers import is_black_area_present_ledge_grab
+
 
 crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
 
@@ -128,6 +130,14 @@ def handle_request(data):
             try:
                 touch_heartbeat()
                 res = is_black_area_present_cayo()
+                return 1 if res else 0
+            except Exception:
+                return 0
+            
+        if t == "is_black_area_present_ledge_grab":
+            try:
+                touch_heartbeat()
+                res = is_black_area_present_ledge_grab()
                 return 1 if res else 0
             except Exception:
                 return 0

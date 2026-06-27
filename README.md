@@ -1,8 +1,12 @@
 ﻿# VaultOps ● GTA Online Heist Toolkit
 
+[![GitHub release](https://img.shields.io/github/v/release/infpdev/gtao-heist-toolkit?style=for-the-badge)](https://github.com/infpdev/gtao-heist-toolkit/releases/latest) [![Downloads](https://img.shields.io/github/downloads/infpdev/gtao-heist-toolkit/total?style=for-the-badge)](https://github.com/infpdev/gtao-heist-toolkit/releases/latest) [![Buy me a coffee](https://img.shields.io/badge/Feed-My%20Cat-ff69b4?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/infpdev)
+
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
->A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2. An upgraded version of the standalone script **"GTA Casino Solver v2"**<br>Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine.
+> A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2<br>
+> An upgraded version of the standalone script **"GTA Casino Solver v2"**<br>
+> Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine
 
 
 <br>
@@ -21,6 +25,10 @@
   <br>
   <a href="https://youtu.be/fBdukmCSDeA">
     Diamond Casino Replay Guide (vaultOps + Standalone)
+  </a>
+  <br><br>
+  <a href="https://youtu.be/hupQ7fMXHTE">
+    Buffered Ledge Grab | Diamond Casino (vaultOps + Standalone)
   </a>
   <br>
   <a href="https://youtu.be/Gkyn2pzeotc">
@@ -52,6 +60,7 @@ This repository includes:
     - [Plug and Play (TL;DR)](#plug-and-play-tldr)
   - [Detailed Toolkit Usage](#detailed-toolkit-usage)
     - [NoSave](#nosave)
+    - [Ledge Grab Automation](#ledge-grab-automation)
     - [Fingerprint / Keypad solvers](#fingerprint--keypad-solvers)
     - [Hotkeys \& Controls](#hotkeys--controls)
     - [Options](#options)
@@ -67,6 +76,7 @@ This repository includes:
 
 - Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
+- Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist
 - Supports both **AHK-based** and **OpenCV-based** detection methods  
 - Supports all common **16:9** and **21:9 ultrawide** resolutions  
 - Cayo Perico **PgUp** bug fix  
@@ -142,7 +152,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/24c3b59135aedea47eee4c3f38b98f4e2b0a8252130922bcac36ee264201f689
+> https://www.virustotal.com/gui/file/18908a39e02568f1a7b0c633f36b2426a9f0612c5cc5d4ee452a3c340ea9734a
 
 
 <p align="center">
@@ -195,6 +205,28 @@ Provided as-is, with no guarantees.
 > Full replay tutorials:
 > - Cayo Perico: https://youtu.be/Cd5V64UiiGY
 > - Diamond Casino: https://youtu.be/fBdukmCSDeA
+
+### Ledge Grab Automation
+
+* Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist, eliminating the need to time the inputs manually.
+
+**How to use:**
+
+1. Enable **Ledge Grab** in the GUI app. (There is no hotkey to toggle this option.)
+2. Position your character near the ledge so that it is facing the ledge and ready to take cover.
+3. Press the **Take Cover** key (`Q` by default) to start the automation.
+4. Wait for the script to perform the ledge grab sequence. Keyboard and mouse input will be temporarily blocked during this time.
+5. Once you see the **"Input re-enabled"** tooltip, move to the desired position.
+6. Press the **Take Cover** key again to stop the automation.
+
+> [!NOTE]
+>
+> * If your in-game **Take Cover** keybind is not `Q`, change it in the GUI app, or the in-game controls, before using the feature.
+> * Do not close the phone until you are teleported to the ledge, otherwise the glitch will simply fail.
+> * This feature is primarily intended for the Diamond Casino heist, since the glitch is not useful for looting in the Cayo Perico heist.
+> * You will **not** be able to use the **ledge grab** feature while vaultOps is in **Manual** or **Auto** mode, and the **puzzle solvers** will be **unavailable** while the **ledge grab automation** is active.
+> * Full tutorial: https://youtu.be/hupQ7fMXHTE
+
 
 ### Fingerprint / Keypad solvers
 
@@ -355,6 +387,7 @@ _src/
 │  ├─ checkResolution.ahk             # Resolution detection and fallback handling
 │  ├─ commonFuncs.ahk                 # Shared utilities for the Toolkit and Standalone scripts
 │  ├─ initHotkeys.ahk                 # Hotkey registration + event binding
+│  ├─ pureCommonFuncs.ahk             # Shared utilities for the Toolkit and Standalone scripts (no global dependencies)
 │  ├─ sharedCanonicalHelpers.ahk      # Canonical hotkey conversion helpers
 │  ├─ standaloneHelpers.ahk           # Shared helpers for standalone builds
 │  ├─ standaloneUpdate.ahk            # Auto-updater for standalone scripts
@@ -379,6 +412,7 @@ _src/
 - `initHotkeys.ahk` — Hotkey registration and callbacks
 - `sharedCanonicalHelpers.ahk` — Canonical hotkey formatting/helpers
 - `standaloneHelpers.ahk` — Shared helpers for standalone builds
+- `pureCommonFuncs.ahk` — Shared utilities for the Toolkit and Standalone scripts (no global dependencies)
 - `updateCheck.ahk` — Version checking and update notifications
 - `standaloneUpdate.ahk` — Auto-updater for standalone scripts
 
