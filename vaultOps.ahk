@@ -27,12 +27,14 @@ global vaultOps := true
 #Include <updateCheck>
 #Include <initHotkeys>
 #Include <ahk2py_socket>
+#Include <commonFuncs>
 
 ; vaultOps scripts
 #Include <scripts\CasinoFingerprint>
 #Include <scripts\CasinoKeypad>
 #Include <scripts\ElRubio>
 #Include <scripts\NoSave>
+#Include <scripts\LedgeGrab>
 
 ; GUI imports
 #Include <gui\hotkeyHelpers>
@@ -49,7 +51,8 @@ if debug {
 }
 
 global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnResetHotkey := ResetScriptsHotkey,
-    fnToggleNoSave := ToggleNoSaveStatus, fnToggleScripts := ToggleScriptsEnabled
+    fnToggleNoSave := ToggleNoSaveStatus, fnToggleScripts := ToggleScriptsEnabled, fnToggleLedgeGrab :=
+    ToggleLedgeGrabInProgress
 
 ; ⏐===========================================================================================================⏐
 ; ⏐==================================== Casino Script Instance Management ====================================⏐
@@ -153,9 +156,10 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     ; Registers hotkeys based on current settings. If scripts are disabled, only registers toggle hotkeys.
     ; Also updates status tooltip to reflect changes.
     TryRegisterHotkeys() {
-        global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, scriptsEnabled
-        static regNoSaveKey := "", regToggleScriptsKey := "", regManualKey := "", regAutoHackKey := "",
-            regResetKey := ""
+        global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, scriptsEnabled, ledgeGrabKey,
+            ledgeGrabEnabled
+        static regNoSaveKey := "", regToggleScriptsKey := "", regManualKey := "",
+            regAutoHackKey := "", regResetKey := "", regLedgeGrabKey := ""
 
         ; Helper function to safely register a hotkey value as-is.
         RegisterHotkeyWithFallback(hotkeyValue, hotkeyFunc, existingValue := "") {
@@ -188,6 +192,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (regToggleScriptsKey && regToggleScriptsKey != toggleScriptsKey) {
             try Hotkey("~*" CanonicalToRegistration(regToggleScriptsKey), fnToggleScripts, "Off")
         }
+        if (regLedgeGrabKey && regLedgeGrabKey != ledgeGrabKey)
+            try RegisterLedgeGrabHotkey(false, regLedgeGrabKey)
 
         ; Register NoSave and ToggleScripts (always active)
         if (noSaveKey) {
@@ -197,6 +203,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (toggleScriptsKey) {
             if RegisterHotkeyWithFallback(toggleScriptsKey, fnToggleScripts, regToggleScriptsKey)
                 regToggleScriptsKey := toggleScriptsKey
+        }
+
+        if (ledgeGrabEnabled && ledgeGrabKey) {
+            if RegisterLedgeGrabHotkey(true)
+                regLedgeGrabKey := ledgeGrabKey
         }
 
         ; If scripts are disabled, unregister all manual/auto/reset hotkeys
@@ -243,14 +254,21 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                 regResetKey := resetKey
         }
 
-        if (heist == CAYO_PERICO)
-            TryRegisterPgUpHotkey()
+        ; if (heist == CAYO_PERICO)
+        ;     TryRegisterPgUpHotkey()
 
         UpdateGlobalStatus(hackInProgress)
     }
 
     ManualHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
+
+        if (ledgeGrabInProgress) {
+            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
+            SetTimer () => ToolTip(), -2000
+            return
+        }
+
         hackMode := "manual"
         if (IsObject(heistInstance)) {
             if (heist == CAYO_PERICO)
@@ -272,6 +290,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     AutoHackHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
+
+        if (ledgeGrabInProgress) {
+            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
+            SetTimer () => ToolTip(), -2000
+            return
+        }
+
         hackMode := "auto"
         if (IsObject(heistInstance)) {
             if (heist == CAYO_PERICO)
@@ -302,11 +327,16 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                 try heistInstance.Destroy()
                 sleep 500
                 CreateHeistInstance()
+                UpdateGlobalStatus(false, , , , true)
             }
             else {
                 ToolTip "Reset hotkey triggered!"
                 SetTimer () => ToolTip(), -700
             }
+        }
+
+        if (ledgeGrabInProgress) {
+            ToggleLedgeGrabInProgress()
         }
 
         SetTimer(findAnchorsAndCreateInstance, 500) ; Restart anchor detection timer
@@ -349,8 +379,6 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     }
 
-    ; Updates the 20th ToolTip with current hack status, mode, and hotkey info.
-    ; Called by heist instances to reflect changes in state
     /**
      * Updates the status tooltip with current hack state, mode, and hotkey info.
      * Called by heist instances to reflect changes in state.
@@ -365,11 +393,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         static previousStatus := ""
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
-        global hackMode, fingerprintMode, scriptsEnabled, noSave, manualKey, autoHackKey, resetKey, hackInProgress,
-            heist, sendPgUpKey, pgUpSent, unsupportedResolution
+        global hackMode, fingerprintMode, scriptsEnabled, ledgeGrabEnabled, noSave, manualKey, noSaveKey, ledgeGrabKey,
+            autoHackKey, resetKey, hackInProgress, heist, sendPgUpKey, pgUpSent, unsupportedResolution,
+            ledgeGrabInProgress
 
         readableNoSaveKey := CanonicalToDisplay(noSaveKey)
         readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
+        readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
         readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
         readableManualKey := CanonicalToDisplay(manualKey)
         readableAutoHackKey := CanonicalToDisplay(autoHackKey)
@@ -380,13 +410,17 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         ; noSaveText := noSave ? "NoSave enabled" : "NoSave disabled"
         noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
+
+        ledgeGrabText := ledgeGrabEnabled ? "Press " readableLedgeGrabKey " to " (ledgeGrabInProgress ? "stop" :
+            "initiate") " Ledge Grab" : "Ledge Grab disabled"
+
         earlyReturn := false
 
         if (caller && debug)
             ShowCenteredToolTip "Called by: " caller, 10, 25
 
         if (!scriptsEnabled) {
-            status := "Scripts disabled`n" noSaveText
+            status := "Scripts disabled`n" noSaveText "`n" ledgeGrabText
             earlyReturn := true
             ToolTip(unsupportedResolutionText . status, scrW, 0, 20)
         }
@@ -446,10 +480,10 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         keys := (heist == CAYO_PERICO && hackMode != "auto" ? "Send PgUp: " readableSendPgUpKey "`n" :
             "")
 
-        keys .= (hackMode == "manual" ? indicator : "") "Manual: " StrTitle(readableManualKey) "`n" (hackMode == "auto" ?
-            indicator : "") "Auto: " StrTitle(readableAutoHackKey) "`nReset: " StrTitle(readableResetKey)
+        keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
+            indicator : "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-        aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
+        aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" ledgeGrabText "`n" keys
 
         if (aggregatedStatus != previousStatus || force) { ; Only update tooltip if status has changed to reduce flickering
             previousStatus := aggregatedStatus
@@ -488,8 +522,27 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         picScriptsEnabled.Value := scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
         ; IniWrite(scriptsEnabled, iniFile, "Options", "scriptsEnabled") ; Not required anymore since it's reset on every launch.
         CreateHeistInstance()
-        UpdateGlobalStatus(scriptsEnabled && hackInProgress)
+        UpdateGlobalStatus(scriptsEnabled && hackInProgress, , , , true)
 
+    }
+
+    ; Toggles the ledge-grab feature on/off, updates the UI elements, and registers/unregisters the associated hotkey.
+    ToggleLedgeGrabEnabled(*) {
+        global ledgeGrabEnabled, iniFile, picLedgeGrabEnabled, txtLedgeGrabInstr, inputLedgeGrabText, hackInProgress,
+            ledgeGrabInProgress
+        ledgeGrabEnabled := !ledgeGrabEnabled
+        ledgeGrabInProgress := false
+
+        if (ledgeGrabEnabled)
+            FocusGtaIfRunning()
+
+        RegisterLedgeGrabHotkey(ledgeGrabEnabled)
+
+        inputLedgeGrabAutomation.Visible := ledgeGrabEnabled
+        picLedgeGrabEnabled.Value := ledgeGrabEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
+        UpdateLedgeGrabInstrText()
+        IniWrite(ledgeGrabEnabled, iniFile, "Options", "ledgeGrab")
+        UpdateGlobalStatus(hackInProgress)
     }
 
     ToggleNoSaveStatus(*) {
@@ -630,23 +683,25 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 ; ⏐==========================================================================================================⏐
 Init() {
     ; ===========Hotkeys===========
-    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, sendPgUpKey
+    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey, sendPgUpKey
 
     ; ========= GUI objects =========
     global Title := "vaultOps"
     global guiApp, picNoSave, xBtn, settingsGroup
-    global picFingerprintToggle, picScriptsEnabled, picHeistToggle, picEngineToggle
+    global picFingerprintToggle, picScriptsEnabled, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
     global inputManual := "", inputAuto := "", inputReset := ""
-    global inputDelay := "", inputNoSave := "", inputToggleScripts := "", inputPgUp := ""
+    global inputDelay := "", inputNoSave := "", inputToggleScripts := "", inputLedgeGrabAutomation := "", inputPgUp :=
+        "", inputLedgeGrab := ""
 
     ; Text labels
     global txtHeistLabel, txtCasinoLabel, txtCayoLabel, txtPgUpLabel,
-        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo,
+        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo, inputLedgeGrabText,
         txtEngineLabel, txtAHKLabel, txtOpenCVLabel
 
     ; Instruction text variables (global scope)
     global instrNoSave := "Lets you do the replay glitch in heists / missions.",
         instrScripts := "Enable scripts and show the toggle-mode button.",
+        instrLedgeGrab := "Automate the ledge grab glitch.",
         instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
         instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
         instrOpenCVEngine := "OpenCV detection. Works on all resolutions, with AHK fallback.",
@@ -656,14 +711,16 @@ Init() {
         instrReset := "Resets the current script's progress. Use in case of errors.",
         instrPgUp := "Lets you use the plasma cutters during the heist."
     ; Instruction text control variables (global scope)
-    global txtNoSaveInstr := "", txtScriptsInstr := "", txtModeInstr := "",
+    global txtNoSaveInstr := "", txtScriptsInstr := "", txtLedgeGrabInstr := "", txtModeInstr := "",
         txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
         txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
         txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
 
     ; ======== Boolean flags and state variables ========
-    global noSave, scriptsEnabled, fingerprintMode, engine, hackMode, heist, delay, iniFile, debug
-    global anchorFound := false, pgUpSent := false, hackInProgress := false, pgUpDisabled := false, isBeta,
+    global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
+        delay, iniFile, debug, isBeta
+    global anchorFound := false, pgUpSent := false, hackInProgress := false,
+        pgUpDisabled := false, ledgeGrabInProgress := false,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
@@ -709,7 +766,7 @@ Init() {
     groupW := (width - leftPadding) / scale
 
     ; ======= Labels / fields styling =======
-    numSettings := 8 ; Includes Engine and mode rows
+    numSettings := 9 ; Includes Engine and mode rows
     labelW := 140 / scale
     fieldW := 90 / scale
     instrW := groupW - labelW - fieldW - 120 / scale
@@ -721,6 +778,7 @@ Init() {
     xInstr := xField + fieldW + 75 / scale
     toggleX := xField - 87 / scale
     y := groupY + 30 / scale
+    toggleStartY := y + rowH * 3
     adjustmentYOffset := 4 / scale
 
     settingsGroup := guiApp.AddGroupBox("x" leftPadding / (2 * scale) " y" groupY " w" groupW " h" groupH,
@@ -755,7 +813,37 @@ Init() {
     }
 
     ; ⏐===================================================================================⏐
-    ; ⏐======================== ROW 2: Scripts toggle and keybind ========================⏐
+    ; ⏐============================ ROW 2: Toggle Ledge-Grab =============================⏐
+    ; ⏐===================================================================================⏐
+    {
+        ; Ledge-Grab label
+        ledgeGrabInstrOffset := 20 / scale
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Ledge grab:")
+        ; Ledge-Grab toggle
+        picLedgeGrabEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
+        scale " +0x4",
+        ledgeGrabEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
+        ; Ledge-Grab hotkey field
+        inputLedgeGrabText := guiApp.AddText("x" xField " y" y, "Cover Key:")
+        inputLedgeGrabAutomation := guiApp.AddEdit("x+15 y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(ledgeGrabKey))
+        ; Ledge-Grab instruction text
+        txtLedgeGrabInstr := guiApp.AddText("x" xInstr + ledgeGrabInstrOffset " y" y " w" instrW " cA9A9A9 BackgroundTrans",
+            "")
+        ; Ledge-Grab event listeners
+        picLedgeGrabEnabled.OnEvent("Click", ToggleLedgeGrabEnabled)
+        inputLedgeGrabAutomation.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputLedgeGrabAutomation,
+            "LedgeGrab",
+            ledgeGrabKey))
+        inputLedgeGrabAutomation.OnEvent("Change", (*) => AutoSaveKeybind(inputLedgeGrabAutomation, "LedgeGrab"))
+
+        inputLedgeGrabAutomation.Visible := ledgeGrabEnabled
+        UpdateLedgeGrabInstrText(xInstr, ledgeGrabInstrOffset)
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐======================== ROW 3: Scripts toggle and keybind ========================⏐
     ; ⏐===================================================================================⏐
     {
         ; Scripts label
@@ -780,11 +868,12 @@ Init() {
     }
 
     ; ⏐===================================================================================⏐
-    ; ⏐===================== ROW 3: Engine Selection (AHK / OpenCV) ======================⏐
+    ; ⏐===================== ROW 4: Engine Selection (AHK / OpenCV) ======================⏐
     ; ⏐===================================================================================⏐
     {
         engineX := toggleX
 
+        y := toggleStartY
         txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
 
         if (higherRes) {
@@ -818,7 +907,7 @@ Init() {
     }
 
     ; ⏐===================================================================================⏐
-    ; ⏐=============================== ROW 4: Heist Toggle ===============================⏐
+    ; ⏐=============================== ROW 5: Heist Toggle ===============================⏐
     ; ⏐===================================================================================⏐
     {
         heistX := toggleX
@@ -849,7 +938,7 @@ Init() {
     }
 
     ; ⏐========================================================================================================⏐
-    ; ⏐======================== ROW 5: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
+    ; ⏐======================== ROW 6: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
     ; ⏐========================================================================================================⏐
     {
         fingerprintX := toggleX, modeY := y, modeW := labelW
@@ -888,7 +977,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐===========================ROW 6: Manual Keybind =========================⏐
+    ; ⏐===========================ROW 7: Manual Keybind =========================⏐
     ; ⏐==========================================================================⏐
     {
         ; Manual keybind label
@@ -906,7 +995,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐========================= ROW 7: AutoHack Keybind ========================⏐
+    ; ⏐========================= ROW 8: AutoHack Keybind ========================⏐
     ; ⏐==========================================================================⏐
     {
         ; AutoHack keybind label
@@ -924,7 +1013,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐========================== ROW 8: Reset Keybind ==========================⏐
+    ; ⏐========================== ROW 9: Reset Keybind ==========================⏐
     ; ⏐==========================================================================⏐
     {
         ; Reset keybind label
@@ -942,7 +1031,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐=============================== ROW 9: Delay =============================⏐
+    ; ⏐=============================== ROW 10: Delay =============================⏐
     ; ⏐==========================================================================⏐
     {
         ; Delay label
@@ -965,7 +1054,7 @@ Init() {
     }
 
     ; ⏐==========================================================================⏐
-    ; ⏐============================ Link and Tray Menu ==========================⏐
+    ; ⏐================================== Links =================================⏐
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
@@ -989,18 +1078,18 @@ Init() {
     ; ====================== Finalize GUI setup ======================
     OnMessage(0x0006, GuiApp_OnActivate) ; 0x0006 = WM_ACTIVATE
     SetRoundedCorners(guiApp.Hwnd, width, height, borderRadius)
-    SetHeistToggleBtnVisibility(scriptsEnabled)
-    SetEngineToggleBtnVisibility(scriptsEnabled)
-    SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
+    SetHeistToggleBtnVisibility(false)
+    SetEngineToggleBtnVisibility(false)
+    SetModeToggleBtnVisibility(false)
 
     LoadCache()
 
-    fwEnabledLocal := isFirewallEnabled()
-
-    if (noSave && !fwEnabledLocal)
-        ToggleNoSaveStatus()
+    isFirewallEnabled()
 
     TryRegisterHotkeys()
+
+    if (ledgeGrabEnabled)
+        try Hotkey(CanonicalToRegistration(ledgeGrabKey), ToggleLedgeGrabInProgress, "On")
 
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
@@ -1012,18 +1101,19 @@ Init() {
     guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
 
-    if (gtaHwnd) {
-        try {
-            sleep 100
-            WinActivate "ahk_id " gtaHwnd
-            WinWaitActive "ahk_id " gtaHwnd, , 2
-        } catch {
-            return
-        }
-    }
+    ; if (gtaHwnd) {
+    ;     try {
+    ;         sleep 100
+    ;         WinActivate "ahk_id " gtaHwnd
+    ;         WinWaitActive "ahk_id " gtaHwnd, , 2
+    ;     } catch {
+    ;         return
+    ;     }
+    ; }
 
-    if (!scriptsEnabled)
-        UpdateGlobalStatus(false)
+    FocusGtaIfRunning()
+
+    UpdateGlobalStatus(false)
 
 }
 

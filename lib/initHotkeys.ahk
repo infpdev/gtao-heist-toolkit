@@ -1,4 +1,5 @@
-#Include "sharedCanonicalHelpers.ahk"
+#Include sharedCanonicalHelpers.ahk
+#Include pureCommonFuncs.ahk
 
 ; VaultOps app data directory and settings backup path
 global AppDataDir := A_AppData "\vaultOps"
@@ -19,6 +20,16 @@ global noSave := 0
  * Resets to false on exit.
  */
 global scriptsEnabled := 0
+
+/** Boolean state for whether ledge grab automation is enabled, can be toggled in the GUI.<br>
+ */
+global ledgeGrabEnabled := IniRead(iniFile, "Options", "ledgeGrab", 0)
+
+/** Hotkey to toggle the ledge grab automation.
+ * (vk51sc010 - physical key is Q)
+ */
+global ledgeGrabKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "LedgeGrab", "vk51sc010"),
+"LedgeGrab", "Hotkeys")
 
 /** @vaultOps
  *  Boolean state for the casino mode, 1 for casino, 0 for Cayo Perico.
@@ -119,6 +130,7 @@ CreateDefaultSettings() {
         . "; === vaultOps options.. Ignore if your script is standalone === `n"
         . "[Options]`n"
         . "heist=1`n"
+        . "ledgeGrab=0`n"
         . "FingerprintMode=1`n"
         . "Engine=0`n"
         . "Delay=40`n`n"
@@ -144,6 +156,9 @@ CreateDefaultSettings() {
         . "; Instantly solve fingerprint/keypad (auto mode).`n"
         . "; (vk48sc023) Physical key: H`n"
         . "AutoHack=vk48sc023`n`n"
+        . '; In-game keybind used to "Take Cover"`n'
+        . "; (vk51sc010) Physical key: Q`n"
+        . "LedgeGrab=vk51sc010`n`n"
         . "; Reset the script's progress and state.`n"
         . "; (vk52sc013) Physical key: R`n"
         . "Reset=vk52sc013`n`n"

@@ -2,7 +2,7 @@
 SetWorkingDir A_ScriptDir
 #Include .\helpers\_JXON.ahk
 #Include .\helpers\FileHash_SHA256.ahk
-#Include ..\commonFuncs.ahk
+#Include .\buildHelpers.ahk
 global apiKey := ""
 
 ; Run scan if script is executed directly (not imported)

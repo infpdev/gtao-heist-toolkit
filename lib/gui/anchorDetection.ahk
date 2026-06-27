@@ -11,7 +11,7 @@
  */
 foundAnchor() {
     global cachedFingerprintAnchor, cachedKeypadAnchor, folder, scrW, scrH, debug, cachedRubioAnchor,
-        engine, OPENCV_ENGINE, AHK_ENGINE
+        engine, OPENCV_ENGINE, AHK_ENGINE, ledgeGrabInProgress
     static fp_x1 := 0.76 * A_ScreenWidth
     static fp_y1 := 0.22 * A_ScreenHeight
     static fp_x2 := 0.8 * A_ScreenWidth
@@ -29,6 +29,9 @@ foundAnchor() {
 
     static tolerance := "*" 20 " "
     static rubioAnchorTolerance := "*" 10 " "
+
+    if (ledgeGrabInProgress)
+        return 0
 
     localSearchSize := 20
     fpFound := false, kpFound := false, elFound := false
@@ -159,6 +162,9 @@ foundAnchor() {
  * Side effects: None
  */
 foundAnchorOpenCV() {
+    global ledgeGrabInProgress
+    if (ledgeGrabInProgress)
+        return 0
 
     puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
     if (puzzle) {
@@ -180,14 +186,14 @@ foundAnchorOpenCV() {
  * Side effects: Updates global anchorFound, hackMode, creates heist instance.
  */
 findAnchorsAndCreateInstance() {
-    global anchorFound, hackMode, fingerprintMode, scriptsEnabled, heistInstance
+    global anchorFound, hackMode, fingerprintMode, scriptsEnabled, heistInstance, ledgeGrabInProgress
     if (hackMode != "idle" || !scriptsEnabled) {
         SetTimer(findAnchorsAndCreateInstance, 0)
         anchorFound := false
         return
     }
 
-    if (!isGtaFocused(true))
+    if (!isGtaFocused(true) || ledgeGrabInProgress)
         return
 
     anchor := (engine == AHK_ENGINE)

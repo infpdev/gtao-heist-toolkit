@@ -1,8 +1,10 @@
 #Include updateCheck.ahk
 #Include initHotkeys.ahk
+#Include commonFuncs.ahk
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
 #Include ahk2py_socket.ahk
+#Include scripts\LedgeGrab.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir
@@ -22,6 +24,7 @@ global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
 global engine := OPENCV_ENGINE
 global pgUpSent := false
+global ledgeGrabEnabled := true, ledgeGrabInProgress := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
 
@@ -31,16 +34,9 @@ global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
 global readableManualKey := CanonicalToDisplay(manualKey)
 global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
 global readableResetKey := CanonicalToDisplay(resetKey)
+global readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
 
-gtaHwnd := getGtaHwnd()
-
-if (gtaHwnd) {
-    try {
-        sleep 100
-        WinActivate "ahk_id " gtaHwnd
-        WinWaitActive "ahk_id " gtaHwnd, , 2
-    }
-}
+FocusGtaIfRunning()
 
 ; Register hotkeys with error handling.
 try {
@@ -58,6 +54,7 @@ try {
 } catch {
     MsgBox "Failed to register Terminate hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
+RegisterLedgeGrabHotkey(true)
 
 LoadCache()
 initPython()
@@ -83,12 +80,20 @@ resetSolver(*) {
         heistInstance := ""
     }
 
+    if (ledgeGrabInProgress) {
+        ToggleLedgeGrabInProgress()
+    }
+
     CreateHeistInstance()
 }
 
 ExitScript(*) {
     if (IsObject(heistinstance))
         heistinstance.Destroy()
+
+    if (ledgeGrabInProgress) {
+        ToggleLedgeGrabInProgress()
+    }
 
     OnExitCleanup()
     ExitApp
@@ -104,7 +109,7 @@ OnExitCleanup(*) {
     try StopPython()
 }
 
-ResetHackMode() {
+ResetHackMode(*) {
     resetSolver()
 }
 
@@ -129,6 +134,9 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
         return ; Don't update status while PgUp is being sent to avoid tooltip interference
 
     noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
+
+    ledgeGrabText := ledgeGrabEnabled ? "Press " readableLedgeGrabKey " to " (ledgeGrabInProgress ? "stop" :
+        "initiate") " Ledge Grab" : "Ledge grab disabled"
 
     if (isTimingOut) {
         status := "Timeout in " timeoutProgress "s"
@@ -180,7 +188,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
         "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
-    aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
+    aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" ledgeGrabText "`n" keys
 
     if (force || aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
         previousStatus := aggregatedStatus
@@ -246,11 +254,6 @@ ToggleNoSaveStatus(*) {
 clearAllToolTips() {
     loop 19
         ToolTip "", , , A_Index
-}
-
-isGtaFocused(excludeGui := true, strict := false) {
-    return (WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe") || (debug && !strict))
 }
 
 PgUpDown(*) {

@@ -2,11 +2,11 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 SetWorkingDir A_ScriptDir
-#Include .\virusTotalScan.ahk
-#Include ..\commonFuncs.ahk
+#Include virusTotalScan.ahk
 
 ; Development mode flag (set to false for release builds)
 global configFile := ".\build_options.ini"
+global debug := true
 
 isDev := IniRead(configFile, "Dist", "isDev", 0)
 
@@ -656,7 +656,7 @@ CreateTempScriptWithReplacedInclude(standaloneScript, originalScript, tempPath) 
     for _, line in StrSplit(standaloneContent, "`n", "`r") {
         trimmedLine := Trim(line)
         ; MsgBox trimmedLine
-        if (SubStr(trimmedLine, 1, StrLen('#Include "classes\')) = '#Include "classes\') {
+        if (SubStr(trimmedLine, 1, StrLen('#Include classes\')) = '#Include classes\') {
             includeLine := trimmedLine
             break
         }

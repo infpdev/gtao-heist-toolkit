@@ -49,6 +49,8 @@ global REQ_BLACK_KP := "is_black_area_present_keypad"
 ; Return 1 if a black area is detected in the cayo puzzle, 0 if not. Used for false positive reduction.
 global REQ_BLACK_CAYO := "is_black_area_present_cayo"
 
+global REQ_LEDGE_GRAB_BLACK := "is_black_area_present_ledge_grab"
+
 ; Error code returned when anything goes wrong
 global ERRMSG := "ErrNoResponse"
 ; Helper ping request used to keep the OpenCV engine alive while the host is running.

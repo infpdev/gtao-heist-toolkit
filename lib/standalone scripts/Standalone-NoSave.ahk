@@ -1,15 +1,9 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-SendMode "Input"
-SetWorkingDir A_ScriptDir
-SetKeyDelay 0
-SetWinDelay 0
-SetBatchLines := -1
-SetControlDelay 0
-SetTitleMatchMode 2
 
-#Include "../initHotkeys.ahk"
-#Include "../updateCheck.ahk"
+#Include ../initHotkeys.ahk
+#Include ../updateCheck.ahk
+
 global noSaveActive := false
 
 global NOSAVE_RULE_NAME := "123456"
@@ -32,6 +26,8 @@ UpdateTooltip() {
             "`nExit: " CanonicalToDisplay(terminateKey)
     )
     ToolTip(status "`n" key, A_ScreenWidth, 0, 20)
+
+    MakeAllToolTipsClickThrough(false)
 }
 
 ToggleNoSaveMode(*) {
@@ -56,6 +52,8 @@ init()
 init() {
     isFirewallEnabled()
     UpdateTooltip()
+
+    FocusGtaIfRunning()
 
     try Hotkey("~*" CanonicalToRegistration(noSaveKey), ToggleNoSaveMode, "On")
     try Hotkey("~*" CanonicalToRegistration(terminateKey), (*) => ExitApp(), "On")

@@ -1,5 +1,5 @@
-#Include "../standaloneHelpers.ahk"
-#Include "classes\Class-Rubio.ahk"
+#Include ../standaloneHelpers.ahk
+#Include classes\Class-Rubio.ahk
 
 global heist := CAYO_PERICO
 
@@ -13,12 +13,24 @@ init() {
     try Hotkey("~" pgUpReg " up", PgUpUp, "On")
 
     standalone_switch_to_auto(*) {
+        if (ledgeGrabInProgress) {
+            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
+            SetTimer () => ToolTip(), -2000
+            return
+        }
+
         global hackMode := "auto"
         UpdateGlobalStatus(hackInProgress)
         heistinstance.Hack()
     }
 
     standalone_switch_to_manual(*) {
+        if (ledgeGrabInProgress) {
+            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
+            SetTimer () => ToolTip(), -2000
+            return
+        }
+
         global hackMode := "manual"
         UpdateGlobalStatus(hackInProgress)
         heistinstance.SwitchToManual()

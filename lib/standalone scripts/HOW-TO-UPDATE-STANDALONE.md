@@ -1,9 +1,20 @@
 # Updating Standalone Scripts
 
+## Option 1: Automatic Updater (Recommended)
+
+1. Open the `VaultOps-Standalone-Pack` folder
+2. Open the `lib` folder
+3. Run `standaloneUpdater.exe`
+4. If the update succeeds, the standalone script will launch automatically
+
+If the updater fails for any reason, follow the steps below to update manually.
+
+## Option 2: Manual Update
+
 1. Download the latest standalone package:
 
    * [vaultOps-Standalone-Pack.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe) (includes all standalone solvers)
-   * [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe) (not an SFX package, simply download and run)
+   * [NoSave-Standalone.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/NoSave-Standalone.exe) (not an SFX package; simply download and run)
 
 2. Run the downloaded executable
 
@@ -17,9 +28,15 @@ Done!
 > This means you no longer need to extract updates into the same folder to keep your configuration.
 
 <details>
-<summary><b>vaultOps v4.2.0 changes</b></summary>
+<summary><b>vaultOps v4.20.69 changes</b></summary>
 
-<br>
+Please read the [v4.20.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69) for detailed information on how
+to use the new buffered ledge grab automation feature.
+
+</details>
+
+<details>
+<summary><b>vaultOps v4.2.0 changes</b></summary>
 
 Please read the [v4.2.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.2.0) for detailed information about:
 
@@ -32,8 +49,6 @@ Please read the [v4.2.0 release notes](https://github.com/infpdev/gtao-heist-too
 
 <details>
 <summary><b>vaultOps v4.1.1 changes</b></summary>
-
-<br>
 
 Please read the [v4.1.1 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.1.1) for additional information about:
 

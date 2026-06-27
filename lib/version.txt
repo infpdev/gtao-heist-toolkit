@@ -1,5 +1,3 @@
-4.2.0
-Improved puzzle detection reliability and reduced false detections
-Fixed a bug in the Cayo Perico Fingerprint Solver
-Added video tutorials for using vaultOps in the Diamond Casino and Cayo Perico heists
-Added automatic updates for standalone solvers
+4.20.69
+Added Buffered Ledge Grab automation
+Improved GUI readability
