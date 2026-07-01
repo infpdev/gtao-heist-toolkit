@@ -9,19 +9,35 @@ global iniFile := dir "\zSettings.ini"
 
 EnsureSettingsFile()
 
+/**
+ * Set the Tooltip anchor position.
+ * 1 = Top Left, 2 = Middle Left, 3 = Bottom Left
+ * 4 = Top Right, 5 = Middle Right, 6 = Bottom Right
+ * 4 is the default position (Top Right)
+ */
+global toolTipPos := IniRead(iniFile, "Options", "ToolTipPos", "4")
+
+/**
+ * Vertical offset (in pixels) applied to the tooltip from the selected anchor position<br>
+ * Negative values move the tooltip upward<br>
+ * Positive values move the tooltip downward<br>
+ * Zero is the default position, which is the exact anchor position
+ */
+global tooltipYOffset := IniRead(iniFile, "Options", "ToolTipYOffset", "0")
+
 /** @vaultOps
- *  Boolean state for noSave mode, can be toggled with the assigned hotkey.<br>
+ *  Boolean state for noSave mode, can be toggled with the assigned hotkey<br>
  * Resets to false on exit.
  */
 global noSave := 0
 
 /** @vaultOps
- *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey.<br>
+ *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey<br>
  * Resets to false on exit.
  */
 global scriptsEnabled := 0
 
-/** Boolean state for whether ledge grab automation is enabled, can be toggled in the GUI.<br>
+/** Boolean state for whether ledge grab automation is enabled, can be toggled in the GUI
  */
 global ledgeGrabEnabled := IniRead(iniFile, "Options", "ledgeGrab", 0)
 
@@ -134,6 +150,10 @@ CreateDefaultSettings() {
         . "FingerprintMode=1`n"
         . "Engine=0`n"
         . "Delay=40`n`n"
+        . "; ToolTip position: 1=Top Left, 2=Middle Left, 3=Bottom Left, 4=Top Right, 5=Middle Right, 6=Bottom Right`n"
+        . "ToolTipPos=4`n"
+        . "; Vertical offset (in pixels) applied to the tooltip from the selected anchor position`n"
+        . "ToolTipYOffset=0`n`n"
         . "; ---------------------------`n"
         . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
         . "; Please use the vaultOps GUI to change these hotkeys,`n"

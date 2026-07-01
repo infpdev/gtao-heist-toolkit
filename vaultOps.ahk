@@ -44,7 +44,7 @@ global vaultOps := true
 #Include <gui\instructionFieldHelpers>
 
 if debug {
-    ToolTip "In Debug mode", 0, 0, 20
+    CustomTooltip "In Debug mode", 0, 0, 20
     sleep 100
     Hotkey("F2", (*) => Reload())
     Hotkey("F3", (*) => ExitApp())
@@ -265,7 +265,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         if (ledgeGrabInProgress) {
             ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => ToolTip(), -2000
+            SetTimer () => CustomTooltip(), -2000
             return
         }
 
@@ -283,8 +283,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             UpdateGlobalStatus(hackInProgress)
 
         } else {
-            ToolTip "Manual hotkey triggered!"
-            SetTimer () => ToolTip(), -700
+            CustomTooltip "Manual hotkey triggered!"
+            SetTimer () => CustomTooltip(), -700
         }
     }
 
@@ -293,7 +293,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         if (ledgeGrabInProgress) {
             ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => ToolTip(), -2000
+            SetTimer () => CustomTooltip(), -2000
             return
         }
 
@@ -311,8 +311,8 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             UpdateGlobalStatus(hackInProgress)
 
         } else {
-            ToolTip "AutoHack hotkey triggered!"
-            SetTimer () => ToolTip(), -700
+            CustomTooltip "AutoHack hotkey triggered!"
+            SetTimer () => CustomTooltip(), -700
         }
     }
 
@@ -323,15 +323,15 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         SetTimer(findAnchorsAndCreateInstance, 0) ; Restart anchor detection timer
         if (IsObject(heistInstance)) {
             if (heistInstance) {
-                ToolTip "Resetting script", scrW, 0, 20
+                CustomTooltip "Resetting script", scrW, 0, 20
                 try heistInstance.Destroy()
                 sleep 500
                 CreateHeistInstance()
                 UpdateGlobalStatus(false, , , , true)
             }
             else {
-                ToolTip "Reset hotkey triggered!"
-                SetTimer () => ToolTip(), -700
+                CustomTooltip "Reset hotkey triggered!"
+                SetTimer () => CustomTooltip(), -700
             }
         }
 
@@ -393,6 +393,10 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         static previousStatus := ""
         static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
+        pos := getToolTipPos(toolTipPos)
+        x := pos.x
+        y := pos.y
+
         global hackMode, fingerprintMode, scriptsEnabled, ledgeGrabEnabled, noSave, manualKey, noSaveKey, ledgeGrabKey,
             autoHackKey, resetKey, hackInProgress, heist, sendPgUpKey, pgUpSent, unsupportedResolution,
             ledgeGrabInProgress
@@ -422,13 +426,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (!scriptsEnabled) {
             status := "Scripts disabled`n" noSaveText "`n" ledgeGrabText
             earlyReturn := true
-            ToolTip(unsupportedResolutionText . status, scrW, 0, 20)
+            CustomTooltip(unsupportedResolutionText . status, x, y, 20)
         }
 
         if (isTimingOut) {
             earlyReturn := true
             status := "Timeout in " timeoutProgress "s"
-            ToolTip(status, scrW, 0, 20)
+            CustomTooltip(status, x, y, 20)
         }
 
         if (earlyReturn) {
@@ -487,7 +491,10 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         if (aggregatedStatus != previousStatus || force) { ; Only update tooltip if status has changed to reduce flickering
             previousStatus := aggregatedStatus
-            ToolTip(aggregatedStatus, scrW, 0, 20)
+            pos := getToolTipPos(toolTipPos)
+            x := pos.x
+            y := pos.y
+            CustomTooltip(aggregatedStatus, x, y, 20)
 
             MakeAllToolTipsClickThrough(hackMode == "idle")
         }
@@ -532,6 +539,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             ledgeGrabInProgress
         ledgeGrabEnabled := !ledgeGrabEnabled
         ledgeGrabInProgress := false
+        BlockInput 0
 
         if (ledgeGrabEnabled)
             FocusGtaIfRunning()
@@ -720,7 +728,8 @@ Init() {
     global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
         delay, iniFile, debug, isBeta
     global anchorFound := false, pgUpSent := false, hackInProgress := false,
-        pgUpDisabled := false, ledgeGrabInProgress := false,
+        pgUpDisabled := false, ledgeGrabInProgress := false, LedgeGrabRunningSignal :=
+        false,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""

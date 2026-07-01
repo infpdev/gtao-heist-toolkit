@@ -25,7 +25,7 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
     centerX := (A_ScreenWidth // 2) - 0.9 * (width // 2)  ; Adjust for slight visual centering
     centerY := y > 0 ? y : 0
 
-    ToolTip(text, centerX, centerY, id)
+    CustomTooltip(text, centerX, centerY, id)
 }
 
 /**
@@ -199,10 +199,83 @@ DirGetParent(path) {
     return parent2 ? parent2 : path
 }
 
+; Checks if the given base path contains any of the known VaultOps markers (executable or resolution folders).
+; Returns true if any marker is found, false otherwise.
 HasVaultOpsMarkers(basePath) {
     hasExe := FileExist(basePath "\vaultOps.exe") != ""
     has1920 := InStr(FileExist(basePath "\1920x1080"), "D")
     has1600 := InStr(FileExist(basePath "\1600x900"), "D")
     has1366 := InStr(FileExist(basePath "\1366x768"), "D")
     return hasExe || has1920 || has1600 || has1366
+}
+
+CustomTooltip(text := '', x := 0, y := 0, id := 1) {
+    global toolTipPos, tooltipYOffset, toolTipPos
+    if (text = '') {
+        if (id != 1)
+            ToolTip("", x, y, id)
+        else
+            ToolTip()
+        return
+    }
+
+    if (IsSet(tooltipYOffset)) {
+        y += tooltipYOffset
+    }
+
+    if (IsSet(toolTipPos)) {
+        if (toolTipPos == 2 || toolTipPos == 5)
+            y -= 50
+    }
+
+    ToolTip(text, x, y, id)
+}
+
+getToolTipPos(pos) {
+    x := 0
+    y := 0
+    switch pos {
+        case 1:
+            x := 0
+            y := 0
+        case 2:
+            x := 0
+            y := A_ScreenHeight // 2
+        case 3:
+            x := 0
+            y := A_ScreenHeight
+        case 4:
+            x := A_ScreenWidth
+            y := 0
+        case 5:
+            x := A_ScreenWidth
+            y := A_ScreenHeight // 2
+        case 6:
+            x := A_ScreenWidth
+            y := A_ScreenHeight
+    }
+    return { x: x, y: y }
+}
+
+FocusOrOpenFolder(folderPath) {
+    folderPath := RTrim(folderPath, "\")
+
+    shell := ComObject("Shell.Application")
+
+    for window in shell.Windows {
+        try {
+            if (window.Document.Folder.Self.Path = folderPath) {
+                hwnd := window.HWND
+
+                if WinExist("ahk_id " hwnd) {
+                    WinActivate
+                    return true
+                }
+            }
+        }
+    }
+
+    ; Not already open
+    Run('explorer.exe "' folderPath '"')
+    return false
 }

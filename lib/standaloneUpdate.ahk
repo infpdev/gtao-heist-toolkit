@@ -1,4 +1,6 @@
 #Requires AutoHotkey v2.0
+#Include pureCommonFuncs.ahk
+CoordMode "ToolTip", "Screen"
 
 global updaterName := "standaloneUpdater.exe"
 global updaterTempDir := A_Temp "\vaultOpsUpdate"
@@ -9,7 +11,7 @@ relaunchAsAdmin()
 currentExePath := A_Args.Length >= 1 ? A_Args[1] : ""
 global directUpdate := A_Args.Length >= 2 ? A_Args[2] = "1" : false
 
-if (currentExePath = "" && FileExist(A_ScriptDir "\OpenCV_Engine.exe")) {
+if (currentExePath = "" && HasVaultOpsMarkers(DirGetParent(A_ScriptDir))) {
     directUpdate := true
     SplitPath(A_ScriptFullPath, , &libDir)
     SplitPath(libDir, , &currentExePath)
@@ -40,7 +42,7 @@ PerformUpdate(currentExePath) {
         SplitPath(currentDir, , &targetDir)
     }
 
-    ToolTip("Updating standalone pack", A_ScreenWidth / 2 - 70, 0, 17)
+    ShowCenteredToolTip("Updating standalone pack")
 
     downloadUrl :=
         "https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe"
@@ -94,7 +96,7 @@ PerformUpdate(currentExePath) {
 
         ; Fallback: open extracted folder if the original standalone name no longer exists
 
-        Run('explorer.exe "' currentDir '"')
+        FocusOrOpenFolder(currentDir)
 
         if (directUpdate) {
             MsgBox("Standalone pack updated successfully", "Auto Update", 64)

@@ -217,7 +217,7 @@ Terminate(*) {
 
         ShowCenteredToolTip "GTA must be focused to terminate the script", 1
 
-        SetTimer(() => (ToolTip()
+        SetTimer(() => (CustomTooltip()
         UpdateTooltip()), -5000)
         showedWarning := true
     }
@@ -314,14 +314,18 @@ GetAfkDisplayKey() {
  * Shows status tooltip: toggle/change-key/terminate instructions, or termination countdown.
  */
 UpdateTooltip(terminationStart := 0) {
-    global afkHolding, afkKeyReg, terminateKeyReg
+    global afkHolding, afkKeyReg, terminateKeyReg, tooltipYOffset
 
     keyLabel := StrTitle(GetAfkDisplayKey())
     terminateLabel := StrTitle(GetKeyName(terminateKeyReg))
     toggleText := "Press " . CanonicalToDisplay(toggleHotkey) . " to " (afkHolding ? "stop" : "start") " sending " keyLabel
     changeText := "Press ALT+" keyLabel " to change key"
     terminateText := "Press " terminateLabel " to exit"
-    ToolTip toggleText "`n" changeText "`n" terminateText, 0, 0
+
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y + tooltipYOffset
+    CustomTooltip toggleText "`n" changeText "`n" terminateText, x, y, 20
     MakeAllToolTipsClickThrough(false)
 }
 

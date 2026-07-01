@@ -2,10 +2,12 @@
 
 global pyProc := 0
 global pythonExe := "pyw.exe"
-if A_LineFile = A_ScriptFullPath {
+isVaultOpsAhk := A_ScriptName = "vaultOps.ahk"
+
+if (A_LineFile = A_ScriptFullPath) {
     global scriptPath := A_ScriptDir "\py_helpers\OpenCV_Engine.py"
 } else {
-    if (!A_IsCompiled && IsSet(isStandaloneScript) && isStandaloneScript) {
+    if (!A_IsCompiled && !isVaultOpsAhk && IsSet(isStandaloneScript) && isStandaloneScript) {
         ; If running uncompiled in a standalone context (e.g. from VaultOps Toolkit), use parent dir for helper path
         global scriptPath := A_ScriptDir "\..\py_helpers\OpenCV_Engine.py"
     }
@@ -90,6 +92,14 @@ StartPython() {
     if (pyProc || isShuttingDown)
         return
 
+    if (!FileExist(scriptPath)) {
+        if (IsSet(ShowCenteredToolTip))
+            MsgBox "OpenCV helper not found at:`n`n" scriptPath "`n`nPlease ensure the file exists and try again.",
+                "Error",
+                16
+        ExitApp
+    }
+
     shell := ComObject("WScript.Shell")
     shell.Environment("Process")["PYTHONIOENCODING"] := "utf-8"
 
@@ -122,11 +132,32 @@ StopPython(*) {
 
 ; Restart the helper process (stop then start). Useful after timeouts.
 RestartPython(err := "") {
-    if (IsSet(ShowCenteredToolTip))
-        ShowCenteredToolTip "An error occured. Restarting helper.`n" . err
+    static errCount := 0
+    errCount++
+    MsgBox "An error occured. Restarting OpenCV helper.`n`n" . err
+
+    if (errCount > 3) {
+        MsgBox "OpenCV helper has failed to restart multiple times. Exiting script."
+        ExitApp
+    }
+
     StopPython()
     Sleep 50
     StartPython()
+}
+
+LastRequestFinished(timeout := 2000) {
+    global ocvCallInProgress
+
+    ToolTip , , , 15
+    start := A_TickCount
+    while (ocvCallInProgress) {
+        if (A_TickCount - start > timeout)
+            return false
+        Sleep 10
+    }
+    ; ShowCenteredToolTip "Helper is ready for new requests", 15, 500
+    return true
 }
 
 ; =========================
@@ -172,6 +203,7 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
         pyProc.StdIn.WriteLine(req)
     } catch as err {
         ocvCallInProgress := false
+        MsgBox("Err @204")
         RestartPython(err.Message)
         return ""
     }

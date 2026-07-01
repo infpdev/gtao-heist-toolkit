@@ -261,7 +261,7 @@ class FingerprintSolver {
             } else {
                 this.lastFoundTick := A_TickCount
                 if (debug)
-                    ToolTip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
+                    CustomTooltip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
             }
 
             positions := GetResFromOpenCV(REQ_FINGERPRINT)
@@ -346,7 +346,7 @@ class FingerprintSolver {
                 if (this.handoffPending && this.pArr.Count == 4) {
 
                     if (debug) {
-                        ToolTip "Auto handoff triggered! Detected pieces: " this.pArr.Count, 50, 50, 19
+                        CustomTooltip "Auto handoff triggered! Detected pieces: " this.pArr.Count, 50, 50, 19
                         ; Sleep 1000
                     }
 
@@ -498,7 +498,7 @@ class FingerprintSolver {
         }
 
         static lastFoundAnchor := 0
-        ToolTip "", , , 18
+        CustomTooltip "", , , 18
 
         if (A_TickCount - lastFoundAnchor < 2000 && this.foundAnchor) {
             return true
@@ -523,7 +523,7 @@ class FingerprintSolver {
                     )
                 }
                 if (fpFound && debug) {
-                    ToolTip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
+                    CustomTooltip "Fingerprint anchor (cached)!", fpPx + 10, fpPy, 18
                 }
             }
         } catch {
@@ -535,7 +535,7 @@ class FingerprintSolver {
             fpFound := ImageSearch(&fpPx, &fpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
             )
             if (fpFound && debug) {
-                ToolTip "[class] Fingerprint anchor found!", fpPx + 10, fpPy, 18
+                CustomTooltip "[class] Fingerprint anchor found!", fpPx + 10, fpPy, 18
             }
         }
 
@@ -550,7 +550,7 @@ class FingerprintSolver {
             cachedFingerprintAnchor := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found (fp)", 0, 0, 18
+                CustomTooltip "No anchors found (fp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -601,15 +601,15 @@ class FingerprintSolver {
                     }
 
                     this.lastSeenPrint := i
-                    ToolTip("Found fingerprint " i, Round(x1 + ((x2 - x1) / 2) - (this.scrW * 0.04)), Round(
+                    CustomTooltip("Found fingerprint " i, Round(x1 + ((x2 - x1) / 2) - (this.scrW * 0.04)), Round(
                         this.scrH / 2), 17)
                     this.anchorGroup := group
                     return group
                 }
                 else {
                     if (debug) {
-                        ToolTip "⇲", x1, y1, 15 ; Debug: show search area top-left "." arrow / area
-                        ToolTip "⇱", x2, y2, 16 ; Debug: show search area bottom-right "." arrow / area
+                        CustomTooltip "⇲", x1, y1, 15 ; Debug: show search area top-left "." arrow / area
+                        CustomTooltip "⇱", x2, y2, 16 ; Debug: show search area bottom-right "." arrow / area
                     }
                 }
             } catch {
@@ -627,7 +627,7 @@ class FingerprintSolver {
     Pmatch(N, XP1, YP1, XP2, YP2) {
         ; Guard: check all coordinates and N are numbers
         ; if !(IsNumber(XP1) && IsNumber(YP1) && IsNumber(XP2) && IsNumber(YP2) && IsNumber(N)) {
-        ;     ToolTip("Invalid coordinates or N: " XP1 "," YP1 "," XP2 "," YP2 "," N, 100, 100, 18)
+        ;     CustomTooltip("Invalid coordinates or N: " XP1 "," YP1 "," XP2 "," YP2 "," N, 100, 100, 18)
         ;     return
         ; }
 
@@ -639,7 +639,7 @@ class FingerprintSolver {
             try this.detected[N] := false
             if this.pArr.Has(N)
                 this.pArr.Delete(N)
-            ToolTip("", , , N)
+            CustomTooltip("", , , N)
         }
     }
 
@@ -688,7 +688,7 @@ class FingerprintSolver {
         }
 
         if (debug)
-            ToolTip "Tracked pieces: " this.pArr.Count, 50, 50, 19
+            CustomTooltip "Tracked pieces: " this.pArr.Count, 50, 50, 19
     }
 
     markPrint(slot, N) {
@@ -723,7 +723,7 @@ class FingerprintSolver {
                     : slotData.arrow " " N)
                 : slotData.arrow
 
-        ToolTip(text, tTipX, tTipY, N)
+        CustomTooltip(text, tTipX, tTipY, N)
     }
 
     markPrints(prevArr, currArr) {
@@ -745,7 +745,7 @@ class FingerprintSolver {
         ; remove marks that no longer exist
         for _, val in prevArr {
             if (val != "" && !currMap.Has(val)) {
-                ToolTip("", , , val)
+                CustomTooltip("", , , val)
             }
         }
 
@@ -788,7 +788,7 @@ class FingerprintSolver {
             }
             ; Sleep 10
             times := val - prev
-            ; ToolTip "Sending Down " times " times`npArr length: " this.pArr.Length, 50, 50, 19
+            ; CustomTooltip "Sending Down " times " times`npArr length: " this.pArr.Length, 50, 50, 19
             ; sleep 200
             if (Mod(times, 2) == 0) {
                 times := times / 2

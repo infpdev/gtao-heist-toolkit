@@ -147,7 +147,7 @@ class KeypadSolver {
         this.prevRingRow := 1
 
         this.clearAll()
-        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; ToolTip replacement
+        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; CustomTooltip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -176,7 +176,7 @@ class KeypadSolver {
         try SetTimer this.fnCheckFalsePositive, 0
 
         loop 19
-            ToolTip("", , , A_Index)
+            CustomTooltip("", , , A_Index)
     }
 
     /**
@@ -275,7 +275,7 @@ class KeypadSolver {
             }
             this.anchorLastSeen := A_TickCount
             if (debug)
-                ToolTip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
+                CustomTooltip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
 
             ; Detect all columns and rows using OpenCV
             gridResult := GetResFromOpenCV(REQ_KEYPAD)
@@ -482,7 +482,7 @@ class KeypadSolver {
                 this.showKeys()
             }
             if (debug)
-                ToolTip "Stabilized? " this.stabilized, this.scrW / 2, 10, 19
+                CustomTooltip "Stabilized? " this.stabilized, this.scrW / 2, 10, 19
 
         }
     }
@@ -506,7 +506,7 @@ class KeypadSolver {
         if (this.highRes)
             return false
 
-        ToolTip "", , , 18
+        CustomTooltip "", , , 18
         if (A_TickCount - lastCalled < 1000 && this.foundAnchor) {
             return this.prevFoundPixel
         }
@@ -531,7 +531,7 @@ class KeypadSolver {
                     )
                 }
                 if (kpFound && debug) {
-                    ToolTip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
+                    CustomTooltip "Keypad anchor (cached)!", kpPx + 10, kpPy, 18
                 }
             }
         } catch {
@@ -543,7 +543,7 @@ class KeypadSolver {
             kpFound := ImageSearch(&kpPx, &kpPy, x1, y1, x2, y2, "*" this.primaryAnchorTolerance " " this.folder "anchor.png"
             )
             if (kpFound && debug) {
-                ToolTip "[class] Keypad anchor found!", kpPx + 10, kpPy, 18
+                CustomTooltip "[class] Keypad anchor found!", kpPx + 10, kpPy, 18
             }
         }
 
@@ -557,7 +557,7 @@ class KeypadSolver {
             this.prevFoundPixel := 0
             this.foundAnchor := 0
             if (debug) {
-                ToolTip "No anchors found (kp)", 0, 0, 18
+                CustomTooltip "No anchors found (kp)", 0, 0, 18
                 ; Sleep 500
             }
             return false
@@ -621,7 +621,8 @@ class KeypadSolver {
                     x1a := x1, x2a := x2, y1a := y1, y2a := y2
                 }
                 if (debug)
-                    ToolTip "Col " col ": Searching", this.baseXImg + (col - 1) * this.spacing, this.baseYImg - 20,
+                    CustomTooltip "Col " col ": Searching", this.baseXImg + (col - 1) * this.spacing, this.baseYImg -
+                    20,
                     col
 
                 foundImg := ImageSearch(&fx, &fy, x1a, y1a, x2a, y2a, "*" this.gridTolerance " " this.keyImgPath)
@@ -638,7 +639,7 @@ class KeypadSolver {
                     found := true
                     x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
                     y := this.baseYImg + (row - 1) * (this.spacing)
-                    ToolTip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)),
+                    CustomTooltip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)),
                     col
                 }
                 attempt++
@@ -731,7 +732,7 @@ class KeypadSolver {
                 g := (color >> 8) & 0xFF
                 b := color & 0xFF
                 if (debug)
-                    ToolTip r " " g " " b, cx + 10, cy, 18
+                    CustomTooltip r " " g " " b, cx + 10, cy, 18
                 ; Check if pixel is non-black/non-dark (any channel > 40)
                 if (r > 40 || g > 40 || b > 40) {
                     cy2 := cy + 5
@@ -740,7 +741,7 @@ class KeypadSolver {
                     g2 := (color2 >> 8) & 0xFF
                     b2 := color2 & 0xFF
                     if (debug)
-                        ToolTip r2 " " g2 " " b2, cx + 10, cy2, 18
+                        CustomTooltip r2 " " g2 " " b2, cx + 10, cy2, 18
                     if (r2 > 40 || g2 > 40 || b2 > 40) {
                         cy3 := cy2 + 5
                         color3 := PixelGetColor(cx, cy3, "RGB")
@@ -779,7 +780,7 @@ class KeypadSolver {
                 this.ShowRingMap()
 
                 if (debug)
-                    ToolTip "Ring: Row " ringRow ", Col " ringCol, px, py, 18
+                    CustomTooltip "Ring: Row " ringRow ", Col " ringCol, px, py, 18
 
                 if (this.cols.Has(ringCol) && this.mode == "auto")
                     this.SelectCurrentCol(ringCol, ringRow)
@@ -788,7 +789,7 @@ class KeypadSolver {
             return true
         } else {
             if (debug)
-                ToolTip "No ring stack found (color)", 50, 100, 18
+                CustomTooltip "No ring stack found (color)", 50, 100, 18
             return false
         }
     }
@@ -832,7 +833,7 @@ class KeypadSolver {
             ;     Sleep 50
             ; }
             if (debug) {
-                ToolTip "Sending " key, 0, 0, 18
+                CustomTooltip "Sending " key, 0, 0, 18
             }
             SendEvent(key)
 
@@ -1025,7 +1026,7 @@ class KeypadSolver {
         }
 
         if found {
-            ToolTip "", , , col
+            CustomTooltip "", , , col
             if (this.cols.Has(col))
                 this.cols.Delete(col)
             if (this.cols.Count = 0 || col == 6) {
@@ -1047,7 +1048,7 @@ class KeypadSolver {
             col := A_Index
 
             if !this.cols.Has(col)
-                ToolTip("", , , col)
+                CustomTooltip("", , , col)
         }
 
         ; draw active cols
@@ -1055,7 +1056,7 @@ class KeypadSolver {
             x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
             y := this.baseYImg + (c.row - 1) * (this.spacing)
 
-            ToolTip(
+            CustomTooltip(
                 "⛛",
                 x - (10 * ((1920 / this.scrW) ** 0.5)),
                 y - (18 * ((1080 / this.scrH) ** 0.8)),
@@ -1088,7 +1089,7 @@ class KeypadSolver {
         }
         if (out = "")
             out := "No mapping found."
-        ToolTip out, this.scrW * 0.105, (this.scrH * 0.4), 17
+        CustomTooltip out, this.scrW * 0.105, (this.scrH * 0.4), 17
     }
 
     /**
@@ -1099,7 +1100,7 @@ class KeypadSolver {
     ResetState(*) {
         SetTimer this.fnMainLoop, 0
         loop 19
-            ToolTip("", , , A_Index)
+            CustomTooltip("", , , A_Index)
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -1109,13 +1110,13 @@ class KeypadSolver {
         this.needStatusUpdate := true
         this.cvNoCircleSince := 0
         this.cvGridStableSince := 0
-        ; ToolTip "Resetting state", this.scrW / 2, 10, 19
+        ; CustomTooltip "Resetting state", this.scrW / 2, 10, 19
         Sleep 2500
         SetTimer this.fnMainLoop, 100
     }
 
     clearAll() {
         loop 18
-            ToolTip("", , , A_Index)
+            CustomTooltip("", , , A_Index)
     }
 }

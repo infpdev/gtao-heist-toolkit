@@ -1,6 +1,9 @@
 #Requires AutoHotkey v2.0
 #Include checkResolution.ahk
 #Include pureCommonFuncs.ahk
+#Include validateFiles.ahk
+
+CoordMode "ToolTip", "Screen"
 
 if !A_IsAdmin {
     try Run('*RunAs "' A_ScriptFullPath '"')
@@ -24,6 +27,7 @@ isNoSaveStandalone := isStandaloneScript && InStr(A_ScriptName, "NoSave")
 if !IsSet(vaultOps)
     global vaultOps := false
 
+validataFiles(dir)
 CheckForUpdate()
 checkResolution()
 

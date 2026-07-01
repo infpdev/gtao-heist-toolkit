@@ -22,6 +22,22 @@ global debug := !A_IsCompiled
 
 EnsureSettingsFile()
 
+/**
+ * Set the Tooltip anchor position.
+ * 1 = Top Left, 2 = Middle Left, 3 = Bottom Left
+ * 4 = Top Right, 5 = Middle Right, 6 = Bottom Right
+ * 1 is the default position (Top Left)
+ */
+global toolTipPos := IniRead(iniFile, "Options", "ToolTipPos", "1")
+
+/**
+ * Vertical offset (in pixels) applied to the tooltip from the selected anchor position<br>
+ * Negative values move the tooltip upward<br>
+ * Positive values move the tooltip downward<br>
+ * Zero is the default position, which is the exact anchor position
+ */
+global tooltipYOffset := IniRead(iniFile, "Options", "ToolTipYOffset", "0")
+
 ; Hotkey to reset the script's state and progress, useful if something gets stuck or goes wrong.
 ; (vk52sc013 - physical R key)
 global resetKey := NormalizeHotkeyValue(IniRead(iniFile, "Utility", "Reset", "vk52sc013"), "Reset", "Utility")
@@ -60,6 +76,17 @@ CreateDefaultSettings() {
         . "; + = Shift  → e.g. +h means Shift + H`n"
         . "; # = Win    → e.g. #h means Win + H`n; `n"
         . "; LButton / RButton / MButton for mouse buttons`n"
+        . "; ---------------------------`n`n"
+        . "[Options]`n"
+        . "; ToolTip position: 1=Top Left, 2=Middle Left, 3=Bottom Left, 4=Top Right, 5=Middle Right, 6=Bottom Right`n"
+        . "ToolTipPos=1`n"
+        . "; Vertical offset (in pixels) applied to the tooltip from the selected anchor position`n"
+        . "ToolTipYOffset=0`n`n"
+        . "; ---------------------------`n"
+        . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
+        . "; Please use the vaultOps GUI to change these hotkeys,`n"
+        . "; or refer to the documentation for how to customize them in the INI file.`n"
+        . "; The default hotkeys are mentioned above each setting for reference.`n"
         . "; ---------------------------`n`n"
         . "; === Utility Hotkeys ===`n"
         . "[Utility]`n`n"
