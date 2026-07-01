@@ -24,7 +24,7 @@ global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DIAMOND_CASINO
 global engine := OPENCV_ENGINE
 global pgUpSent := false
-global ledgeGrabEnabled := true, ledgeGrabInProgress := false
+global ledgeGrabEnabled := true, ledgeGrabInProgress := false, LedgeGrabRunningSignal := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
 

@@ -199,6 +199,8 @@ DirGetParent(path) {
     return parent2 ? parent2 : path
 }
 
+; Checks if the given base path contains any of the known VaultOps markers (executable or resolution folders).
+; Returns true if any marker is found, false otherwise.
 HasVaultOpsMarkers(basePath) {
     hasExe := FileExist(basePath "\vaultOps.exe") != ""
     has1920 := InStr(FileExist(basePath "\1920x1080"), "D")

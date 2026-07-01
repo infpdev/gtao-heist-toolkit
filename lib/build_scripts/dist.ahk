@@ -2,6 +2,8 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 SetWorkingDir A_ScriptDir
+CoordMode "ToolTip", "Screen"
+
 #Include helpers\virusTotalScan.ahk
 
 ; Development mode flag (set to false for release builds)

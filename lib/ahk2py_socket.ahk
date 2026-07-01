@@ -2,10 +2,12 @@
 
 global pyProc := 0
 global pythonExe := "pyw.exe"
-if A_LineFile = A_ScriptFullPath {
+isVaultOpsAhk := A_ScriptName = "vaultOps.ahk"
+
+if (A_LineFile = A_ScriptFullPath) {
     global scriptPath := A_ScriptDir "\py_helpers\OpenCV_Engine.py"
 } else {
-    if (!A_IsCompiled && IsSet(isStandaloneScript) && isStandaloneScript) {
+    if (!A_IsCompiled && !isVaultOpsAhk && IsSet(isStandaloneScript) && isStandaloneScript) {
         ; If running uncompiled in a standalone context (e.g. from VaultOps Toolkit), use parent dir for helper path
         global scriptPath := A_ScriptDir "\..\py_helpers\OpenCV_Engine.py"
     }
@@ -144,6 +146,20 @@ RestartPython(err := "") {
     StartPython()
 }
 
+LastRequestFinished(timeout := 2000) {
+    global ocvCallInProgress
+
+    ToolTip , , , 15
+    start := A_TickCount
+    while (ocvCallInProgress) {
+        if (A_TickCount - start > timeout)
+            return false
+        Sleep 10
+    }
+    ; ShowCenteredToolTip "Helper is ready for new requests", 15, 500
+    return true
+}
+
 ; =========================
 ; CORE CALL
 ; =========================
@@ -187,6 +203,7 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
         pyProc.StdIn.WriteLine(req)
     } catch as err {
         ocvCallInProgress := false
+        MsgBox("Err @204")
         RestartPython(err.Message)
         return ""
     }

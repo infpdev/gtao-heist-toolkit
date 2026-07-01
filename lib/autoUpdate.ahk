@@ -1,4 +1,5 @@
 #Requires AutoHotkey v2.0
+CoordMode "ToolTip", "Screen"
 
 global updaterName := "vaultOpsUpdater.exe"
 global updaterTempDir := A_Temp "\vaultOpsUpdate"

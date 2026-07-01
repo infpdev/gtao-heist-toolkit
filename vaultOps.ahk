@@ -539,6 +539,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             ledgeGrabInProgress
         ledgeGrabEnabled := !ledgeGrabEnabled
         ledgeGrabInProgress := false
+        BlockInput 0
 
         if (ledgeGrabEnabled)
             FocusGtaIfRunning()
@@ -727,7 +728,8 @@ Init() {
     global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
         delay, iniFile, debug, isBeta
     global anchorFound := false, pgUpSent := false, hackInProgress := false,
-        pgUpDisabled := false, ledgeGrabInProgress := false,
+        pgUpDisabled := false, ledgeGrabInProgress := false, LedgeGrabRunningSignal :=
+        false,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
