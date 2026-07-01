@@ -130,6 +130,10 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     global hackInProgress, readableNoSaveKey, readableScriptsKey, readableSendPgUpKey, readableManualKey,
         readableAutoHackKey, readableResetKey, pgUpSent, unsupportedResolution
 
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y
+
     if (pgUpSent)
         return ; Don't update status while PgUp is being sent to avoid tooltip interference
 
@@ -140,7 +144,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
 
     if (isTimingOut) {
         status := "Timeout in " timeoutProgress "s"
-        ToolTip(status, scrW, 0, 20)
+        CustomTooltip(status, x, y, 20)
         MakeAllToolTipsClickThrough(hackMode == "idle")
         return
     }
@@ -192,7 +196,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
 
     if (force || aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
         previousStatus := aggregatedStatus
-        ToolTip(aggregatedStatus, scrW, 0, 20)
+        CustomTooltip(aggregatedStatus, x, y, 20)
 
         MakeAllToolTipsClickThrough(hackMode == "idle")
     }
@@ -253,13 +257,17 @@ ToggleNoSaveStatus(*) {
 
 clearAllToolTips() {
     loop 19
-        ToolTip "", , , A_Index
+        CustomTooltip "", , , A_Index
 }
 
 PgUpDown(*) {
     global pgUpSent, sendPgUpKey
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y
+
     if !isGtaFocused(, true) {
-        ToolTip "[PgUp] GTA not focused", scrW, 0, 20
+        CustomTooltip "[PgUp] GTA not focused", x, y, 20
         return
     }
 
@@ -267,7 +275,7 @@ PgUpDown(*) {
         if (!GetKeyState("RButton", "P")) {
             pgUpSent := true
             Send "{PgUp down}"
-            ToolTip "PgUp pressed (LMB)", scrW, 0, 20
+            CustomTooltip "PgUp pressed (LMB)", x, y, 20
         }
         ; If RButton is pressed, do nothing (block PgUp)
         return
@@ -275,7 +283,7 @@ PgUpDown(*) {
 
     pgUpSent := true
     Send "{PgUp down}"
-    ToolTip "PgUp pressed (" sendPgUpKey ")", scrW, 0, 20
+    CustomTooltip "PgUp pressed (" sendPgUpKey ")", x, y, 20
 
 }
 
@@ -312,7 +320,7 @@ ToggleDebugChord(*) {
         sleep 1000
     }
 
-    SetTimer(() => (debug ? ToolTip("", , , 17) : clearAllToolTips()), -1200)
+    SetTimer(() => (debug ? CustomTooltip("", , , 17) : clearAllToolTips()), -1200)
 }
 
 Hotkey("!F10", ToggleDebugChord)

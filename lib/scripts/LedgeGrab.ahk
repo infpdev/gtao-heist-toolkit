@@ -4,7 +4,7 @@ ToggleLedgeGrabInProgress(*) {
 
     if (hackInProgress || hackMode != "idle") {
         ShowCenteredToolTip "Cannot use ledge grab while hack is in progress", 17
-        SetTimer(() => (ToolTip("", , , 17)), -2000)
+        SetTimer(() => (CustomTooltip("", , , 17)), -2000)
         return
     }
 
@@ -12,7 +12,7 @@ ToggleLedgeGrabInProgress(*) {
         return
     BlockInput 0
     ledgeGrabInProgress := !ledgeGrabInProgress
-    ToolTip("", , , 17)
+    CustomTooltip("", , , 17)
     UpdateGlobalStatus(hackInProgress)
     if (ledgeGrabInProgress)
         SetTimer LedgeGrab, -1
@@ -106,7 +106,7 @@ SleepIfBlack() {
         if (A_TickCount - startTime > timeoutMs) {
             global ledgeGrabInProgress := false
             BlockInput 0
-            ToolTip("", , , 17)
+            CustomTooltip("", , , 17)
             UpdateGlobalStatus(hackInProgress)
             break
         }
@@ -161,7 +161,7 @@ DisableInput() {
 EnableInput() {
     BlockInput 0
     ShowCenteredToolTip "Inputs re-enabled. You can now move to the desired position", 17
-    SetTimer(() => (ToolTip("", , , 17)), -5000)
+    SetTimer(() => (CustomTooltip("", , , 17)), -5000)
 }
 
 ; Disables ledge-grab automation if GTA is not the focused window.
@@ -175,7 +175,7 @@ DisableLedgeGrabIfGtaNotFocused() {
         ledgeGrabInProgress := false
         UpdateGlobalStatus(hackInProgress)
         ShowCenteredToolTip "Ledge grab disabled (GTA not focused)", 17
-        SetTimer(() => (ToolTip("", , , 17)), -2000)
+        SetTimer(() => (CustomTooltip("", , , 17)), -2000)
         return true
     }
     return false

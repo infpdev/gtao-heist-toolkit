@@ -162,21 +162,14 @@ savePixels() {
 /**
  * Shows status tooltip: triggerbot on/off, toggle/calibrate/terminate instructions, or countdown.
  */
-UpdateTooltip(resetStart := 0) {
-    if (resetStart > 0) {
-
-        ToolTip "Resetting script in " .
-            (Integer(resetTimer / 1000) -
-            Floor((A_TickCount - resetStart) / 1000))
-            . "s`nRelease the key to cancel.", 0, 0, 17
-
-        MakeAllToolTipsClickThrough(false)
-        return
-    }
+UpdateTooltip() {
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y + tooltipYOffset
 
     CaliberatingText := "Finding red pixel near center..."
     if (isCalibrating) {
-        ToolTip CaliberatingText, 0, 0
+        CustomTooltip CaliberatingText, x, y
         MakeAllToolTipsClickThrough(false)
         return
     }
@@ -186,7 +179,8 @@ UpdateTooltip(resetStart := 0) {
     " triggerbot"
     CaliberateText := "Press Alt + " . CanonicalToDisplay(toggleHotkey) . " to calibrate the red pixel"
     TerminateText := "Press " . StrTitle(CanonicalToDisplay(terminateKey)) . " to terminate the script"
-    ToolTip TriggerbotStatus "`n" ToggleText "`n" CaliberateText "`n" TerminateText, 0, 0
+
+    CustomTooltip TriggerbotStatus "`n" ToggleText "`n" CaliberateText "`n" TerminateText, x, y
 
     MakeAllToolTipsClickThrough(false)
 

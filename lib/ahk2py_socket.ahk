@@ -90,6 +90,14 @@ StartPython() {
     if (pyProc || isShuttingDown)
         return
 
+    if (!FileExist(scriptPath)) {
+        if (IsSet(ShowCenteredToolTip))
+            MsgBox "OpenCV helper not found at:`n`n" scriptPath "`n`nPlease ensure the file exists and try again.",
+                "Error",
+                16
+        ExitApp
+    }
+
     shell := ComObject("WScript.Shell")
     shell.Environment("Process")["PYTHONIOENCODING"] := "utf-8"
 
@@ -122,8 +130,15 @@ StopPython(*) {
 
 ; Restart the helper process (stop then start). Useful after timeouts.
 RestartPython(err := "") {
-    if (IsSet(ShowCenteredToolTip))
-        ShowCenteredToolTip "An error occured. Restarting helper.`n" . err
+    static errCount := 0
+    errCount++
+    MsgBox "An error occured. Restarting OpenCV helper.`n`n" . err
+
+    if (errCount > 3) {
+        MsgBox "OpenCV helper has failed to restart multiple times. Exiting script."
+        ExitApp
+    }
+
     StopPython()
     Sleep 50
     StartPython()

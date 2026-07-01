@@ -187,7 +187,7 @@ if !A_IsAdmin {
         if IsFirewallOnActiveProfile() {
             if (!isJustAToggle) {
                 ShowCenteredToolTip("Firewall check passed :]", 17)
-                SetTimer () => ToolTip("", , , 17), -2000
+                SetTimer () => CustomTooltip("", , , 17), -2000
                 CleanupLegacyDuplicateRules()
             }
             return true ; Already on, do nothing
@@ -206,7 +206,7 @@ if !A_IsAdmin {
         Sleep 300
         if IsFirewallOnActiveProfile() {
             ShowCenteredToolTip("Firewall check passed :]", 17)
-            SetTimer () => ToolTip("", , , 17), -2000
+            SetTimer () => CustomTooltip("", , , 17), -2000
 
             return true
 
@@ -275,7 +275,7 @@ if !A_IsAdmin {
 
     clearNoSaveToolTip(localMode) {
         if (forMode == localMode)
-            ToolTip("", , , 17)
+            CustomTooltip("", , , 17)
     }
 
     ; Cleans up the NoSave rule on exit.
@@ -283,7 +283,7 @@ if !A_IsAdmin {
         if FileExist(iniFile) {
             DisableNoSaveMode()
         }
-        ToolTip("", , , 17)
+        CustomTooltip("", , , 17)
     }
 
 }

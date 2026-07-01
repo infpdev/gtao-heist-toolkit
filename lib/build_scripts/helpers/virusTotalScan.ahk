@@ -1,8 +1,11 @@
 #Requires AutoHotkey v2.0
 SetWorkingDir A_ScriptDir
-#Include .\helpers\_JXON.ahk
-#Include .\helpers\FileHash_SHA256.ahk
-#Include .\buildHelpers.ahk
+#Include .\_JXON.ahk
+#Include .\FileHash_SHA256.ahk
+; #Include .\buildHelpers.ahk
+#Include ..\..\pureCommonFuncs.ahk
+#Include ..\..\initHotkeys.ahk
+
 global apiKey := ""
 
 ; Run scan if script is executed directly (not imported)

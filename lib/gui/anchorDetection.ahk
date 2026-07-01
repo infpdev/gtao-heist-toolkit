@@ -39,9 +39,9 @@ foundAnchor() {
 
     ; Fingerprint: try cached area first, then fallback to full fingerprint area.
     if (debug) {
-        ToolTip "Searching for fingerprint anchor", 0, 0, 18
-        ToolTip "⇲", fp_x1, fp_y1, 15 ; Debug: show search area
-        ToolTip "⇱", fp_x2, fp_y2, 16 ; Debug: show search area
+        CustomTooltip "Searching for fingerprint anchor", 0, 0, 18
+        CustomTooltip "⇲", fp_x1, fp_y1, 15 ; Debug: show search area
+        CustomTooltip "⇱", fp_x2, fp_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
     try {
@@ -65,9 +65,9 @@ foundAnchor() {
 
     ; Keypad: try cached area first, then fallback to full keypad area.
     if (debug) {
-        ToolTip "Searching for keypad anchor", 0, 0, 18
-        ToolTip "⇲", kp_x1, kp_y1, 15 ; Debug: show search area
-        ToolTip "⇱", kp_x2, kp_y2, 16 ; Debug: show search area
+        CustomTooltip "Searching for keypad anchor", 0, 0, 18
+        CustomTooltip "⇲", kp_x1, kp_y1, 15 ; Debug: show search area
+        CustomTooltip "⇱", kp_x2, kp_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
     try {
@@ -91,9 +91,9 @@ foundAnchor() {
 
     ; El Rubio: try cached area first, then fallback to full region.
     if (debug) {
-        ToolTip "Searching for El Rubio anchor", 0, 0, 18
-        ; ToolTip "⇲", rb_x1, rb_y1, 15 ; Debug: show search area
-        ; ToolTip "⇱", rb_x2, rb_y2, 16 ; Debug: show search area
+        CustomTooltip "Searching for El Rubio anchor", 0, 0, 18
+        ; CustomTooltip "⇲", rb_x1, rb_y1, 15 ; Debug: show search area
+        ; CustomTooltip "⇱", rb_x2, rb_y2, 16 ; Debug: show search area
         ; Sleep 300
     }
 
@@ -122,7 +122,7 @@ foundAnchor() {
 
     if (kpFound) {
         if (debug) {
-            ToolTip "Keypad anchor found!", kpPx + 10, kpPy + 10, 18
+            CustomTooltip "Keypad anchor found!", kpPx + 10, kpPy + 10, 18
         }
         cachedKeypadAnchor := { x: kpPx, y: kpPy }
         return { mode: "keypad", x: kpPx, y: kpPy }
@@ -130,7 +130,7 @@ foundAnchor() {
 
     if (fpFound) {
         if (debug) {
-            ToolTip "Fingerprint anchor found!", fpPx + 10, fpPy + 10, 18
+            CustomTooltip "Fingerprint anchor found!", fpPx + 10, fpPy + 10, 18
         }
         cachedFingerprintAnchor := { x: fpPx, y: fpPy }
         return { mode: "fingerprint", x: fpPx, y: fpPy }
@@ -138,14 +138,14 @@ foundAnchor() {
 
     if (elFound) {
         if (debug) {
-            ToolTip "El Rubio anchor found!", elPx + 10, elPy + 10, 18
+            CustomTooltip "El Rubio anchor found!", elPx + 10, elPy + 10, 18
         }
         cachedRubioAnchor := { x: elPx, y: elPy }
         return { mode: "cayo", x: elPx, y: elPy }
     }
 
     if (debug) {
-        ToolTip "No anchors found (auto-detect)", 0, 0, 18
+        CustomTooltip "No anchors found (auto-detect)", 0, 0, 18
     }
     return false
 

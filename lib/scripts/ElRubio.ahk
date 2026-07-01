@@ -180,7 +180,7 @@ class ElRubioSolver {
 
             this.lastSeenTick := A_TickCount
             if (debug)
-                ToolTip("Rubio Anchor (opencv)", 0, 0, 18)
+                CustomTooltip("Rubio Anchor (opencv)", 0, 0, 18)
 
             res := GetResFromOpenCV(REQ_CAYO)
             if (res = ERRMSG || res = "" || !res)
@@ -336,7 +336,7 @@ class ElRubioSolver {
         x := this.scrW * 0.15
 
         loop 8
-            ToolTip("", , , A_Index)
+            CustomTooltip("", , , A_Index)
 
         for row, offset in clicks {
             if (this.isShuttingDown)
@@ -351,7 +351,7 @@ class ElRubioSolver {
             else
                 txt := "Aligned"
 
-            ToolTip(txt, x, y, row)
+            CustomTooltip(txt, x, y, row)
         }
 
         if (this.isShuttingDown)
@@ -371,7 +371,7 @@ class ElRubioSolver {
     ResetState() {
         this.clearAll()
         if (debug)
-            ToolTip "All rows solved / lost anchor", 0, 0, 18
+            CustomTooltip "All rows solved / lost anchor", 0, 0, 18
         this.foundAnchor := false
         this.needStatusUpdate := true
         this.prevClicks := ""

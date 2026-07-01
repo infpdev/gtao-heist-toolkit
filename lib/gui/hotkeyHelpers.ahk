@@ -417,7 +417,7 @@ PgUpDown(*) {
             pgUpSent := true
             Send "{PgUp down}"
             txtPgUpLabel.Opt("c648f64")
-            ToolTip "PgUp pressed (LMB)", scrW, 0, 20
+            CustomTooltip "PgUp pressed (LMB)", scrW, 0, 20
         }
         ; If RButton is pressed, do nothing (block PgUp)
         return
@@ -427,7 +427,7 @@ PgUpDown(*) {
     txtPgUpLabel.Opt("c648f64")
     pgUpSent := true
     Send "{PgUp down}"
-    ToolTip "PgUp pressed (" sendPgUpKey ")", scrW, 0, 20
+    CustomTooltip "PgUp pressed (" sendPgUpKey ")", scrW, 0, 20
 }
 
 PgUpUp(*) {
@@ -475,7 +475,7 @@ ToggleDebugChord(*) {
         sleep 1000
     }
 
-    SetTimer(() => (debug ? ToolTip("", , , 17) : clearAllToolTips()), -1200)
+    SetTimer(() => (debug ? CustomTooltip("", , , 17) : clearAllToolTips()), -1200)
 }
 
 Hotkey("!F10", ToggleDebugChord)

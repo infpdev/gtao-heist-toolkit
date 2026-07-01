@@ -89,7 +89,7 @@ BlockGtaUdp() {
 
         return true
     } catch {
-        ToolTip()
+        CustomTooltip()
         return false
     }
 }
@@ -169,7 +169,12 @@ UpdateTooltip() {
     ToggleText := "Press " . CanonicalToDisplay(toggleHotkey) . " to " (shouldBlock ? "cancel" :
         "switch to solo session")
     TerminateText := "`nPress " . StrTitle(CanonicalToDisplay(terminateKey)) . " to terminate the script"
-    ToolTip (shouldBlock ? BlockedText : "") . ToggleText . TerminateText, 0, 0
+
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y + tooltipYOffset
+
+    CustomTooltip (shouldBlock ? BlockedText : "") . ToggleText . TerminateText, x, y
     MakeAllToolTipsClickThrough(false)
 }
 
