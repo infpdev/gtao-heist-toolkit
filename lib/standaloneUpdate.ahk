@@ -42,7 +42,7 @@ PerformUpdate(currentExePath) {
         SplitPath(currentDir, , &targetDir)
     }
 
-    ToolTip("Updating standalone pack", A_ScreenWidth / 2 - 70, 0, 17)
+    ShowCenteredToolTip("Updating standalone pack")
 
     downloadUrl :=
         "https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Standalone-Pack.exe"
@@ -96,7 +96,7 @@ PerformUpdate(currentExePath) {
 
         ; Fallback: open extracted folder if the original standalone name no longer exists
 
-        Run('explorer.exe "' currentDir '"')
+        FocusOrOpenFolder(currentDir)
 
         if (directUpdate) {
             MsgBox("Standalone pack updated successfully", "Auto Update", 64)

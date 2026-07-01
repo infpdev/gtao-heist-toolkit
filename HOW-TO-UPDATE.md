@@ -23,8 +23,11 @@ Done!
 <details>
 <summary><b>vaultOps v4.20.69 changes</b></summary>
 
-Please read the [v4.20.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69) for detailed information on how
-to use the new buffered ledge grab automation feature.
+Please read the [v4.20.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69) for detailed information about:
+
+* Buffered Ledge Grab automation for the Diamond Casino heist
+* Configurable tooltip position and vertical offset
+* Startup file validation and automatic Windows Security exclusion prompt
 
 </details>
 

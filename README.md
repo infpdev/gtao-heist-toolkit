@@ -152,7 +152,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/18908a39e02568f1a7b0c633f36b2426a9f0612c5cc5d4ee452a3c340ea9734a
+> https://www.virustotal.com/gui/file/b258cf013a01a044eef26d7adfbb3d3da01217c78cc9e85a8cb31e4b981732f0
 
 
 <p align="center">
@@ -293,7 +293,8 @@ All hotkeys are customizable.
 | Option | Description | Notes |
 |---|---|---|
 | Delay (30 – 200 ms) | Controls auto-mode solving speed | Lower = faster but unstable<br>Higher = slower but stable<br>Recommended / Default: `40 ms` |
-
+| Tooltip Position | Chooses where status tooltips appear on the screen | Supports six screen positions. Default: `Top-Right` (`ToolTipPos=4`). Can currently be changed only in `zSettings.ini`. |
+| Tooltip Y Offset | Adjusts the vertical position of status tooltips | Useful for avoiding overlap with in-game HUD elements or display burn-in. Can currently be changed only in `zSettings.ini`. |
 
 ## Standalone Scripts
 

@@ -115,7 +115,7 @@ buildVaultOps() {
     if (compileStandalone)
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses, buildVaultOpsExe)
 
-    OpenFolderAsUser(parentDir "\dist")
+    FocusOrOpenFolder(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled
     ; if !A_IsCompiled {

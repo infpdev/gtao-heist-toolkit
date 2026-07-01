@@ -256,3 +256,26 @@ getToolTipPos(pos) {
     }
     return { x: x, y: y }
 }
+
+FocusOrOpenFolder(folderPath) {
+    folderPath := RTrim(folderPath, "\")
+
+    shell := ComObject("Shell.Application")
+
+    for window in shell.Windows {
+        try {
+            if (window.Document.Folder.Self.Path = folderPath) {
+                hwnd := window.HWND
+
+                if WinExist("ahk_id " hwnd) {
+                    WinActivate
+                    return true
+                }
+            }
+        }
+    }
+
+    ; Not already open
+    Run('explorer.exe "' folderPath '"')
+    return false
+}
