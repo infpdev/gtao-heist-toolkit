@@ -336,7 +336,7 @@ class ElRubioSolver {
         x := this.scrW * 0.15
 
         loop 8
-            CustomTooltip("", , , A_Index)
+            ToolTip("", , , A_Index)
 
         for row, offset in clicks {
             if (this.isShuttingDown)
@@ -351,7 +351,7 @@ class ElRubioSolver {
             else
                 txt := "Aligned"
 
-            CustomTooltip(txt, x, y, row)
+            ToolTip(txt, x, y, row)
         }
 
         if (this.isShuttingDown)

@@ -203,7 +203,7 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
         pyProc.StdIn.WriteLine(req)
     } catch as err {
         ocvCallInProgress := false
-        MsgBox("Err @204")
+        ; MsgBox("Err @204")
         RestartPython(err.Message)
         return ""
     }

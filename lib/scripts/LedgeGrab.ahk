@@ -4,7 +4,7 @@ ToggleLedgeGrabInProgress(*) {
 
     if (hackInProgress || hackMode != "idle") {
         ShowCenteredToolTip "Cannot use ledge grab while hack is in progress", 17
-        SetTimer(() => (CustomTooltip("", , , 17)), -2000)
+        SetTimer(() => (ToolTip("", , , 17)), -2000)
         return
     }
 
@@ -17,7 +17,7 @@ ToggleLedgeGrabInProgress(*) {
 
         if (!LastRequestFinished()) {
             ShowCenteredToolTip "Failed to enable ledge grab", 17
-            SetTimer(() => (CustomTooltip("", , , 17)), -2000)
+            SetTimer(() => (ToolTip("", , , 17)), -2000)
             return
         }
         LedgeGrabRunningSignal := true
@@ -27,7 +27,7 @@ ToggleLedgeGrabInProgress(*) {
     }
 
     ; ledgeGrabInProgress := !ledgeGrabInProgress
-    ; CustomTooltip("", , , 17)
+    ; ToolTip("", , , 17)
     ; UpdateGlobalStatus(hackInProgress)
     ; if (ledgeGrabInProgress)
     ;     SetTimer LedgeGrab, -1
@@ -146,7 +146,7 @@ SleepIfBlack() {
             ; MsgBox "Failed here"
             global ledgeGrabInProgress := false
             BlockInput 0
-            CustomTooltip("", , , 17)
+            ToolTip("", , , 17)
             UpdateGlobalStatus(hackInProgress)
             break
         }
@@ -169,7 +169,7 @@ SleepIfBlack() {
             ShowCenteredToolTip "Ledge grab sequence completed", 17
         else
             ShowCenteredToolTip "Ledge grab sequence interrupted", 17
-        SetTimer(() => (CustomTooltip("", , , 17)), -2000)
+        SetTimer(() => (ToolTip("", , , 17)), -2000)
         disableLedgeGrabInProgress()
     }
 
@@ -214,7 +214,7 @@ EnableInput() {
 
     if (LedgeGrabRunningSignal) {
         ShowCenteredToolTip "Inputs re-enabled. You can now move to the desired position", 17
-        SetTimer(() => (CustomTooltip("", , , 17)), -5000)
+        SetTimer(() => (ToolTip("", , , 17)), -5000)
     }
 }
 
@@ -229,7 +229,7 @@ DisableLedgeGrabIfGtaNotFocused() {
         ledgeGrabInProgress := false
         UpdateGlobalStatus(hackInProgress)
         ShowCenteredToolTip "Ledge grab disabled (GTA not focused)", 17
-        SetTimer(() => (CustomTooltip("", , , 17)), -2000)
+        SetTimer(() => (ToolTip("", , , 17)), -2000)
         return true
     }
     return false

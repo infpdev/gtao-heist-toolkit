@@ -89,7 +89,7 @@ BlockGtaUdp() {
 
         return true
     } catch {
-        CustomTooltip()
+        ToolTip()
         return false
     }
 }

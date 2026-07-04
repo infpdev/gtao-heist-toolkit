@@ -412,12 +412,16 @@ PgUpDown(*) {
     if !isGtaFocused(false, true)
         return
 
+    pos := getToolTipPos(toolTipPos)
+    x := pos.x
+    y := pos.y
+
     if (sendPgUpKey == "LButton") {
         if (!GetKeyState("RButton", "P")) {
             pgUpSent := true
             Send "{PgUp down}"
             txtPgUpLabel.Opt("c648f64")
-            CustomTooltip "PgUp pressed (LMB)", scrW, 0, 20
+            CustomTooltip "PgUp pressed (LMB)", x, y, 20
         }
         ; If RButton is pressed, do nothing (block PgUp)
         return
@@ -427,7 +431,7 @@ PgUpDown(*) {
     txtPgUpLabel.Opt("c648f64")
     pgUpSent := true
     Send "{PgUp down}"
-    CustomTooltip "PgUp pressed (" sendPgUpKey ")", scrW, 0, 20
+    CustomTooltip "PgUp pressed (" sendPgUpKey ")", x, y, 20
 }
 
 PgUpUp(*) {

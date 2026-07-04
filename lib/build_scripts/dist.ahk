@@ -57,20 +57,17 @@ if (compileStandalone && packageBuilds && !FileExist(rarExe)) {
 buildVaultOps()
 
 buildVaultOps() {
-    global parentDir, buildVaultOpsExe, compileStandalone, packageBuilds, useOriginalClasses, scanVirusTotal,
+    global parentDir, buildVaultOpsExe, packageBuilds, useOriginalClasses, scanVirusTotal,
         baseExe, AHK2EXEPath, iconPath, isccExe, issScript
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
     outFile := parentDir "\vaultOps.exe"
     updaterInFile := parentDir "\lib\autoUpdate.ahk"
     updaterOutFile := parentDir "\lib\vaultOpsUpdater.exe"
-    standaloneUpdaterInFile := parentDir "\lib\standaloneUpdate.ahk"
-    standaloneUpdaterOutFile := parentDir "\lib\standaloneUpdater.exe"
     vaultOpsInstaller := parentDir "\dist\vaultOps-Setup.exe"
 
     cmd := '"' AHK2EXEPath '" /in "' inFile '" /out "' outFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     updaterCmd := '"' AHK2EXEPath '" /in "' updaterInFile '" /out "' updaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
-    standaloneUpdaterCmd := '"' AHK2EXEPath '" /in "' standaloneUpdaterInFile '" /out "' standaloneUpdaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     innoCmd := '"' isccExe '" "' issScript '"'
 
     sleep 20
@@ -91,6 +88,10 @@ buildVaultOps() {
         RunWait innoCmd, , "Hide"
 
         if RequireExistingFile(vaultOpsInstaller, "Installer") {
+            ; cleanup intermediate build files
+            try FileDelete(outFile)
+            try FileDelete(updaterOutFile)
+
             ShowCenteredToolTip "Distribution build and Inno Setup installer complete!"
             ; Scan with VirusTotal if option selected
             if (scanVirusTotal) {
@@ -108,33 +109,29 @@ buildVaultOps() {
         SetTimer () => (ToolTip("", , , 10)), -1000
     }
 
-    ShowCenteredToolTip "Compiling standalone updater"
-    if (compileStandalone)
-        RunWait standaloneUpdaterCmd, , "Hide"
-
     if (compileStandalone)
         createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses, buildVaultOpsExe)
 
     FocusOrOpenFolder(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled
-    ; if !A_IsCompiled {
-    ;     AHK2EXEPath := "AHK2EXE\Ahk2Exe.exe"
-    ;     baseExe := "AHK_BASE\AutoHotkeyUX.exe"
+    if !A_IsCompiled {
+        AHK2EXEPath := "AHK2EXE\Ahk2Exe.exe"
+        baseExe := "AHK_BASE\AutoHotkeyUX.exe"
 
-    ;     if FileExist(AHK2EXEPath) && FileExist(baseExe) {
-    ;         scriptPath := A_ScriptFullPath
-    ;         exePath := A_ScriptDir "\compile_scripts.exe"
-    ;         quotedBase := '"' baseExe '"'
+        if FileExist(AHK2EXEPath) && FileExist(baseExe) {
+            scriptPath := A_ScriptFullPath
+            exePath := A_ScriptDir "\compile_scripts.exe"
+            quotedBase := '"' baseExe '"'
 
-    ;         cmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
-    ;         RunWait cmd, , "Hide"
+            cmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
+            RunWait cmd, , "Hide"
 
-    ;         if FileExist(exePath) {
-    ;             ShowCenteredToolTip "compiled dist.ahk"
-    ;         }
-    ;     }
-    ; }
+            if FileExist(exePath) {
+                ShowCenteredToolTip "compiled dist.ahk"
+            }
+        }
+    }
     sleep 2000
     ExitApp
 }
@@ -220,6 +217,7 @@ BuildOpenCVEngine(parentDir) {
     FileCopy builtExe, outputFile, true
 
     try DirDelete(buildDir "\nuitka_temp", true)
+    try FileDelete(builtExe)
 
     if !FileExist(outputFile) {
         MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
@@ -272,6 +270,10 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
     distStandaloneDir := distFolder "standalone"
     bundleFile := distFolder "vaultOps-Standalone-Pack.exe"
     standaloneExtractionFolder := "vaultOps-Standalone-Pack"
+    standaloneUpdaterInFile := parentDir "\lib\standaloneUpdate.ahk"
+    standaloneUpdaterOutFile := parentDir "\lib\standaloneUpdater.exe"
+
+    standaloneUpdaterCmd := '"' AHK2EXEPath '" /in "' standaloneUpdaterInFile '" /out "' standaloneUpdaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
 
     imageFolders := ["1366x768", "1600x900", "1920x1080"]
 
@@ -295,7 +297,11 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
     if FileExist(bundleFile)
         try FileDelete(bundleFile)
 
-    if (!packageBuilds || FileExist(rarExe)) {
+    ShowCenteredToolTip "Compiling standalone updater"
+    if (compileStandalone)
+        RunWait standaloneUpdaterCmd, , "Hide"
+
+    if (FileExist(rarExe)) {
 
         ; cleanup temp ahks
         loop files, standaloneDir "\temp_*.ahk", "F" {
@@ -424,18 +430,22 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             else
                 exeName := StrReplace(scriptName, ".ahk", ".exe")
 
-            outExe := distStandaloneDir "\" exeName
+            ShowCenteredToolTip "Compiling: " exeName
+
+            outExe := distFolder "\" exeName
 
             cmd := '"' AHK2EXEPath '" /in "' script '" /out "' outExe '" /icon "' iconPath '" /compress 0 /base ' quotedBase
 
             RunWait cmd, , "Hide"
 
+            ShowCenteredToolTip "Compiled: " exeName
+
             ; copy directly to dist root
-            try FileCopy(
-                outExe,
-                distFolder exeName,
-                true
-            )
+            ; try FileCopy(
+            ;     outExe,
+            ;     distFolder exeName,
+            ;     true
+            ; )
 
             ; don't add to compiledExeList
         }
@@ -497,6 +507,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 
         ; cleanup temporary standalone staging folder
         try DirDelete(distStandaloneDir, true)
+        try FileDelete(standaloneUpdaterOutFile)
 
         ShowCenteredToolTip "Standalone bundle packaging complete."
 

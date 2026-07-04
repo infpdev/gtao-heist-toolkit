@@ -498,7 +498,7 @@ class FingerprintSolver {
         }
 
         static lastFoundAnchor := 0
-        CustomTooltip "", , , 18
+        Tooltip "", , , 18
 
         if (A_TickCount - lastFoundAnchor < 2000 && this.foundAnchor) {
             return true
@@ -601,15 +601,15 @@ class FingerprintSolver {
                     }
 
                     this.lastSeenPrint := i
-                    CustomTooltip("Found fingerprint " i, Round(x1 + ((x2 - x1) / 2) - (this.scrW * 0.04)), Round(
+                    Tooltip("Found fingerprint " i, Round(x1 + ((x2 - x1) / 2) - (this.scrW * 0.04)), Round(
                         this.scrH / 2), 17)
                     this.anchorGroup := group
                     return group
                 }
                 else {
                     if (debug) {
-                        CustomTooltip "⇲", x1, y1, 15 ; Debug: show search area top-left "." arrow / area
-                        CustomTooltip "⇱", x2, y2, 16 ; Debug: show search area bottom-right "." arrow / area
+                        Tooltip "⇲", x1, y1, 15 ; Debug: show search area top-left "." arrow / area
+                        Tooltip "⇱", x2, y2, 16 ; Debug: show search area bottom-right "." arrow / area
                     }
                 }
             } catch {
@@ -639,7 +639,7 @@ class FingerprintSolver {
             try this.detected[N] := false
             if this.pArr.Has(N)
                 this.pArr.Delete(N)
-            CustomTooltip("", , , N)
+            Tooltip("", , , N)
         }
     }
 
@@ -723,7 +723,7 @@ class FingerprintSolver {
                     : slotData.arrow " " N)
                 : slotData.arrow
 
-        CustomTooltip(text, tTipX, tTipY, N)
+        Tooltip(text, tTipX, tTipY, N)
     }
 
     markPrints(prevArr, currArr) {
@@ -745,7 +745,7 @@ class FingerprintSolver {
         ; remove marks that no longer exist
         for _, val in prevArr {
             if (val != "" && !currMap.Has(val)) {
-                CustomTooltip("", , , val)
+                Tooltip("", , , val)
             }
         }
 
@@ -788,7 +788,7 @@ class FingerprintSolver {
             }
             ; Sleep 10
             times := val - prev
-            ; CustomTooltip "Sending Down " times " times`npArr length: " this.pArr.Length, 50, 50, 19
+            ; Tooltip "Sending Down " times " times`npArr length: " this.pArr.Length, 50, 50, 19
             ; sleep 200
             if (Mod(times, 2) == 0) {
                 times := times / 2
@@ -909,7 +909,7 @@ class FingerprintSolver {
     clearAll() {
         this.anchorGroup := []
         loop 19
-            CustomTooltip("", , , A_Index)
+            Tooltip("", , , A_Index)
     }
 
 }

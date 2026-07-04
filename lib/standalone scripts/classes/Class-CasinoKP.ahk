@@ -147,7 +147,7 @@ class KeypadSolver {
         this.prevRingRow := 1
 
         this.clearAll()
-        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; CustomTooltip replacement
+        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; Tooltip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -176,7 +176,7 @@ class KeypadSolver {
         try SetTimer this.fnCheckFalsePositive, 0
 
         loop 19
-            CustomTooltip("", , , A_Index)
+            Tooltip("", , , A_Index)
     }
 
     /**
@@ -482,7 +482,7 @@ class KeypadSolver {
                 this.showKeys()
             }
             if (debug)
-                CustomTooltip "Stabilized? " this.stabilized, this.scrW / 2, 10, 19
+                ShowCenteredToolTip "Stabilized? " this.stabilized, 19
 
         }
     }
@@ -506,7 +506,7 @@ class KeypadSolver {
         if (this.highRes)
             return false
 
-        CustomTooltip "", , , 18
+        Tooltip "", , , 18
         if (A_TickCount - lastCalled < 1000 && this.foundAnchor) {
             return this.prevFoundPixel
         }
@@ -621,7 +621,7 @@ class KeypadSolver {
                     x1a := x1, x2a := x2, y1a := y1, y2a := y2
                 }
                 if (debug)
-                    CustomTooltip "Col " col ": Searching", this.baseXImg + (col - 1) * this.spacing, this.baseYImg -
+                    Tooltip "Col " col ": Searching", this.baseXImg + (col - 1) * this.spacing, this.baseYImg -
                     20,
                     col
 
@@ -639,7 +639,7 @@ class KeypadSolver {
                     found := true
                     x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
                     y := this.baseYImg + (row - 1) * (this.spacing)
-                    CustomTooltip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)),
+                    Tooltip "⛛", x - (10 * ((1920 / this.scrW) ** 0.5)), y - (18 * ((1080 / this.scrH) ** 0.8)),
                     col
                 }
                 attempt++
@@ -1026,7 +1026,7 @@ class KeypadSolver {
         }
 
         if found {
-            CustomTooltip "", , , col
+            Tooltip "", , , col
             if (this.cols.Has(col))
                 this.cols.Delete(col)
             if (this.cols.Count = 0 || col == 6) {
@@ -1048,7 +1048,7 @@ class KeypadSolver {
             col := A_Index
 
             if !this.cols.Has(col)
-                CustomTooltip("", , , col)
+                Tooltip("", , , col)
         }
 
         ; draw active cols
@@ -1056,7 +1056,7 @@ class KeypadSolver {
             x := this.baseXImg + (col - 1) * (this.spacing) + (this.circleRadius / 2)
             y := this.baseYImg + (c.row - 1) * (this.spacing)
 
-            CustomTooltip(
+            Tooltip(
                 "⛛",
                 x - (10 * ((1920 / this.scrW) ** 0.5)),
                 y - (18 * ((1080 / this.scrH) ** 0.8)),
@@ -1089,7 +1089,7 @@ class KeypadSolver {
         }
         if (out = "")
             out := "No mapping found."
-        CustomTooltip out, this.scrW * 0.105, (this.scrH * 0.4), 17
+        Tooltip out, this.scrW * 0.105, (this.scrH * 0.4), 17
     }
 
     /**
@@ -1100,7 +1100,7 @@ class KeypadSolver {
     ResetState(*) {
         SetTimer this.fnMainLoop, 0
         loop 19
-            CustomTooltip("", , , A_Index)
+            Tooltip("", , , A_Index)
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -1110,13 +1110,13 @@ class KeypadSolver {
         this.needStatusUpdate := true
         this.cvNoCircleSince := 0
         this.cvGridStableSince := 0
-        ; CustomTooltip "Resetting state", this.scrW / 2, 10, 19
+        ; Tooltip "Resetting state", this.scrW / 2, 10, 19
         Sleep 2500
         SetTimer this.fnMainLoop, 100
     }
 
     clearAll() {
         loop 18
-            ToolTip("", , , A_Index)
+            Tooltip("", , , A_Index)
     }
 }

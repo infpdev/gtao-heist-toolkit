@@ -217,7 +217,7 @@ Terminate(*) {
 
         ShowCenteredToolTip "GTA must be focused to terminate the script", 1
 
-        SetTimer(() => (CustomTooltip()
+        SetTimer(() => (ToolTip()
         UpdateTooltip()), -5000)
         showedWarning := true
     }
