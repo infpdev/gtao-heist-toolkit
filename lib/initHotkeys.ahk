@@ -4,7 +4,11 @@
 ; VaultOps app data directory and settings backup path
 global AppDataDir := A_AppData "\vaultOps"
 global settingsBackup := AppDataDir "\zSettings.ini"
-global dir := DirGetParent(A_ScriptDir)
+
+if !HasVaultOpsMarkers(DirGetParent(A_ScriptDir))
+    global dir := A_ScriptDir
+else
+    global dir := DirGetParent(A_ScriptDir)
 global iniFile := dir "\zSettings.ini"
 
 EnsureSettingsFile()

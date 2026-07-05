@@ -1,8 +1,8 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-#Include ../initHotkeys.ahk
 #Include ../updateCheck.ahk
+#Include ../initHotkeys.ahk
 
 global noSaveActive := false
 

@@ -27,7 +27,9 @@ isNoSaveStandalone := isStandaloneScript && InStr(A_ScriptName, "NoSave")
 if !IsSet(vaultOps)
     global vaultOps := false
 
-validataFiles(dir)
+if (!isNoSaveStandalone)
+    validataFiles(dir)
+
 CheckForUpdate()
 checkResolution()
 
