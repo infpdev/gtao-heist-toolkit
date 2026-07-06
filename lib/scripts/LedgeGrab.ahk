@@ -13,7 +13,7 @@ ToggleLedgeGrabInProgress(*) {
 
     BlockInput 0
 
-    if (!LedgeGrabRunningSignal) {
+    if (!LedgeGrabRunningSignal && !ledgeGrabInProgress) {
 
         if (!LastRequestFinished()) {
             ShowCenteredToolTip "Failed to enable ledge grab", 17
@@ -128,6 +128,7 @@ LoopArrowUp() {
 
 ; Helper function that waits until the screen is no longer black, or until a timeout occurs.
 SleepIfBlack() {
+    global ledgeGrabInProgress, LedgeGrabRunningSignal
     static centerX := A_ScreenWidth // 2
     static centerY := A_ScreenHeight // 2
     static timeoutMs := 3000
@@ -144,7 +145,8 @@ SleepIfBlack() {
 
         if (A_TickCount - startTime > timeoutMs) {
             ; MsgBox "Failed here"
-            global ledgeGrabInProgress := false
+            ledgeGrabInProgress := false
+            LedgeGrabRunningSignal := false
             BlockInput 0
             ToolTip("", , , 17)
             UpdateGlobalStatus(hackInProgress)
@@ -195,7 +197,7 @@ RegisterLedgeGrabHotkey(shouldRegister := true, unregisterKey := "") {
         } else {
             if (unregisterKey == "")
                 unregisterKey := ledgeGrabKey
-            try Hotkey(CanonicalToRegistration(unregisterKey), ToggleLedgeGrabInProgress, "Off")
+            try Hotkey(CanonicalToRegistration(unregisterKey), "Off")
             return true
         }
     }
@@ -227,6 +229,7 @@ DisableLedgeGrabIfGtaNotFocused() {
         BlockInput 0
 
         ledgeGrabInProgress := false
+        LedgeGrabRunningSignal := false
         UpdateGlobalStatus(hackInProgress)
         ShowCenteredToolTip "Ledge grab disabled (GTA not focused)", 17
         SetTimer(() => (ToolTip("", , , 17)), -2000)

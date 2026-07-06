@@ -309,13 +309,13 @@ ToggleDebugChord(*) {
     debug := !debug
 
     if (debug) {
-        Hotkey("F2", (*) => Reload(), "On")
-        Hotkey("F3", (*) => ExitApp(), "On")
+        Hotkey("F2 Up", (*) => Reload(), "On")
+        Hotkey("F3 Up", (*) => ExitApp(), "On")
         ShowCenteredToolTip "Debug mode enabled", 17
         sleep 1000
     } else {
-        try Hotkey("F2", "Off")
-        try Hotkey("F3", "Off")
+        try Hotkey("F2 Up", "Off")
+        try Hotkey("F3 Up", "Off")
         ShowCenteredToolTip "Debug mode disabled", 17
         sleep 1000
     }

@@ -177,6 +177,8 @@ SendAfkKeyOnce(*) {
         if (recallDelay != 0) {
             ShowCenteredToolTip "Triggered Anti-AFK", 1
 
+            SetTimer(() => (ToolTip(, , , 1)), -2000)
+
             DllCall("mouse_event", "UInt", 0x0001, "Int", Random(-500, 500), "Int", 0, "UInt", 0, "UPtr", 0)
             Send "{" afkKeyReg "}"
         } else {

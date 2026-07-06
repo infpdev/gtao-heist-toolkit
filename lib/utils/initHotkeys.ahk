@@ -158,7 +158,7 @@ isGtaFocusedForUtilities(showWarning := true) {
     if (GtaNotRunning()) {
         return false
     }
-    gtaActive := (WinActive("ahk_exe GTA5.exe") || WinActive("ahk_exe GTA5_Enhanced.exe"))
+    gtaActive := (WinActive(GTA_LEGACY_EXE) || WinActive(GTA_ENHANCED_EXE))
     if (!gtaActive && showWarning) {
         ShowCenteredToolTip "GTA is not the active window. Please focus GTA to use this utility", 1
         SetTimer UpdateTooltip, -5000

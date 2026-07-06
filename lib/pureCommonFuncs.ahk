@@ -53,12 +53,14 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
     }
 }
 
+global GTA_ENHANCED_EXE := "ahk_exe GTA5_Enhanced.exe"
+global GTA_LEGACY_EXE := "ahk_exe GTA5.exe"
+
 getGtaHwnd() {
     static gtaMatchers := [
-        "ahk_exe GTA5_Enhanced.exe",
+        GTA_ENHANCED_EXE,
         "ahk_exe GTA5_Enhanced",
-        "GTA5_Enhanced",
-        "GTA5"
+        GTA_LEGACY_EXE,
     ]
 
     for matcher in gtaMatchers {

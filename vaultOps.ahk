@@ -46,8 +46,8 @@ global vaultOps := true
 if debug {
     CustomTooltip "In Debug mode", 0, 0, 20
     sleep 100
-    Hotkey("F2", (*) => Reload())
-    Hotkey("F3", (*) => ExitApp())
+    Hotkey("F2 Up", (*) => Reload())
+    Hotkey("F3 Up", (*) => ExitApp())
 }
 
 global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnResetHotkey := ResetScriptsHotkey,
@@ -827,7 +827,7 @@ Init() {
     {
         ; Ledge-Grab label
         ledgeGrabInstrOffset := 20 / scale
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Ledge grab:")
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Ledge Grab:")
         ; Ledge-Grab toggle
         picLedgeGrabEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
         scale " +0x4",

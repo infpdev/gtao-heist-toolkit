@@ -17,15 +17,15 @@ isGtaFocused(excludeGui := false, strict := false) {
     }
 
     return ((!strict && debug) ||
-    WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe")
+    WinActive(GTA_ENHANCED_EXE)
+    || WinActive(GTA_LEGACY_EXE)
     || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
 }
 
 isGtaFocusedStandalone(excludeGui := true, strict := false) {
     global debug
-    return (WinActive("ahk_exe GTA5.exe")
-    || WinActive("ahk_exe GTA5_Enhanced.exe") || (debug && !strict))
+    return (WinActive(GTA_LEGACY_EXE)
+    || WinActive(GTA_ENHANCED_EXE) || (debug && !strict))
 }
 
 /**

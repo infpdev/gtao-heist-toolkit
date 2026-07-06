@@ -123,10 +123,13 @@ Use responsibly, and avoid overusing the **NoSave** replay glitch.
 </details>
 
 Everything runs externally, similar to a macro tool, with a GUI designed for ease of use.
+
+
 ## Requirements
 
 - **Windows** (tested on Windows 11)  
-- **GTA Online** — tested on E&E, may also work on Legacy  
+- **GTA Online** — tested and supported on both **Enhanced** and **Legacy**
+- **60 FPS** or more *(required only for Buffered Ledge Grab Automation)*
 - The game should be running in **Borderless Fullscreen** or **Borderless Windowed** mode  
 - **Supported resolutions**
   - Supports all common **16:9** and **21:9 ultrawide** resolutions
@@ -152,7 +155,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/ed6665cfcb7b7d617fd472bfa147d375e5fc20b6ab9749d3f4ded467b394d8ee
+> https://www.virustotal.com/gui/file/a70593feb4601e36926f9839077574d54a8ee970d04e06c8311f1f9ee8b30343
 
 
 <p align="center">
