@@ -16,8 +16,16 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
     DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
 
     size := Buffer(8)
-    DllCall("GetTextExtentPoint32", "ptr", hdc, "str", text, "int", StrLen(text), "ptr", size)
-    width := NumGet(size, 0, "int")
+    maxWidth := 0
+
+    for line in StrSplit(text, "`n") {
+        DllCall("GetTextExtentPoint32", "ptr", hdc, "str", line, "int", StrLen(line), "ptr", size)
+        width := NumGet(size, 0, "int")
+        if (width > maxWidth)
+            maxWidth := width
+    }
+
+    width := maxWidth
 
     DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
 

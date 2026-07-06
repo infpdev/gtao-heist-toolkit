@@ -129,21 +129,26 @@ CheckForUpdate() {
         }
 
     }
-    catch {
+    catch as err {
         if (disableUpdates) {
             ShowCenteredToolTip "Failed to check for updates • updates disabled"
             Sleep 2000
             ToolTip "", , , 10
             return
         }
-        msg := "v" ver "`n`nFailed to check for updates.`n`n"
-            . "If you think this is an error, please download the latest version manually.`n`n"
-            . "Do you want to see the update instructions?"
-        res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
-        if (res = "Yes") {
-            Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone ? "3" : "2")
-        }
-        ExitApp
+
+        ShowCenteredToolTip "Failed to check for updates: " err.Message
+        Sleep 2000
+        ToolTip "", , , 10
+        return
+        ; msg := "v" ver "`n`nFailed to check for updates.`n`n"
+        ;     . "If you think this is an error, please download the latest version manually.`n`n"
+        ;     . "Do you want to see the update instructions?"
+        ; res := MsgBox(msg, "Failed to Check For Updates", "YesNo Default2 T15 " . 0x10)
+        ; if (res = "Yes") {
+        ;     Run "https://infpdev.netlify.app?vaultOps=" . (isNoSaveStandalone ? "3" : "2")
+        ; }
+        ; ExitApp
     }
 }
 
