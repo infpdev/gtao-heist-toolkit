@@ -28,6 +28,17 @@ Done!
 > This means you no longer need to extract updates into the same folder to keep your configuration.
 
 <details>
+<summary><b>vaultOps v4.67.69 changes</b></summary>
+
+Please read the [v4.67.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.67.69) for detailed information about:
+
+* Compatibility with the **Kortz Center** heist
+* Updated standalone **Fingerprint** and **Keypad** solvers for Kortz compatibility
+* Improved **Keypad** solver reliability
+
+</details>
+
+<details>
 <summary><b>vaultOps v4.20.69 changes</b></summary>
 
 Please read the [v4.20.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69) for detailed information about:

@@ -190,7 +190,7 @@ class ElRubioSolver {
                 this.autoStarted := false
 
             if (this.needStatusUpdate && this.foundAnchor) {
-                updateGlobalStatus(true, , , "ElRubioSolver.tryOpenCV()")
+                updateGlobalStatus(true, , , "ElRubioSolver.tryOpenCV()", true)
                 this.needStatusUpdate := false
             }
 

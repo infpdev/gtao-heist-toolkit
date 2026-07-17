@@ -21,7 +21,7 @@ SetBatchLines := -1
 global scrW := A_ScreenWidth, scrH := A_ScreenHeight
 global hackMode := "idle", hackInProgress := false
 global fingerprintMode := true, debug := !A_IsCompiled
-global heist := DIAMOND_CASINO
+global heist := DCH_OR_KORTZ
 global engine := OPENCV_ENGINE
 global pgUpSent := false
 global ledgeGrabEnabled := true, ledgeGrabInProgress := false, LedgeGrabRunningSignal := false
@@ -54,6 +54,15 @@ try {
 } catch {
     MsgBox "Failed to register Terminate hotkey. Please check your settings.", "Hotkey Registration Failed", 48
 }
+try {
+    if (debug) {
+        Hotkey("F2 Up", (*) => Reload(), "On")
+        Hotkey("F3 Up", (*) => ExitApp(), "On")
+    }
+} catch {
+    MsgBox "Failed to register debug hotkeys. Please check your settings.", "Hotkey Registration Failed", 48
+}
+
 RegisterLedgeGrabHotkey(true)
 
 LoadCache()
@@ -150,7 +159,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     }
 
     if (hackMode == "idle") {
-        if (heist == DIAMOND_CASINO) {
+        if (heist == DCH_OR_KORTZ) {
             hackStatus := fingerprintMode ? "Fingerprint mode (idle)" : "Keypad mode (idle)"
         } else if (heist == CAYO_PERICO) {
             hackStatus := "El Rubio mode (idle)"
@@ -164,7 +173,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
                 hackStatus .= (hackMode == "manual") ? "(Manual)" : "(Hacking)"
                 hackInProgress := true
             }
-            else if (heist == DIAMOND_CASINO) {
+            else if (heist == DCH_OR_KORTZ) {
                 hackStatus := (fingerprintMode ? "Fingerprint mode " : "Keypad mode ")
                 hackStatus .= (hackMode == "manual") ? "(Manual)" : "(Hacking)"
                 hackInProgress := true
@@ -175,7 +184,7 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
             if (heist == CAYO_PERICO) {
                 hackStatus := "El Rubio mode " (hackMode == "manual" ? "(Manual)" : "(Auto)")
             }
-            else if (heist == DIAMOND_CASINO) {
+            else if (heist == DCH_OR_KORTZ) {
                 hackStatus := "Waiting for " (fingerprintMode ? "fingerprint" : "keypad") " " ((hackMode ==
                     "manual") ?
                     "(Manual)" : "(Auto)")

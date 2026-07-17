@@ -1,5 +1,5 @@
 #Include ../standaloneHelpers.ahk
-#Include classes\Class-CasinoFP.ahk
+#Include classes\Class-FP.ahk
 
 init() {
     global heistinstance

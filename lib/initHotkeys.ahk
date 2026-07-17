@@ -13,6 +13,45 @@ global iniFile := dir "\zSettings.ini"
 
 EnsureSettingsFile()
 
+; =============================== Boolean Flags ===============================
+
+/** @vaultOps
+ *  Boolean state for noSave mode, can be toggled with the assigned hotkey<br>
+ * Resets to false on exit.
+ */
+global noSave := 0
+
+/** @vaultOps
+ *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey<br>
+ * Resets to false on exit.
+ */
+global scriptsEnabled := 0
+
+/** @vaultOps
+ *  String state that represents the casino mode based on the value of `heist`
+ */
+global DCH_OR_KORTZ := 1
+
+/** @vaultOps
+ *  String state that represents the cayo perico heist based on the value of `heist`
+ */
+global CAYO_PERICO := 0
+
+/** @vaultOps
+ *  Boolean state that represents the AHK detection (0)
+ */
+global AHK_ENGINE := 0
+
+/** @vaultOps
+ *  Boolean state that represents the OpenCV detection (1)
+ */
+global OPENCV_ENGINE := 1
+
+; Used to prevent OpenCV callbacks from running while the script is exiting
+global isShuttingDown := false
+
+; =============================== Ini variables ===============================
+
 /**
  * Set the Tooltip anchor position.
  * 1 = Top Left, 2 = Middle Left, 3 = Bottom Left
@@ -28,18 +67,6 @@ global toolTipPos := IniRead(iniFile, "Options", "ToolTipPos", "4")
  * Zero is the default position, which is the exact anchor position
  */
 global tooltipYOffset := IniRead(iniFile, "Options", "ToolTipYOffset", "0")
-
-/** @vaultOps
- *  Boolean state for noSave mode, can be toggled with the assigned hotkey<br>
- * Resets to false on exit.
- */
-global noSave := 0
-
-/** @vaultOps
- *  Boolean state for whether the main scripts are enabled, can be toggled with the assigned hotkey<br>
- * Resets to false on exit.
- */
-global scriptsEnabled := 0
 
 /** Boolean state for whether ledge grab automation is enabled, can be toggled in the GUI
  */
@@ -57,38 +84,15 @@ global ledgeGrabKey := NormalizeHotkeyValue(IniRead(iniFile, "Hotkeys", "LedgeGr
 global heist := IniRead(iniFile, "Options", "heist", 1)
 
 /** @vaultOps
- *  String state that represents the casino mode based on the value of `heist`
- */
-global DIAMOND_CASINO := 1
-
-/** @vaultOps
- *  String state that represents the cayo perico heist based on the value of `heist`
- */
-global CAYO_PERICO := 0
-
-/** @vaultOps
  *  Boolean state that determines the type of hack, 1 for fingerprint hacking, 0 for keypad.
  */
 global fingerprintMode := IniRead(iniFile, "Options", "FingerprintMode", 1)
-
-/** @vaultOps
- *  Boolean state that represents the AHK detection (0)
- */
-global AHK_ENGINE := 0
-
-/** @vaultOps
- *  Boolean state that represents the OpenCV detection (1)
- */
-global OPENCV_ENGINE := 1
 
 /** @vaultOps
  *  Boolean state that determines the anchor detection engine, 1 for OpenCV, 0 for legacy AHK detection.
  * OpenCV by default.
  */
 global engine := IniRead(iniFile, "Options", "Engine", 1)
-
-; Used to prevent OpenCV callbacks from running while the script is exiting
-global isShuttingDown := false
 
 /** @vaultOps
  * Hotkey to toggle noSave mode which prevents the script from saving progress, useful during heists

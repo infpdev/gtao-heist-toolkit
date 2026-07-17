@@ -62,7 +62,7 @@ def is_in(img, subimg, threshold=0.65):
     return max_val >= threshold
 
 
-def scan_fingerprint_slots(img=None, threshold=0.65, debug=False):
+def get_fingerprints(img=None, threshold=0.65, debug=False):
     """Detect candidate fingerprint slots from the prepared game frame.
 
     Returns:
@@ -163,7 +163,7 @@ def scan_fingerprint_slots(img=None, threshold=0.65, debug=False):
 
 def main(debug=False):
     """Run fingerprint scan against live capture and return solver payload."""
-    result = scan_fingerprint_slots(None, debug=debug)
+    result = get_fingerprints(None, debug=debug)
     return result
 
 if __name__ == "__main__":
@@ -176,4 +176,4 @@ if __name__ == "__main__":
 
     processed = prepare_detection_image(0.5, img)
 
-    scan_fingerprint_slots(processed, debug=True)
+    get_fingerprints(processed, debug=True)

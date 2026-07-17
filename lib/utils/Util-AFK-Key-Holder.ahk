@@ -219,8 +219,8 @@ Terminate(*) {
 
         ShowCenteredToolTip "GTA must be focused to terminate the script", 1
 
-        SetTimer(() => (ToolTip()
-        UpdateTooltip()), -5000)
+        SetTimer UpdateTooltip, -5000
+
         showedWarning := true
     }
 }
@@ -317,6 +317,7 @@ GetAfkDisplayKey() {
  */
 UpdateTooltip(terminationStart := 0) {
     global afkHolding, afkKeyReg, terminateKeyReg, tooltipYOffset
+    ToolTip()
 
     keyLabel := StrTitle(GetAfkDisplayKey())
     terminateLabel := StrTitle(GetKeyName(terminateKeyReg))

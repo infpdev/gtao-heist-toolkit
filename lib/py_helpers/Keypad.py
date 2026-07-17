@@ -68,21 +68,26 @@ def _grid_metrics(scale: float):
     return base_x1, base_y1, base_x2, base_y2, col_spacing, row_spacing, row_base, col_base
 
 
-def detect_keypad(image=None, scale=0.5, debug=False):
+def get_keypad(image=None, scale=0.5, debug=False, cols=6):
     """Detect all 6 keypad columns in one call and return the row values."""
     image = _prepare_image(image, scale)
     if image is None:
         return False
+    
+    if cols==6:
+        is_kortz = is_kortz_heist(image=image, scale=scale, col=0, debug=debug)
+        if is_kortz:
+            cols = 5
 
     base_x1, base_y1, base_x2, base_y2, col_spacing, row_spacing, row_base, _ = _grid_metrics(scale)
 
-    lower_cyan = np.array([90, 40, 20])
-    upper_cyan = np.array([150, 255, 255])
+    lower_cyan = np.array([88, 140, 150])
+    upper_cyan = np.array([102, 255, 255])
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     debug_img = image.copy() if debug else None
 
     cols_data = []
-    for col in range(6):
+    for col in range(cols):
         x1 = base_x1 + (col * col_spacing)
         x2 = base_x2 + (col * col_spacing)
         y1 = base_y1
@@ -99,23 +104,32 @@ def detect_keypad(image=None, scale=0.5, debug=False):
         search_region = image[y1:y2, x1:x2]
         hsv = cv2.cvtColor(search_region, cv2.COLOR_RGB2HSV)
         cyan_mask = cv2.inRange(hsv, lower_cyan, upper_cyan)
-        cyan_mask = cv2.morphologyEx(cyan_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+        raw_mask = cv2.inRange(hsv, lower_cyan, upper_cyan)
+
+        # if debug:
+        #     cv2.imwrite("raw_mask.png", raw_mask)
+
+        cyan_mask = cv2.morphologyEx(
+            raw_mask,
+            cv2.MORPH_CLOSE,
+            kernel,
+            iterations=2
+        )
+            
 
         contours, _ = cv2.findContours(cyan_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
             cols_data.append(-1)
             continue
 
-        # --- filter valid contours ---
         valid = []
         for cnt in contours:
             area = cv2.contourArea(cnt)
-            if area < 80:   # ↑ was 20 → too small, noise passes
+            if area < 80:
                 continue
 
             x, y, w, h = cv2.boundingRect(cnt)
 
-            # reject thin noise (your false detection is exactly this)
             if w < 8 or h < 8:
                 continue
 
@@ -130,7 +144,6 @@ def detect_keypad(image=None, scale=0.5, debug=False):
             cols_data.append(-1)
             continue
 
-        # pick strongest remaining
         largest_contour = max(valid, key=lambda x: x[1])[0]
 
         moments = cv2.moments(largest_contour)
@@ -159,9 +172,8 @@ def detect_keypad(image=None, scale=0.5, debug=False):
             cx_local = int(moments["m10"] / moments["m00"])
             cx_full = x1 + cx_local
             cv2.circle(debug_img, (cx_full, cy_full), 5, (0, 0, 255), -1)
+            print(hsv[cy_local, cx_local])
 
-    # If no circles are visible, tell the caller explicitly with -1 so it can
-    # keep polling until the flashing stops.
     if any(v == -1 for v in cols_data):
         if debug:
             _dump_debug_image(debug_img, "keypad_debug.png")
@@ -172,8 +184,85 @@ def detect_keypad(image=None, scale=0.5, debug=False):
 
     return ",".join(map(str, cols_data))
 
+def is_kortz_heist(image=None, scale=0.5, col=0, debug=False):
+    """
+    Returns True if the selected column looks like the Kortz puzzle
+    (bottom circle is dark while the four above are gray).
+    """
 
-def detect_ring(image=None, scale=0.3, debug=False, col=None):
+    if image is None:
+        image = _prepare_image(None, scale)
+    if image is None:
+        return False
+
+    base_x1, base_y1, base_x2, base_y2, col_spacing, row_spacing, _, _ = _grid_metrics(scale)
+
+    x1 = base_x1 + col * col_spacing
+    x2 = base_x2 + col * col_spacing
+
+    x1 = max(0, min(image.shape[1] - 1, x1))
+    x2 = max(x1 + 1, min(image.shape[1], x2))
+
+    lower_cyan = np.array([90, 40, 20])
+    upper_cyan = np.array([150, 255, 255])
+
+    row_h = (base_y2 - base_y1) / 5
+
+    brightness = []
+    cyan_counts = []
+
+    for row in range(5):
+        cy = int(base_y1 + row_h * (row + 0.5))
+        cx = int((x1 + x2) / 2)
+
+        r = int(row_h * 0.4)
+
+        roi = image[
+            max(0, cy - r):min(image.shape[0], cy + r),
+            max(0, cx - r):min(image.shape[1], cx + r)
+        ]
+
+        if roi.size == 0:
+            brightness.append(None)
+            cyan_counts.append(0)
+            continue
+
+        hsv = cv2.cvtColor(roi, cv2.COLOR_RGB2HSV)
+        gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+
+        count = cv2.countNonZero(cv2.inRange(hsv, lower_cyan, upper_cyan))
+
+        cyan_counts.append(count)
+        brightness.append(float(gray.mean()))
+
+    avg_cyan = sum(cyan_counts) / len(cyan_counts)
+
+    for i in range(5):
+        if cyan_counts[i] > avg_cyan * 1.5:
+            brightness[i] = None
+
+    bottom = brightness[4]
+    if bottom is None:
+        return False
+
+    valid = [b for b in brightness[:4] if b is not None]
+
+    if len(valid) < 3:
+        return False
+
+    avg_upper = sum(valid) / len(valid)
+    diff = avg_upper - bottom
+
+    if debug:
+        print("Cyan:", cyan_counts)
+        print("Brightness:", brightness)
+        print("Upper:", valid)
+        print("Bottom:", bottom)
+        print("Diff:", diff)
+
+    return diff > 15
+
+def detect_ring(image=None, scale=0.5, debug=False, col=None):
     """Detect the keypad ring position and map it to row 1..5.
 
     Args:
@@ -238,14 +327,24 @@ def detect_ring(image=None, scale=0.3, debug=False, col=None):
             circles = np.uint16(np.around(circles[0]))
 
             best = None
-            best_score = 999
+            best_score = -1
 
             for cx, cy, r in circles:
-                patch = gray[max(0, cy - 2):cy + 3, max(0, cx - 2):cx + 3]
-                center_val = int(np.mean(patch)) if patch.size else 255
+                # Brightness of the ring itself
+                ring_mask = np.zeros_like(gray, np.uint8)
+                cv2.circle(ring_mask, (cx, cy), r, 255, 2)
+                ring_score = cv2.mean(gray, mask=ring_mask)[0]
 
-                if center_val < best_score:
-                    best_score = center_val
+                # Darkness of the center
+                center_mask = np.zeros_like(gray, np.uint8)
+                cv2.circle(center_mask, (cx, cy), max(2, r // 3), 255, -1)
+                center_score = cv2.mean(gray, mask=center_mask)[0]
+
+                # Ring should be bright while center stays dark
+                score = ring_score - center_score
+
+                if score > best_score:
+                    best_score = score
                     best = (cx, cy, r)
 
             if best is None:
@@ -362,9 +461,8 @@ def detect_column_selected(image=None, col=1, scale=0.5, debug=False):
     # Convert to HSV and detect cyan patches
     hsv = cv2.cvtColor(search_region, cv2.COLOR_RGB2HSV)
     
-    # Cyan range: H [90-150], S [40-255], V [20-255]
-    lower_cyan = np.array([90, 40, 20])
-    upper_cyan = np.array([150, 255, 255])
+    lower_cyan = np.array([88, 140, 150])
+    upper_cyan = np.array([102, 255, 255])
     cyan_mask = cv2.inRange(hsv, lower_cyan, upper_cyan)
     
     # Morphological operations to remove noise and connect nearby pixels
@@ -436,17 +534,23 @@ def detect_column_selected(image=None, col=1, scale=0.5, debug=False):
 
 
 if __name__ == "__main__":
-    base_dir = os.path.dirname(__file__)
-    img_path = os.path.join(base_dir, "zkeypadwide.png")
+    # base_dir = os.path.dirname(__file__)
+    # img_path = os.path.join(base_dir, "zkeypadwide.png")
 
-    img = cv2.imread(img_path)
+    # img = cv2.imread(img_path)
 
-    if img is None:
-        raise FileNotFoundError(img_path)
+    # if img is None:
+    #     raise FileNotFoundError(img_path)
 
-    # BGR -> RGB
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # # BGR -> RGB
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    
+    # result = detect_keypad(image=None, scale=0.5, debug=True, cols=6)
+    
+    result = detect_ring(image=None, scale=0.5, debug=True)
 
-    result = detect_ring(image=img, debug=True, col=4)
+    # result = detect_column_selected(image=None, debug=True, col=2)
+    
+    # result = is_kortz_heist(image=None, scale=0.5, col=0, debug=True)
 
     print(result)

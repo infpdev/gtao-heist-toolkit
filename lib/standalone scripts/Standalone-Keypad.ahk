@@ -1,5 +1,5 @@
 #Include ../standaloneHelpers.ahk
-#Include classes\Class-CasinoKP.ahk
+#Include classes\Class-KP.ahk
 
 global fingerprintMode := 0
 

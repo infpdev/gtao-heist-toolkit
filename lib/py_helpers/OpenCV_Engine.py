@@ -35,8 +35,8 @@ except Exception:
 sys.excepthook = log_exception
 
 try:
-    from casinofingerprint import scan_fingerprint_slots
-    from cayofingerprint import detect_fingerprint
+    from Fingerprint import get_fingerprints
+    from Rubio import get_cayo_prints
     from anchorDetection import (
         run_anchor_detectors,
         keypadAnchor,
@@ -46,7 +46,7 @@ try:
         is_black_area_present_keypad,
         is_black_area_present_cayo,
     )
-    from casinokeypad import detect_ring, detect_column_selected, detect_keypad
+    from Keypad import detect_ring, detect_column_selected, get_keypad
 except Exception:
     write_crash_log(traceback.format_exc())
     raise
@@ -79,18 +79,18 @@ def handle_request(data):
             touch_heartbeat()
             return None
 
-        if t == "fingerprint":
+        if t == "get_fingerprint":
             touch_heartbeat()
-            result = scan_fingerprint_slots(None)
+            result = get_fingerprints(None)
 
             if not result:
                 return -1   # empty = no match
 
             return result
         
-        if t == "cayo":
+        if t == "get_cayo":
             touch_heartbeat()
-            result = detect_fingerprint()
+            result = get_cayo_prints()
             if not result:
                 return ""
 
@@ -176,9 +176,11 @@ def handle_request(data):
             result = detect_column_selected(col=col, debug=False)
             return int(result)
 
-        if t == "detect_keypad":
+        if t == "get_keypad":
+            isKortzHeist = data.get("isKortzHeist", False)
+            cols = 5 if isKortzHeist else 6
             touch_heartbeat()
-            result = detect_keypad(debug=False)
+            result = get_keypad(debug=False, cols=cols)
             if result:
                 return result
             return ""

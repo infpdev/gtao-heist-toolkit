@@ -36,6 +36,29 @@ ShowCenteredToolTip(text, id := 10, y := 0) {
     CustomTooltip(text, centerX, centerY, id)
 }
 
+ShowVerticallyCenteredToolTip(text, id := 10, x := "") {
+    hdc := DllCall("GetDC", "ptr", 0)
+
+    ; DEFAULT_GUI_FONT
+    hfont := DllCall("GetStockObject", "int", 0)
+    DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
+
+    ; Get font height
+    tm := Buffer(60, 0) ; TEXTMETRIC
+    DllCall("GetTextMetrics", "ptr", hdc, "ptr", tm)
+    lineHeight := NumGet(tm, 0, "int") ; tmHeight
+
+    lineCount := StrSplit(text, "`n").Length
+    height := lineHeight * lineCount
+
+    DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
+
+    centerX := (x != "") ? x : 0
+    centerY := (A_ScreenHeight // 2) - (height // 2)
+
+    ToolTip(text, centerX, centerY, id)
+}
+
 /**
  * @description Make all tooltip windows click-through (transparent to mouse) and optionally adjusts opacity
  * @param {boolean} isIdle - If true, reduces opacity to 180 for idle state; otherwise uses provided opacity

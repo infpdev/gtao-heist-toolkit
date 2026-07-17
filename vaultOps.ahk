@@ -30,8 +30,8 @@ global vaultOps := true
 #Include <commonFuncs>
 
 ; vaultOps scripts
-#Include <scripts\CasinoFingerprint>
-#Include <scripts\CasinoKeypad>
+#Include <scripts\Fingerprint>
+#Include <scripts\Keypad>
 #Include <scripts\ElRubio>
 #Include <scripts\NoSave>
 #Include <scripts\LedgeGrab>
@@ -91,7 +91,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
                 engine)
 
-        } else if (heist == DIAMOND_CASINO) {
+        } else if (heist == DCH_OR_KORTZ) {
             pgUpSent := false ; Reset PgUp sent status when switching to casino
             txtPgUpLabel.Opt("cWhite")
             if (fingerprintMode) {
@@ -112,7 +112,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
      * 
      * Side effects: Updates global heistInstance.
      */
-    SwitchCasinoInstance() {
+    SwitchHeistInstance() {
         global fingerprintMode, heistInstance, scriptsEnabled
         if (heistInstance) {
             try heistInstance.Destroy()
@@ -273,7 +273,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (IsObject(heistInstance)) {
             if (heist == CAYO_PERICO)
                 heistInstance.switchToManual()
-            else if (heist == DIAMOND_CASINO) {
+            else if (heist == DCH_OR_KORTZ) {
                 if (fingerprintMode)
                     heistInstance.ManualMode()
                 else
@@ -301,7 +301,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         if (IsObject(heistInstance)) {
             if (heist == CAYO_PERICO)
                 heistInstance.Hack()
-            else if (heist == DIAMOND_CASINO) {
+            else if (heist == DCH_OR_KORTZ) {
                 if (fingerprintMode)
                     heistInstance.AutoHack()
                 else
@@ -368,7 +368,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         global hackMode
         hackMode := "idle"
 
-        SwitchCasinoInstance() ; Restart the heist instance to reset state
+        SwitchHeistInstance() ; Restart the heist instance to reset state
         clearAllToolTips(0)
         UpdateGlobalStatus(false)
         if (scriptsEnabled) {
@@ -442,7 +442,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
         if (hackMode == "idle") {
             hackStatus := "Auto detection active`n"
-            if (heist == DIAMOND_CASINO) {
+            if (heist == DCH_OR_KORTZ) {
                 hackStatus .= fingerprintMode ? "Fingerprint mode (idle)" : "Keypad mode (idle)"
             } else if (heist == CAYO_PERICO) {
                 hackStatus .= "El Rubio mode (idle)"
@@ -457,7 +457,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                     ; hackStatus .= (hackMode == "manual" ? "`nSend PgUp: " sendPgUpKey : "")
                     hackInProgress := true
                 }
-                else if (heist == DIAMOND_CASINO) {
+                else if (heist == DCH_OR_KORTZ) {
                     hackStatus := (fingerprintMode ? "Fingerprint mode " : "Keypad mode ")
                     hackStatus .= (hackMode == "manual") ? "(Manual)" : "(Hacking)"
                     hackInProgress := true
@@ -469,7 +469,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
                     hackStatus := "El Rubio mode " (hackMode == "manual" ? "(Manual)" : "(Auto)")
                     ; hackStatus .= (hackMode == "manual" ? "`nSend PgUp: " sendPgUpKey : "")
                 }
-                else if (heist == DIAMOND_CASINO) {
+                else if (heist == DCH_OR_KORTZ) {
                     hackStatus := "Waiting for " (fingerprintMode ? "fingerprint" : "keypad") " " ((hackMode ==
                         "manual") ?
                         "(Manual)" : "(Auto)")
@@ -524,7 +524,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         }
         SetHeistToggleBtnVisibility(scriptsEnabled)
         SetEngineToggleBtnVisibility(scriptsEnabled)
-        SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
+        SetModeToggleBtnVisibility((heist == DCH_OR_KORTZ) && scriptsEnabled)
         TryRegisterHotkeys()
         picScriptsEnabled.Value := scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
         ; IniWrite(scriptsEnabled, iniFile, "Options", "scriptsEnabled") ; Not required anymore since it's reset on every launch.
@@ -576,16 +576,16 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     }
 
     ToggleHeistMode(*) {
-        global heist, picHeistToggle, txtCasinoLabel, txtCayoLabel, DIAMOND_CASINO, CAYO_PERICO, scriptsEnabled
+        global heist, picHeistToggle, txtCasinoKortzLabel, txtCayoLabel, DCH_OR_KORTZ, CAYO_PERICO, scriptsEnabled
         global txtModeLabel, txtFingerprintLabel, picFingerprintToggle, txtKeypadLabel, txtModeInstr, hackInProgress
-        heist := (heist == DIAMOND_CASINO) ? CAYO_PERICO : DIAMOND_CASINO
-        picHeistToggle.Value := (heist == DIAMOND_CASINO) ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png"
-        txtCasinoLabel.Opt("c" (heist == DIAMOND_CASINO ? "c648f64" : "White"))
+        heist := (heist == DCH_OR_KORTZ) ? CAYO_PERICO : DCH_OR_KORTZ
+        picHeistToggle.Value := (heist == DCH_OR_KORTZ) ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png"
+        txtCasinoKortzLabel.Opt("c" (heist == DCH_OR_KORTZ ? "c648f64" : "White"))
         txtCayoLabel.Opt("c" (heist == CAYO_PERICO ? "c648f64" : "White"))
-        SetModeToggleBtnVisibility((heist == DIAMOND_CASINO) && scriptsEnabled)
+        SetModeToggleBtnVisibility((heist == DCH_OR_KORTZ) && scriptsEnabled)
         UpdateGlobalStatus(hackInProgress)
         IniWrite(heist, iniFile, "Options", "heist")
-        SwitchCasinoInstance()
+        SwitchHeistInstance()
     }
 
     ToggleFingerprintMode(ctrl := "", info := "") {
@@ -599,7 +599,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         txtKeypadLabel.Opt("c" (!fingerprintMode ? "c648f64" : "White"))
 
         UpdateGlobalStatus(false)
-        SwitchCasinoInstance() ; Switch instance on mode toggle
+        SwitchHeistInstance() ; Switch instance on mode toggle
         IniWrite(fingerprintMode, iniFile, "Options", "FingerprintMode")
     }
 
@@ -702,7 +702,7 @@ Init() {
         "", inputLedgeGrab := ""
 
     ; Text labels
-    global txtHeistLabel, txtCasinoLabel, txtCayoLabel, txtPgUpLabel,
+    global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtPgUpLabel,
         txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo, inputLedgeGrabText,
         txtEngineLabel, txtAHKLabel, txtOpenCVLabel
 
@@ -880,7 +880,7 @@ Init() {
     ; ⏐===================== ROW 4: Engine Selection (AHK / OpenCV) ======================⏐
     ; ⏐===================================================================================⏐
     {
-        engineX := toggleX
+        engineX := toggleX - 5
 
         y := toggleStartY
         txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
@@ -903,7 +903,7 @@ Init() {
             )
 
             txtOpenCVLabel := guiApp.AddText(
-                "x" (engineX + 125 / scale) " y" y " c" (engine != AHK_ENGINE ? "c648f64" : "White"),
+                "x" (engineX + 130 / scale) " y" y " c" (engine != AHK_ENGINE ? "c648f64" : "White"),
                 "OpenCV"
             )
             picEngineToggle.OnEvent("Click", ToggleEngineMode)
@@ -919,21 +919,21 @@ Init() {
     ; ⏐=============================== ROW 5: Heist Toggle ===============================⏐
     ; ⏐===================================================================================⏐
     {
-        heistX := toggleX
+        heistX := toggleX - 5
         ; Heist label 1
         txtHeistLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Heist:")
         txtCayoLabel := guiApp.AddText("x" (heistX - 10 / scale) " y" y " c" (heist == CAYO_PERICO ? "c648f64" :
             "White"), "Cayo Perico")
         ; Heist toggle
         picHeistToggle := guiApp.AddPicture("x" (heistX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 /
-        scale " +0x4", heist == DIAMOND_CASINO ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png")
+        scale " +0x4", heist == DCH_OR_KORTZ ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png")
         ; Heist label 2
-        txtCasinoLabel := guiApp.AddText("x" (heistX + 132 / scale) " y" y " c"
-        (heist == DIAMOND_CASINO ? "c648f64" : "White"), "Casino")
+        txtCasinoKortzLabel := guiApp.AddText("x" (heistX + 123 / scale) " y" y " c"
+        (heist == DCH_OR_KORTZ ? "c648f64" : "White"), "DC / Kortz")
 
         ; Heist instruction text
         txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "Switch between Casino and Cayo Perico heists (Usually handled by the script).")
+            "Switch between Casino / Kortz and Cayo Perico heists (Usually handled by the script).")
         ; Heist event listener
         picHeistToggle.OnEvent("Click", ToggleHeistMode)
         y += rowH
@@ -950,8 +950,8 @@ Init() {
     ; ⏐======================== ROW 6: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
     ; ⏐========================================================================================================⏐
     {
-        fingerprintX := toggleX, modeY := y, modeW := labelW
-        ; --- Casino mode options ---
+        fingerprintX := toggleX - 5, modeY := y, modeW := labelW
+        ; --- Casino / Kortz mode options ---
         ; Mode label (row header)
         txtModeLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Mode:")
         ; Fingerprint mode label
@@ -961,7 +961,7 @@ Init() {
         picFingerprintToggle := guiApp.AddPicture("x" (fingerprintX + 75 / scale) " y"
         (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
         fingerprintMode ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
-        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 127 / scale) " y" y
+        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 134 / scale) " y" y
         ; Keypad mode label
         " c" (!fingerprintMode ? "c648f64" : "White"), "Keypad")
         ; Mode instruction text
@@ -1103,22 +1103,10 @@ Init() {
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
 
-    gtaHwnd := getGtaHwnd()
-
     ForceForeground(guiApp)
 
     guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
-
-    ; if (gtaHwnd) {
-    ;     try {
-    ;         sleep 100
-    ;         WinActivate "ahk_id " gtaHwnd
-    ;         WinWaitActive "ahk_id " gtaHwnd, , 2
-    ;     } catch {
-    ;         return
-    ;     }
-    ; }
 
     FocusGtaIfRunning()
 
