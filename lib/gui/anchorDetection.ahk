@@ -220,12 +220,12 @@ findAnchorsAndCreateInstance() {
     anchorFound := true
 
     if (IsObject(anchor) && anchor.mode == "fingerprint") {
-        if (heist != DIAMOND_CASINO)
+        if (heist != DCH_OR_KORTZ)
             ToggleHeistMode() ; Switch to Diamond Casino if not already in it
         if (!fingerprintMode)
             ToggleFingerprintMode() ; Switch to fingerprint mode if not already in it
     } else if (IsObject(anchor) && anchor.mode == "keypad") {
-        if (heist != DIAMOND_CASINO)
+        if (heist != DCH_OR_KORTZ)
             ToggleHeistMode() ; Switch to Diamond Casino if not already in it
         if (fingerprintMode)
             ToggleFingerprintMode() ; Switch to keypad mode if not already in it
@@ -241,7 +241,7 @@ findAnchorsAndCreateInstance() {
     if (!IsObject(heistInstance))
         CreateHeistInstance()
 
-    hackMode := (heist == DIAMOND_CASINO ? "manual" : "auto") ; Default to manual mode when anchor is found
+    hackMode := (heist == DCH_OR_KORTZ ? "manual" : "auto") ; Default to manual mode when anchor is found
 
     SetTimer(() => (IsObject(heistInstance) ? heistInstance.autoStartManual(anchor) : ""), -100) ; Start manual mode on the exact switched instance
     SetTimer(findAnchorsAndCreateInstance, 0) ; Stop anchor detection timer
@@ -390,12 +390,12 @@ is_black_area_present_cayo() {
 
         ; MsgBox forType
 
-        temp_heist := (forType == "cayo" ? CAYO_PERICO : DIAMOND_CASINO)
+        temp_heist := (forType == "cayo" ? CAYO_PERICO : DCH_OR_KORTZ)
         temp_fingerprintMode := (forType == "fingerprint" ? 1 : 0)
 
         try {
             if (tempEngine == AHK_ENGINE) {
-                if (temp_heist == DIAMOND_CASINO) {
+                if (temp_heist == DCH_OR_KORTZ) {
                     if (temp_fingerprintMode) {
                         return is_black_area_present_fingerprint()
                     } else {
@@ -409,7 +409,7 @@ is_black_area_present_cayo() {
             }
             else if (tempEngine == OPENCV_ENGINE || higherRes) {
                 ; return true ; OpenCV now handles both detection and black area verification for all modes
-                if (temp_heist == DIAMOND_CASINO) {
+                if (temp_heist == DCH_OR_KORTZ) {
                     if (temp_fingerprintMode) {
                         res := GetResFromOpenCV(REQ_BLACK_FP)
                         if (debug)

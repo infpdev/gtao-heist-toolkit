@@ -1,3 +1,4 @@
-4.20.69
-Added Buffered Ledge Grab automation
-Improved GUI readability
+4.67.69
+Added Kortz Center support (OpenCV Engine)
+Updated NoSave post-patch replay guide
+Updated app icon

@@ -140,7 +140,7 @@ class FingerprintSolver {
         this.InitDetected()
         SetTimer this.fnMainLoop, 0
         SetTimer this.fnCheckFalsePositive, 0
-        updateGlobalStatus(false, false, , "CasinoFingerprint.Idle()")
+        updateGlobalStatus(false, false, , "Fingerprint.Idle()")
     }
 
     Destroy() {
@@ -214,7 +214,7 @@ class FingerprintSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
 
-        updateGlobalStatus(this.foundAnchor, , , "CasinoFingerprint.ManualMode()")
+        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.ManualMode()")
 
         this.findAnchor()
         this.MainLoop()
@@ -238,7 +238,7 @@ class FingerprintSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
 
-        updateGlobalStatus(this.foundAnchor, , , "CasinoFingerprint.AutoHack()")
+        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.AutoHack()")
 
         this.findAnchor()
         this.MainLoop()
@@ -270,7 +270,7 @@ class FingerprintSolver {
                     this.autoStarted := false
 
                 if (this.needStatusUpdate && this.foundAnchor) {
-                    UpdateGlobalStatus(true, , , "CasinoFingerprint.tryOpenCV()")
+                    UpdateGlobalStatus(true, , , "Fingerprint.tryOpenCV()")
                     this.needStatusUpdate := false
                 }
 
@@ -467,7 +467,7 @@ class FingerprintSolver {
         if (this.lastFoundTick != 0 && !this.foundAnchor) {
             this.clearAll()
             timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft, "CasinoFingerprint.checkTimeout()")
+            updateGlobalStatus(false, true, timeLeft, "Fingerprint.checkTimeout()")
             this.needStatusUpdate := true
             if (A_TickCount - this.lastFoundTick > timeoutMs) {
                 ResetHackMode()
@@ -596,7 +596,7 @@ class FingerprintSolver {
                 if ImageSearch(&Px, &Py, x1, y1, x2, y2, "*" this.anchorTolerance " " file) {
 
                     if (this.needStatusUpdate && this.foundAnchor) { ; update status only on first found print to avoid excessive updates
-                        updateGlobalStatus(true, , , "CasinoFingerprint.DetectAnchorGroup()")
+                        updateGlobalStatus(true, , , "Fingerprint.DetectAnchorGroup()")
                         this.needStatusUpdate := false
                     }
 

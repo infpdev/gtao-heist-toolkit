@@ -19,7 +19,7 @@ baseExe := "AHK_BASE\AutoHotkeyUX.exe"
 AHK2EXEPath := "AHK2EXE\Ahk2Exe.exe"
 isccExe := "Inno Setup 6\ISCC.exe"
 issScript := ".\inno_setup.iss"
-iconPath := ".\gta.ico"
+iconPath := ".\vaultOps.ico"
 rarExe := "C:\Program Files\WinRAR\WinRAR.exe"
 
 ; Check and extract build files if needed before validating paths
@@ -36,6 +36,7 @@ if !IsObject(buildOpts)
     ExitApp
 
 buildVaultOpsExe := buildOpts.buildVaultOps
+shouldBuildOpenCVEngine := buildOpts.buildOpenCVEngine
 compileStandalone := buildOpts.compileStandalone
 packageBuilds := buildOpts.packageBuilds
 useOriginalClasses := buildOpts.useOriginalClasses
@@ -57,7 +58,7 @@ if (compileStandalone && packageBuilds && !FileExist(rarExe)) {
 buildVaultOps()
 
 buildVaultOps() {
-    global parentDir, buildVaultOpsExe, packageBuilds, useOriginalClasses, scanVirusTotal,
+    global parentDir, buildVaultOpsExe, shouldBuildOpenCVEngine, packageBuilds, useOriginalClasses, scanVirusTotal,
         baseExe, AHK2EXEPath, iconPath, isccExe, issScript
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
@@ -73,12 +74,18 @@ buildVaultOps() {
     sleep 20
 
     if (buildVaultOpsExe) {
-        ; Build the OpenCV helper exe that the compiled app loads from lib/.
+        ; Build the OpenCV helper exe only when requested.
 
         ; delete old package if it exists
         try DirDelete(parentDir "\dist", true)
 
-        BuildOpenCVEngine(parentDir)
+        if (shouldBuildOpenCVEngine) {
+            BuildOpenCVEngine(parentDir)
+        } else {
+            RequireExistingFile(parentDir "\lib\py_helpers\OpenCV_Engine.exe", "Existing OpenCV helper")
+            ShowCenteredToolTip "Using existing OpenCV_Engine.exe"
+            sleep 700
+        }
 
         ; === Compile and package the main vaultOps executable ===
         ToolTip "", , , 1
@@ -278,8 +285,8 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
     imageFolders := ["1366x768", "1600x900", "1920x1080"]
 
     standaloneClassMap := Map(
-        "Standalone-Fingerprint.ahk", parentDir "\lib\scripts\CasinoFingerprint.ahk",
-        "Standalone-Keypad.ahk", parentDir "\lib\scripts\CasinoKeypad.ahk",
+        "Standalone-Fingerprint.ahk", parentDir "\lib\scripts\Fingerprint.ahk",
+        "Standalone-Keypad.ahk", parentDir "\lib\scripts\Keypad.ahk",
         "Standalone-ElRubio.ahk", parentDir "\lib\scripts\ElRubio.ahk"
     )
 
@@ -458,7 +465,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 
         try FileCopy(
             iconPath,
-            distStandaloneDir "\gta.ico",
+            distStandaloneDir "\vaultOps.ico",
             true
         )
 
@@ -497,7 +504,7 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
         ; IMPORTANT:
         ; NO *.exe
         ; NO recursive lib packaging madness
-        rarCmd := '"' rarExe '" a -r -sfx -iicon"' distStandaloneDir '\gta.ico" "' bundleFile '" ' exeStr ' "lib\OpenCV_Engine.exe" "lib\standaloneUpdater.exe"' imgStr ' -z"bundle.txt"'
+        rarCmd := '"' rarExe '" a -r -sfx -iicon"' distStandaloneDir '\vaultOps.ico" "' bundleFile '" ' exeStr ' "lib\OpenCV_Engine.exe" "lib\standaloneUpdater.exe"' imgStr ' -z"bundle.txt"'
 
         RunWait rarCmd, , "Hide"
 
@@ -523,15 +530,23 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
 }
 
 buildGUI(isDev := false) {
+    global parentDir
     dlg := Gui("-DPIScale", "Build options")
     dlg.SetFont("s10")
 
     dlg.AddText("xm+9 ym", "Choose build options:")
+    existingOpenCVHelper := parentDir "\lib\py_helpers\OpenCV_Engine.exe"
+    hasExistingOpenCV := FileExist(existingOpenCVHelper) != ""
 
     ; ==== VaultOps build options ====
     dlg.AddGroupBox("xm yp+25 w360 h50", "Build vaultOps.exe")
     rBuildYes := dlg.AddRadio("xp+14 yp+23 Group ", "Yes")
     rBuildNo := dlg.AddRadio("x+60 yp Checked", "No (reuse existing OpenCV helper)")
+
+    ; ==== OpenCV helper build options ====
+    dlg.AddGroupBox("xm y+12 w360 h50", "Build OpenCV_Engine.exe")
+    rOpenCVYes := dlg.AddRadio("xp+14 yp+23 Group" (hasExistingOpenCV ? "" : " Checked"), "Yes")
+    rOpenCVNo := dlg.AddRadio("x+80 yp" (hasExistingOpenCV ? " Checked" : ""), "No (use existing exe)")
 
     ; ==== VirusTotal scan option ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
@@ -553,6 +568,43 @@ buildGUI(isDev := false) {
     }
 
     rScanYes.OnEvent("Click", validateApiKey)
+
+    ValidateOpenCVReuse(showWarning := false) {
+        hasExistingOpenCV := FileExist(existingOpenCVHelper)
+
+        if (rOpenCVNo.Value == 1 && !hasExistingOpenCV) {
+            if (showWarning) {
+                MsgBox "OpenCV_Engine.exe was not found at:`n" existingOpenCVHelper
+                    . "`n`nThe existing-exe option is disabled. Build OpenCV_Engine.exe has been forced to Yes.", "Warning", 48
+            }
+
+            rOpenCVNo.Enabled := false
+            rOpenCVYes.Value := 1
+            rOpenCVNo.Value := 0
+            return
+        }
+
+        rOpenCVNo.Enabled := hasExistingOpenCV
+        if !hasExistingOpenCV {
+            rOpenCVYes.Value := 1
+            rOpenCVNo.Value := 0
+        }
+    }
+
+    UpdateOpenCVBuildOptions(showWarning := false) {
+        enabled := (rBuildYes.Value == 1)
+
+        rOpenCVYes.Enabled := enabled
+        rOpenCVNo.Enabled := enabled
+
+        if !enabled {
+            return
+        }
+
+        ValidateOpenCVReuse(showWarning)
+    }
+
+    rOpenCVNo.OnEvent("Click", (*) => ValidateOpenCVReuse(true))
 
     ; ==== Standalone build and packaging options ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Compile standalone scripts")
@@ -614,6 +666,7 @@ buildGUI(isDev := false) {
             rScanYes.Value := 1
             rScanNo.Value := 0
         }
+        UpdateOpenCVBuildOptions()
         UpdatePackageOptions()
     }
 
@@ -633,6 +686,7 @@ buildGUI(isDev := false) {
     btnOk.OnEvent("Click", (*) => (
         selected := {
             buildVaultOps: rBuildYes.Value == 1,
+            buildOpenCVEngine: rOpenCVYes.Value == 1,
             compileStandalone: rStandaloneYes.Value == 1,
             packageBuilds: isDev && rPackageYes != "" ? (rPackageYes.Value == 1 && rStandaloneYes.Value == 1) : false,
             useOriginalClasses: rClassYes.Value == 1,

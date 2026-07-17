@@ -27,7 +27,7 @@ UsePreviousAppDir=no
 DirExistsWarning=no
 OutputDir=..\..\dist
 OutputBaseFilename="vaultOps-Setup"
-SetupIconFile=gta.ico
+SetupIconFile=vaultOps.ico
 WizardStyle=modern
 
 
@@ -38,7 +38,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "..\..\vaultOps.exe"; DestDir: "{app}"; Flags: ignoreversion 
 Source: "..\..\lib\vaultOpsUpdater.exe"; DestDir: "{app}\lib"; Flags: ignoreversion
 Source: "..\..\lib\py_helpers\OpenCV_Engine.exe"; DestDir: "{app}\lib"; Flags: ignoreversion
-Source: "gta.ico"; DestDir: "{app}\lib\static"; Flags: ignoreversion
+Source: "vaultOps.ico"; DestDir: "{app}\lib\static"; Flags: ignoreversion
 Source: "..\..\1366x768\*"; DestDir: "{app}\1366x768"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\1600x900\*"; DestDir: "{app}\1600x900"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "..\..\1920x1080\*"; DestDir: "{app}\1920x1080"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -48,8 +48,8 @@ Source: "..\static\*"; DestDir: "{app}\lib\static"; Flags: ignoreversion recurse
 
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\gta.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\gta.ico"
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\vaultOps.ico"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\lib\static\vaultOps.ico"
 
 
 [Run]

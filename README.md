@@ -20,20 +20,21 @@
 
 <p align="center">
   <a href="https://youtu.be/Cd5V64UiiGY">
-    Cayo Perico Replay Guide (vaultOps + Standalone)
+    Cayo Perico Replay Guide
   </a>
   <br>
   <a href="https://youtu.be/fBdukmCSDeA">
-    Diamond Casino Replay Guide (vaultOps + Standalone)
+    Diamond Casino Replay Guide
+  </a>
+  <br>
+  <a href="https://youtu.be/2f2PhGMIApw">
+    Kortz Center Puzzle Solvers + Replay Guide
   </a>
   <br><br>
   <a href="https://youtu.be/hupQ7fMXHTE">
-    Buffered Ledge Grab | Diamond Casino (vaultOps + Standalone)
+    Buffered Ledge Grab automation for Diamond Casino
   </a>
-  <br>
-  <a href="https://youtu.be/Gkyn2pzeotc">
-    How to Do the Apartment Trade Glitch (vaultOps + Standalone)
-  </a>
+
 </p>
 
 ## Overview
@@ -74,7 +75,7 @@ This repository includes:
 
 ## Features
 
-- Auto-solves **Diamond Casino Fingerprint** and **Keypad** puzzles  
+- Auto-solves **Fingerprint** and **Keypad** puzzles in the **Diamond Casino** and **Kortz Center** heists
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
 - Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist
 - Supports both **AHK-based** and **OpenCV-based** detection methods  
@@ -155,7 +156,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/2a8e4545daab2b1c225f80b57dde4f863852e7c3928ba25f55c13e741fa3214a
+> https://www.virustotal.com/gui/file/38f4d03292e2fadc86362ad0739976b706c9e534e65073cdde3e4f127abb60a4
 
 
 <p align="center">
@@ -167,7 +168,7 @@ Provided as-is, with no guarantees.
 1. Download and run the setup [vaultOps-Setup.exe](https://github.com/infpdev/gtao-heist-toolkit/releases/latest/download/vaultOps-Setup.exe) to extract the contents
 2. Launch `vaultOps.exe`  
 3. Click **Enable Scripts**  
-4. Start a heist puzzle → the tool will detect it automatically → marks the prints for Casino hacks and auto-solves in case of  Cayo Perico fingerprints.
+4. Start a heist puzzle → the tool will detect it automatically → marks the prints for Diamond Casino and Kortz Center hacks, and auto-solves in case of Cayo Perico fingerprints.
 
 **Optional:**
 - Press **Auto** `H` to solve instantly
@@ -192,7 +193,12 @@ Provided as-is, with no guarantees.
 2. Make sure it is active **before the payment cutscene**  
 3. After returning to freeroam, switch to **Story Mode** while keeping NoSave enabled  
 4. Once Story Mode loads, disable **NoSave**  
-5. Return to GTA Online — the heist can be replayed without setups  
+5. Return to **GTA Online**.
+6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt.
+7. Switch to **Story Mode**, then return to **GTA Online** (without NoSave enabled). The heist can now be replayed without setups.
+
+> [!WARNING]
+> Failing to switch to **Story Mode** the second time may cause you to lose your saved heist. Make sure to follow the steps carefully.
 
 **Behavior:**
 - Works by temporarily blocking network communication  
@@ -208,6 +214,7 @@ Provided as-is, with no guarantees.
 > Full replay tutorials:
 > - Cayo Perico: https://youtu.be/Cd5V64UiiGY
 > - Diamond Casino: https://youtu.be/fBdukmCSDeA
+> - Kortz Center: https://youtu.be/2f2PhGMIApw
 
 ### Ledge Grab Automation
 
@@ -259,8 +266,10 @@ Provided as-is, with no guarantees.
      - Higher resolutions and 21:9 setups will use OpenCV automatically  <br><br>
 
 3. **Select Heist**
-   - **Casino**
-     - Solves Fingerprint and Keypad puzzles  
+   - **Diamond Casino / Kortz Center**
+     - Shown as "**DC / Kortz**" in the GUI
+     - Solves Fingerprint and Keypad puzzles
+     - Both heists use the same Fingerprint and Keypad puzzles, so the same solver (**DC / Kortz**) works for either heist
 
    - **Cayo Perico**
      - Solves the fingerprint cloner puzzle  
@@ -270,7 +279,7 @@ Provided as-is, with no guarantees.
 
    **Note:** When using the PgUp feature, Manual mode is generally recommended to avoid unintended auto-switching  <br><br>
 
-4. **Choose Mode (Casino only)**
+4. **Choose Mode (Diamond Casino / Kortz Center only)**
    - **Fingerprint** — Detects and solves the fingerprint puzzle  
    - **Keypad** — Detects and solves the keypad puzzle  
 
@@ -304,8 +313,8 @@ All hotkeys are customizable.
 Don't want the full toolkit? Use the standalone package instead.
 
 The standalone package includes:
-- Casino Fingerprint Solver
-- Casino Keypad Solver
+- Fingerprint Solver for Diamond Casino / Kortz Center
+- Keypad Solver for Diamond Casino / Kortz Center
 - Cayo Perico Fingerprint Solver
 
 All standalone solvers share a single OpenCV engine and common resources to reduce package size and avoid duplicated files.
@@ -370,15 +379,15 @@ _src/
 │  │
 │  ├─ py_helpers/                     # Python/OpenCV helpers
 │  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV detection engine
-│  │  ├─ casinofingerprint.py         # Casino fingerprint detection logic for OpenCV detection engine
-│  │  ├─ casinokeypad.py              # Casino keypad detection logic for OpenCV detection engine
+│  │  ├─ Fingerprint.py               # Diamond Casino / Kortz fingerprint detection logic for OpenCV detection engine
+│  │  ├─ Keypad.py                    # Diamond Casino / Kortz keypad detection logic for OpenCV detection engine
 │  │  ├─ cayofingerprint.py           # Cayo Perico fingerprint detection logic for OpenCV detection engine
 │  │  ├─ OpenCV_Engine.py             # OpenCV detection engine + IPC listener
 │  │  └─ requirements.txt             # Python deps for OpenCV detection engine
 │  │
 │  ├─ scripts/
-│  │  ├─ CasinoFingerprint.ahk        # Casino fingerprint detection + solving
-│  │  ├─ CasinoKeypad.ahk             # Casino keypad sequence solving
+│  │  ├─ Fingerprint.ahk              # Diamond Casino / Kortz fingerprint detection + solving
+│  │  ├─ Keypad.ahk                   # Diamond Casino / Kortz keypad sequence solving
 │  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
 │  │  └─ NoSave.ahk                   # Handles NoSave usage
 │  │
@@ -421,8 +430,8 @@ _src/
 - `standaloneUpdate.ahk` — Auto-updater for standalone scripts
 
 **AHK Scripts**
-- `CasinoFingerprint.ahk` — Casino fingerprint solver
-- `CasinoKeypad.ahk` — Casino keypad solver
+- `Fingerprint.ahk` — Diamond Casino / Kortz fingerprint solver
+- `Keypad.ahk` — Diamond Casino / Kortz keypad solver
 - `ElRubio.ahk` — Cayo fingerprint cloner solver
 - `NoSave.ahk` — NoSave handling and firewall automation
 - `Util-AFK-Key-Holder.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
@@ -432,8 +441,8 @@ _src/
 **OpenCV Detection Engine (`lib/py_helpers/`)**
 - `OpenCV_Engine.py` — IPC listener/backend entry point
 - `anchorDetection.py` — Puzzle anchor detection
-- `casinofingerprint.py` — Casino fingerprint detection
-- `casinokeypad.py` — Casino keypad detection
+- `Fingerprint.py` — Diamond Casino / Kortz fingerprint detection
+- `Keypad.py` — Diamond Casino / Kortz keypad detection
 - `cayofingerprint.py` — Cayo fingerprint detection
 - `requirements.txt` — Python dependencies for development mode
 

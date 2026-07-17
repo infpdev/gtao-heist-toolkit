@@ -22,11 +22,11 @@ global ocvCallInProgress := false
 ; Request type constants so callers do not need to repeat raw strings.
 
 ; Returns the positions of the fingerprints
-global REQ_FINGERPRINT := "fingerprint"
+global REQ_FINGERPRINT := "get_fingerprint"
 ; Returns the positions of the keypad, or -1 if not found or partial match
-global REQ_KEYPAD := "detect_keypad"
+global REQ_KEYPAD := "get_keypad"
 ; Returns the clicks needed to solve Cayo Perico, or 0 if not found
-global REQ_CAYO := "cayo"
+global REQ_CAYO := "get_cayo"
 
 ; Returns the type of puzzle, e.g. "fingerprint", "keypad", "cayo", or 0
 global REQ_ALL_ANCHORS := "detect_anchor"

@@ -92,7 +92,7 @@
     }
 
     SetHeistToggleBtnVisibility(enabled) {
-        global picHeistToggle, txtHeistLabel, txtCasinoLabel, txtCayoLabel, txtHeistInstr
+        global picHeistToggle, txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtHeistInstr
         if !IsSet(picHeistToggle) || !picHeistToggle
             return
         global txtEnableScriptsInfo
@@ -103,8 +103,8 @@
             picHeistToggle.OnEvent("Click", ToggleHeistMode)
             if IsSet(txtHeistLabel)
                 txtHeistLabel.Visible := true
-            if IsSet(txtCasinoLabel)
-                txtCasinoLabel.Visible := true
+            if IsSet(txtCasinoKortzLabel)
+                txtCasinoKortzLabel.Visible := true
             if IsSet(txtCayoLabel)
                 txtCayoLabel.Visible := true
             if IsSet(txtHeistInstr)
@@ -117,8 +117,8 @@
             picHeistToggle.OnEvent("Click", ToggleHeistMode, 0)
             if IsSet(txtHeistLabel)
                 txtHeistLabel.Visible := false
-            if IsSet(txtCasinoLabel)
-                txtCasinoLabel.Visible := false
+            if IsSet(txtCasinoKortzLabel)
+                txtCasinoKortzLabel.Visible := false
             if IsSet(txtCayoLabel)
                 txtCayoLabel.Visible := false
             if IsSet(txtHeistInstr)

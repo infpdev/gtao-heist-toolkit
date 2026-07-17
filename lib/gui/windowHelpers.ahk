@@ -23,7 +23,6 @@ ForceForeground(guiApp) {
     try WinActivate("ahk_id " guiApp.Hwnd)
     try DllCall("SetForegroundWindow", "ptr", guiApp.Hwnd)
 
-    guiApp.Opt("-Caption")
     return WinActive("ahk_id " guiApp.Hwnd)
 }
 

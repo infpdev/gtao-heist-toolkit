@@ -82,6 +82,7 @@ class KeypadSolver {
     isBusy := false
     isShuttingDown := false
     autoStarted := false
+    isKortzHeist := false
 
     baseX_ratio := 0.26
     baseY_ratio := 0.33
@@ -92,7 +93,6 @@ class KeypadSolver {
 
     __New(delay, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
         AHK_ENGINE) {
-        global
 
         this.delay := delay
         this.folder := folderPath != "" ? folderPath : folder
@@ -147,7 +147,7 @@ class KeypadSolver {
         this.prevRingRow := 1
 
         this.clearAll()
-        updateGlobalStatus(false, , , "CasinoKeypad.Idle()") ; Tooltip replacement
+        updateGlobalStatus(false, , , "Keypad.Idle()") ; Tooltip replacement
         this.stabilized := false
         this.gridFilledOnce := false
         this.lastDetectionTime := 0
@@ -220,7 +220,7 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToAuto()")
+        updateGlobalStatus(this.foundAnchor, , , "Keypad.switchToAuto()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -245,7 +245,7 @@ class KeypadSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
         SetTimer this.fnMainLoop, 0
-        updateGlobalStatus(this.foundAnchor, , , "CasinoKeypad.switchToManual()")
+        updateGlobalStatus(this.foundAnchor, , , "Keypad.switchToManual()")
 
         this.findAnchor() ; Immediate anchor check before starting timers
 
@@ -278,7 +278,17 @@ class KeypadSolver {
                 CustomTooltip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
 
             ; Detect all columns and rows using OpenCV
-            gridResult := GetResFromOpenCV(REQ_KEYPAD)
+            gridResult := GetResFromOpenCV(REQ_KEYPAD, Map("isKortzHeist", this.isKortzHeist))
+            rows := StrSplit(Trim(gridResult), ",")
+            if (rows.Length >= 5) {
+                this.colsCount := rows.Length
+                if (this.colsCount = 5 && !this.isKortzHeist) {
+                    ; MsgBox "Setting kortzheist to true"
+                    this.isKortzHeist := true
+                }
+            }
+
+            ; MsgBox gridResult
             if (gridResult = ERRMSG) {
                 if (debug)
                     MsgBox "grid threw"
@@ -291,7 +301,7 @@ class KeypadSolver {
                 this.autoStarted := false
 
             if (this.needStatusUpdate && this.foundAnchor) {
-                updateGlobalStatus(true, , , "CasinoKeypad.tryOpenCV()")
+                updateGlobalStatus(true, , , "Keypad.tryOpenCV()")
                 this.needStatusUpdate := false
             }
 
@@ -338,7 +348,6 @@ class KeypadSolver {
         try {
 
             this.checkTimeout()
-
             ; Try OpenCV detection if enabled, fallback to AHK only if highRes is false
             cvWorked := this.tryOpenCV()
 
@@ -416,7 +425,7 @@ class KeypadSolver {
 
         if this.findAnchor() {
             if (this.needStatusUpdate && this.foundAnchor) {
-                updateGlobalStatus(true, , , "CasinoKeypad.validateAnchor()")
+                updateGlobalStatus(true, , , "Keypad.validateAnchor()")
 
                 this.needStatusUpdate := false
             }
@@ -442,7 +451,7 @@ class KeypadSolver {
         if (this.anchorLastSeen != 0) {
             this.clearAll()
             timeLeft := Integer((this.timeOut - (A_TickCount - this.anchorLastSeen)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft, "CasinoKeypad.checkTimeout()")
+            updateGlobalStatus(false, true, timeLeft, "Keypad.checkTimeout()")
             this.needStatusUpdate := true
             if (this.anchorLastSeen != 0 && (A_TickCount - this.anchorLastSeen > this.timeOut)) {
                 ResetHackMode()
@@ -816,28 +825,25 @@ class KeypadSolver {
         }
         from := ringRow
         to := c.row
-        if (from != to) {
-            upSteps := Mod(from - to + this.rowsCount, this.rowsCount)
-            downSteps := Mod(to - from + this.rowsCount, this.rowsCount)
-            if upSteps <= downSteps {
-                ; key := "{Up}"
-                num := upSteps
-                key := "{Up " num "}"
-            } else {
-                ; key := "{Down}"
-                num := downSteps
-                key := "{Down " num "}"
-            }
-            ; loop num {
-            ;     Send key
-            ;     Sleep 50
-            ; }
-            if (debug) {
-                CustomTooltip "Sending " key, 0, 0, 18
-            }
-            SendEvent(key)
 
+        rowCount := this.isKortzHeist ? 4 : 5
+
+        if (from != to) {
+            upSteps := Mod(from - to + rowCount, rowCount)
+            downSteps := Mod(to - from + rowCount, rowCount)
+
+            if (upSteps <= downSteps) {
+                key := "{Up " upSteps "}"
+            } else {
+                key := "{Down " downSteps "}"
+            }
+
+            if (debug)
+                CustomTooltip "Sending " key, 0, 0, 18
+
+            SendEvent(key)
         }
+
         Sleep this.delay
         SendEvent("{Enter}")
         start := A_TickCount
@@ -928,7 +934,9 @@ class KeypadSolver {
      * @returns {boolean} True if ring was detected
      */
     ringDetected_AutoSelectOpenCV() {
+        ; sleep 1000
         ringResult := GetResFromOpenCV(REQ_DETECT_RING)
+        ; MsgBox ringResult
 
         if (ringResult = ERRMSG || ringResult = "-1") {
             return false
@@ -978,13 +986,22 @@ class KeypadSolver {
         colResult := GetResFromOpenCV(REQ_IS_COLUMN_SELECTED, Map("col", targetCol))
         if (debug)
             ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
+        if (this.mode == "auto" && targetCol == this.colsCount && colResult = 0) {
+            ringRow := GetResFromOpenCV(REQ_DETECT_RING)
+            ; MsgBox ringRow
+            if (ringRow != "-1" && ringRow != ERRMSG) {
+                ; MsgBox "Ring detected at row " ringRow " but last column not selected. Resetting state."
+                this.ResetState()
+            }
+        }
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
             if (this.mode == "auto") {
                 this.ShowRingMap()
                 this.showkeys()
             }
-            if (this.cols.Count = 0 || targetCol == 6) {
+            if (this.cols.Count == 0 || targetCol == this.colsCount) {
+                ; MsgBox "All columns selected. Resetting state.`ncolsCount: " this.colsCount
                 this.ResetState()
             }
         }
@@ -1067,7 +1084,7 @@ class KeypadSolver {
 
     showMapIfStabilized() {
         ; Show initial ring map on stabilization before any selection
-        if (!this.cols.Has(6))
+        if (!this.cols.Has(this.colsCount))
             return
 
         this.ShowRingMap()
@@ -1077,7 +1094,7 @@ class KeypadSolver {
      * Shows a unified row map tooltip for all active columns.
      */
     ShowRingMap() {
-        if (!this.cols.Has(6))
+        if (!this.cols.Has(this.colsCount))
             return
         out := ""
 
@@ -1089,7 +1106,7 @@ class KeypadSolver {
         }
         if (out = "")
             out := "No mapping found."
-        Tooltip out, this.scrW * 0.105, (this.scrH * 0.4), 17
+        ShowVerticallyCenteredToolTip(out, 17, this.scrW * 0.13)
     }
 
     /**
@@ -1110,8 +1127,16 @@ class KeypadSolver {
         this.needStatusUpdate := true
         this.cvNoCircleSince := 0
         this.cvGridStableSince := 0
-        ; Tooltip "Resetting state", this.scrW / 2, 10, 19
-        Sleep 2500
+        ShowCenteredToolTip "Resetting state", 19
+
+        if (this.isKortzHeist && this.mode = "manual")
+            Sleep 100
+        else
+            Sleep 2500
+
+        this.isKortzHeist := false
+
+        ToolTip "", , , 19
         SetTimer this.fnMainLoop, 100
     }
 

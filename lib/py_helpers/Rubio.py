@@ -55,7 +55,7 @@ def _dump_debug_image(image, debug_overlay, filename):
 
 
 
-def detect_fingerprint(image=None, debug=False):
+def get_cayo_prints(image=None, debug=False):
     """Detect the Cayo fingerprint solution and cursor row.
 
     Returns a dict with:
@@ -164,7 +164,7 @@ def detect_fingerprint(image=None, debug=False):
 
 def main(image=None):
     """Run the detector directly and print a quick human-readable summary."""
-    result = detect_fingerprint(image, True)
+    result = get_cayo_prints(image, True)
     print("[*] Cayo Perico Fingerprint Detection")
     print(result["solution"])
     print("cursor_row:", result["cursor_row"])
