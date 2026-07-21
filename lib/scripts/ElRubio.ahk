@@ -5,7 +5,7 @@
  * OpenCV-only solver for the Cayo Perico fingerprint puzzle.
  * 
  * Flow:
- * Hack()/autoStartManual() -> timer loop -> OpenCV anchor check -> REQ_CAYO solve payload
+ * SwitchToAuto()/autoStartManual() -> timer loop -> OpenCV anchor check -> REQ_CAYO solve payload
  */
 class ElRubioSolver {
     mode := "idle"
@@ -98,7 +98,7 @@ class ElRubioSolver {
         this.autoStarted := true
         this.prevFoundPixel := anchorPixelCoords
         this.foundAnchor := true
-        this.Hack(true)
+        this.SwitchToAuto(true)
         SetTimer () => (this.CheckFalsePositive()), -5000
     }
 
@@ -137,7 +137,7 @@ class ElRubioSolver {
     /**
      * Main entrypoint: starts the automated solve loop.
      */
-    Hack(autoStart := false, *) {
+    SwitchToAuto(autoStart := false, *) {
         if (this.autoStarted && !autoStart)
             this.autoStarted := false
 
@@ -149,7 +149,7 @@ class ElRubioSolver {
         this.mode := "auto"
         this.lastSeenTick := 0
         this.lastSeenGroupTick := 0
-        updateGlobalStatus(this.foundAnchor, , , "ElRubioSolver.Hack()")
+        updateGlobalStatus(this.foundAnchor, , , "ElRubioSolver.SwitchToAuto()")
         SetTimer this.fnMainLoop, 200
     }
 

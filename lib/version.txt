@@ -1,4 +1,4 @@
-4.67.69
+4.69.67
 Added Kortz Center support (OpenCV Engine)
-Updated NoSave post-patch replay guide
-Updated app icon
+Updated NoSave replay guide and in-app tutorial
+Added Drag button and disabled hotkeys outside GTA V

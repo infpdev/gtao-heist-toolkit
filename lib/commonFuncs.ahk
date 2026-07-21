@@ -6,28 +6,6 @@ if (IsSet(dir)) {
     cacheFile := A_ScriptDir "\zAnchorCache.ini"
 }
 
-; Checks if GTA or the script's GUI is currently focused,
-; used to prevent sending inputs when the user is actively using another window.
-; When strict is true, the debug override is ignored to ensure accurate focus checks during testing.
-isGtaFocused(excludeGui := false, strict := false) {
-    global guiApp, debug
-
-    if (!IsSet(guiApp)) {
-        return isGtaFocusedStandalone(true, strict)
-    }
-
-    return ((!strict && debug) ||
-    WinActive(GTA_ENHANCED_EXE)
-    || WinActive(GTA_LEGACY_EXE)
-    || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
-}
-
-isGtaFocusedStandalone(excludeGui := true, strict := false) {
-    global debug
-    return (WinActive(GTA_LEGACY_EXE)
-    || WinActive(GTA_ENHANCED_EXE) || (debug && !strict))
-}
-
 /**
  * @description Loads cached anchor coordinates from anchorCache.ini into global cache variables.
  * Creates the cache file with zero defaults when it does not exist.
@@ -77,4 +55,27 @@ DeleteCache() {
     if FileExist(cacheFile) {
         FileDelete(cacheFile)
     }
+}
+
+KillGta() {
+    killed := false
+    if pid := ProcessExist("GTA5.exe") {
+        ProcessClose(pid)
+        killed := true
+    }
+    else if pid := ProcessExist("GTA5_Enhanced.exe") {
+        killed := true
+        ProcessClose(pid)
+    }
+
+    if (noSave)
+        ToggleNoSaveStatus()
+
+    if (killed) {
+        ShowCenteredToolTip("GTA5 killed", 17)
+    } else {
+        ShowCenteredToolTip("GTA5 not running", 17)
+        SetTimer(() => ToolTip("", , , 17), -2000)
+    }
+
 }

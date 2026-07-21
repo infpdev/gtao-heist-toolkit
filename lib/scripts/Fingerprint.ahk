@@ -7,7 +7,7 @@
  * 
  * ### FLOW:
  * ```text
- * AutoHack()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
+ * SwitchToAuto()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
  *   InitDetected()            ; reset detection state
@@ -225,7 +225,7 @@ class FingerprintSolver {
     /**
      * Starts / switches to auto mode and starts the main loop timer.
      */
-    AutoHack() {
+    SwitchToAuto() {
         if (this.autoStarted)
             this.autoStarted := false
 
@@ -238,7 +238,7 @@ class FingerprintSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
 
-        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.AutoHack()")
+        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.SwitchToAuto()")
 
         this.findAnchor()
         this.MainLoop()

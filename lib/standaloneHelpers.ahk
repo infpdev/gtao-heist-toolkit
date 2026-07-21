@@ -72,6 +72,59 @@ SetTimer(() => (isFirewallEnabled()), -100)
 
 ; --- Common Functions ---
 
+standalone_switch_to_auto(*) {
+    ; static showedWarning := false
+
+    ; if (!isGtaFocused()) {
+    ;     ShowCenteredToolTip "Cannot use solvers while GTA is not focused", 17
+    ;     SetTimer(() => CustomTooltip(), -5000)
+    ;     showedWarning := true
+    ;     return
+    ; }
+
+    ; showedWarning := false
+
+    if (cannotUseScriptsWhenGtaNotFocused())
+        return
+
+    if (ledgeGrabInProgress) {
+        ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
+        SetTimer () => ToolTip(), -2000
+        return
+    }
+
+    global hackMode := "auto"
+    UpdateGlobalStatus(hackInProgress)
+    heistinstance.switchToAuto()
+}
+
+standalone_switch_to_manual(*) {
+    ; static showedWarning := false
+
+    ; if (!isGtaFocused()) {
+    ;     ShowCenteredToolTip "Cannot use solvers while GTA is not focused", 17
+    ;     SetTimer(() => CustomTooltip(), -5000)
+    ;     showedWarning := true
+    ;     return
+    ; }
+
+    ; showedWarning := false
+
+    if (cannotUseScriptsWhenGtaNotFocused())
+        return
+
+    if (ledgeGrabInProgress) {
+        ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 1
+        SetTimer () => ToolTip(), -2000
+        return
+    }
+
+    global hackMode := "manual"
+    UpdateGlobalStatus(hackInProgress)
+    heistinstance.SwitchToManual()
+    return
+}
+
 /**
  * Destroys the current heist instance (if any) and creates a new one based on current settings.
  * Used for switching between fingerprint/keypad modes or heists.
@@ -79,10 +132,15 @@ SetTimer(() => (isFirewallEnabled()), -100)
  * Side effects: Updates global heistInstance.
  */
 resetSolver(*) {
-    global fingerprintMode, heistInstance, scriptsEnabled, hackMode
+    global heistInstance, hackMode
+
+    if (cannotUseScriptsWhenGtaNotFocused())
+        return
 
     hackMode := "idle"
     clearAllToolTips()
+
+    CustomTooltip "Resetting script", scrW, 0, 20
 
     if (heistInstance) {
         try heistInstance.Destroy()
@@ -92,11 +150,26 @@ resetSolver(*) {
     if (ledgeGrabInProgress) {
         ToggleLedgeGrabInProgress()
     }
-
+    sleep 500
     CreateHeistInstance()
+    UpdateGlobalStatus(false, , , , true)
+
 }
 
 ExitScript(*) {
+    static showedWarning := false
+
+    if (isGtaRunning()) {
+        if (!isGtaFocused()) {
+            if (!showedWarning) {
+                ShowCenteredToolTip "Exit hotkey Inactive [GTA Not Focused]", 17
+                SetTimer(() => ToolTip("", , , 17), -5000)
+                showedWarning := true
+            }
+            return
+        }
+    }
+
     if (IsObject(heistinstance))
         heistinstance.Destroy()
 
@@ -238,6 +311,11 @@ ToggleEngineMode(params := "", info := "", to := "") {
 
 ToggleNoSaveStatus(*) {
     global noSave
+
+    if (cannotToggleNoSaveWhenGtaNotFocused(noSave)) {
+        return
+    }
+
     if (!isFirewallEnabled(true)) {
         MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
             . "Please check your firewall settings and try again.",

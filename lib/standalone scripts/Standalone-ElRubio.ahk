@@ -12,31 +12,6 @@ init() {
     try Hotkey("~" pgUpReg, PgUpDown, "On")
     try Hotkey("~" pgUpReg " up", PgUpUp, "On")
 
-    standalone_switch_to_auto(*) {
-        if (ledgeGrabInProgress) {
-            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => ToolTip(), -2000
-            return
-        }
-
-        global hackMode := "auto"
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.Hack()
-    }
-
-    standalone_switch_to_manual(*) {
-        if (ledgeGrabInProgress) {
-            ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => ToolTip(), -2000
-            return
-        }
-
-        global hackMode := "manual"
-        UpdateGlobalStatus(hackInProgress)
-        heistinstance.SwitchToManual()
-        return
-    }
-
     CreateHeistInstance()
 
 }
