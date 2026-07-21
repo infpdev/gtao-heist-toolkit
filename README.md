@@ -65,6 +65,7 @@ This repository includes:
     - [Fingerprint / Keypad solvers](#fingerprint--keypad-solvers)
     - [Hotkeys \& Controls](#hotkeys--controls)
     - [Options](#options)
+    - [Title Bar Controls](#title-bar-controls)
   - [Standalone Scripts](#standalone-scripts)
   - [Run Locally](#run-locally)
   - [Architecture](#architecture)
@@ -156,7 +157,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/38f4d03292e2fadc86362ad0739976b706c9e534e65073cdde3e4f127abb60a4
+> https://www.virustotal.com/gui/file/310c9a6ff84b34afb754b07ba3fbd328e770d8fa7df52a9e4fcee4c45a08e112
 
 
 <p align="center">
@@ -175,8 +176,7 @@ Provided as-is, with no guarantees.
 - Or stay in **Manual** `M` to select prints yourself
 
 > [!NOTE]
-> - vaultOps runs in the system tray. Left-click the tray icon to terminate it immediately, or right-click → **Exit** to close it. <br>
-> - Windows may display a warning when launching the setup. This is because the setup is not code-signed, which can cause Windows SmartScreen to treat it as an unrecognized application.<br> If this happens, click **More info** and then **run anyway** to continue the installation. Don't worry, it's safe and you won't harm your computer \:]
+> Windows may display a warning when launching the setup. This is because the setup is not code-signed, which can cause Windows SmartScreen to treat it as an unrecognized application.<br> If this happens, click **More info** and then **run anyway** to continue the installation. Don't worry, it's safe and won't harm your computer \:]
 >
 > <p align="center">
 > <img width="350" height="350" alt="Suspicious file warning" src="https://github.com/user-attachments/assets/d02dfa4e-d22b-4967-ac97-9014d6d9ff35" />
@@ -189,6 +189,11 @@ Provided as-is, with no guarantees.
 - Allows you to replay the heist by preventing the game from saving  
 
 **How to use:**
+> [!IMPORTANT]
+> **One-Time Setup**
+>
+> After completing your heist setups, force a save → switch to Story Mode → return to GTA Online.
+
 1. Enable **NoSave** either from the app, or using the hotkey, which is `]` by default, during the heist  
 2. Make sure it is active **before the payment cutscene**  
 3. After returning to freeroam, switch to **Story Mode** while keeping NoSave enabled  
@@ -196,6 +201,8 @@ Provided as-is, with no guarantees.
 5. Return to **GTA Online**.
 6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt.
 7. Switch to **Story Mode**, then return to **GTA Online** (without NoSave enabled). The heist can now be replayed without setups.
+
+**Post-Patch Tutorial:** https://youtu.be/6ZYJPmXAMu4
 
 > [!WARNING]
 > Failing to switch to **Story Mode** the second time may cause you to lose your saved heist. Make sure to follow the steps carefully.
@@ -307,6 +314,22 @@ All hotkeys are customizable.
 | Delay (30 – 200 ms) | Controls auto-mode solving speed | Lower = faster but unstable<br>Higher = slower but stable<br>Recommended / Default: `40 ms` |
 | Tooltip Position | Chooses where status tooltips appear on the screen | Supports six screen positions. Default: `Top-Right` (`ToolTipPos=4`). Can currently be changed only in `zSettings.ini`. |
 | Tooltip Y Offset | Adjusts the vertical position of status tooltips | Useful for avoiding overlap with in-game HUD elements or display burn-in. Can currently be changed only in `zSettings.ini`. |
+
+### Title Bar Controls
+
+<p align="center">
+  <img src="lib/static/kill_gta.png" width="5%" alt="Kill GTA Button">
+  <img src="lib/static/exit.png" width="5%" alt="Exit Button">
+  <img src="lib/static/drag.png" width="5%" alt="Drag Button">
+  <img src="lib/static/minimize.png" width="5%" alt="Minimize Button">
+</p>
+
+- Clicking <img src="lib/static/exit.png" width="3%" alt="Exit Button"> immediately disables **NoSave**, terminates the app, and stops all running scripts.
+- Clicking <img src="lib/static/minimize.png" width="3%" alt="Minimize Button"> minimizes the app to the taskbar.
+- Using the <img src="lib/static/drag.png" width="3%" alt="Drag Button"> button:
+  - Click and hold to drag the app around the screen.
+  - Click once to center the app on the screen.
+- Clicking <img src="lib/static/kill_gta.png" width="3%" alt="Kill GTA Button"> forcefully terminates GTA V and disables **NoSave** if it is enabled.
 
 ## Standalone Scripts
 

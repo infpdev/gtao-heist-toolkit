@@ -14,7 +14,8 @@
 
     UpdateNoSaveInstrText() {
         global instrNoSave, noSaveKey, txtNoSaveInstr
-        hotKeyTextNoSave := " Press " CanonicalToDisplay(noSaveKey) " to toggle."
+        hotKeyTextNoSave := " Press " CanonicalToDisplay(noSaveKey) " to toggle. " .
+        '<a href="https://infpdev.netlify.app?vaultOps=4">Tutorial</a>'
         if IsSet(txtNoSaveInstr)
             txtNoSaveInstr.Text := instrNoSave hotKeyTextNoSave
     }

@@ -46,8 +46,15 @@ global vaultOps := true
 if debug {
     CustomTooltip "In Debug mode", 0, 0, 20
     sleep 100
-    Hotkey("F2 Up", (*) => Reload())
+    Hotkey("F2 Up", ReloadVaultOps)
     Hotkey("F3 Up", (*) => ExitApp())
+}
+
+global reloading := false
+
+ReloadVaultOps(*) {
+    reloading := true
+    Reload()
 }
 
 global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnResetHotkey := ResetScriptsHotkey,
@@ -263,9 +270,13 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     ManualHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
 
+        if (cannotUseScriptsWhenGtaNotFocused()) {
+            return
+        }
+
         if (ledgeGrabInProgress) {
             ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => CustomTooltip(), -2000
+            SetTimer () => ToolTip("", , , 17), -2000
             return
         }
 
@@ -291,19 +302,23 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     AutoHackHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
 
+        if (cannotUseScriptsWhenGtaNotFocused()) {
+            return
+        }
+
         if (ledgeGrabInProgress) {
             ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-            SetTimer () => CustomTooltip(), -2000
+            SetTimer () => ToolTip("", , , 17), -2000
             return
         }
 
         hackMode := "auto"
         if (IsObject(heistInstance)) {
             if (heist == CAYO_PERICO)
-                heistInstance.Hack()
+                heistInstance.SwitchToAuto()
             else if (heist == DCH_OR_KORTZ) {
                 if (fingerprintMode)
-                    heistInstance.AutoHack()
+                    heistInstance.SwitchToAuto()
                 else
                     heistInstance.switchToAuto()
             }
@@ -318,6 +333,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ResetScriptsHotkey(*) {
         global hackMode, hackInProgress
+
+        if (cannotUseScriptsWhenGtaNotFocused()) {
+            return
+        }
+
         hackMode := "idle"
         hackInProgress := false
         SetTimer(findAnchorsAndCreateInstance, 0) ; Restart anchor detection timer
@@ -436,7 +456,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         }
 
         if (earlyReturn) {
-            MakeAllToolTipsClickThrough(hackMode == "idle")
+            MakeAllToolTipsClickThrough(hackMode == "idle" && !noSave)
             return
         }
 
@@ -496,7 +516,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
             y := pos.y
             CustomTooltip(aggregatedStatus, x, y, 20)
 
-            MakeAllToolTipsClickThrough(hackMode == "idle")
+            MakeAllToolTipsClickThrough(hackMode == "idle" && !noSave)
         }
     }
 
@@ -507,9 +527,26 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 ; ⏐=========================================== UI Toggle Functions ==========================================⏐
 ; ⏐==========================================================================================================⏐
 {
+
+    /**
+     * Toggles the solver scripts on/off, updates the UI elements, and registers/unregisters the associated hotkeys.
+     * If GTA is not focused, shows a warning and does not toggle scripts.
+     */
     ToggleScriptsEnabled(*) {
+        static showedWarning := false
         global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, pgUpSent := false
         global txtPgUpLabel
+
+        if (!scriptsEnabled && cannotUseScriptsWhenGtaNotFocused(true)) {
+            if (!showedWarning) {
+                ShowCenteredToolTip "Toggle Script Hotkey Inactive [GTA Not Focused]", 1
+                SetTimer(() => CustomTooltip(), -5000)
+                showedWarning := true
+            }
+            return
+        }
+
+        showedWarning := false
 
         txtPgUpLabel.Opt("cWhite")
 
@@ -555,6 +592,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ToggleNoSaveStatus(*) {
         global noSave, picNoSave, iniFile, scriptsEnabled
+
+        if (cannotToggleNoSaveWhenGtaNotFocused(noSave)) {
+            return
+        }
+
         if (!isFirewallEnabled(true)) {
             MsgBox "Cannot toggle NoSave mode because the firewall is not accessible."
                 . "Please check your firewall settings and try again.",
@@ -572,6 +614,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
         }
 
         UpdateGlobalStatus(hackInProgress)
+
         picNoSave.Value := noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png"
     }
 
@@ -695,11 +738,10 @@ Init() {
 
     ; ========= GUI objects =========
     global Title := "vaultOps"
-    global guiApp, picNoSave, xBtn, settingsGroup
-    global picFingerprintToggle, picScriptsEnabled, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
-    global inputManual := "", inputAuto := "", inputReset := ""
-    global inputDelay := "", inputNoSave := "", inputToggleScripts := "", inputLedgeGrabAutomation := "", inputPgUp :=
-        "", inputLedgeGrab := ""
+    global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
+    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
+    global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
+        inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
 
     ; Text labels
     global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtPgUpLabel,
@@ -708,7 +750,7 @@ Init() {
 
     ; Instruction text variables (global scope)
     global instrNoSave := "Lets you do the replay glitch in heists / missions.",
-        instrScripts := "Enable scripts and show the toggle-mode button.",
+        instrScripts := "Enable the scripts to show the heist, engine, and mode toggle buttons.",
         instrLedgeGrab := "Automate the ledge grab glitch.",
         instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
         instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
@@ -754,7 +796,7 @@ Init() {
     guiApp.SetFont("s" overallFontSize " cWhite")
 
     ; ======= Top bar =======
-    topbarH := 30 / scale, btnW := 17 / scale
+    topbarH := 30 / scale, btnW := 22 / scale
     topbarW := width, titleW := topbarW - btnW
 
     bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
@@ -764,9 +806,26 @@ Init() {
         guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",
             "*App running in unsupported resolution mode")
 
-    xBtn := guiApp.AddPicture("x" ((width - btnW - 15 / scale) / scale) " y" 10 / scale " w" btnW " h" btnW " +0x4",
+    ; Kill GTA button
+    killBtn := guiApp.AddPicture("x" ((width - btnW - 100 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    staticFolder "\kill_gta.png")
+    killBtn.OnEvent("Click", (*) => (KillGta()))
+
+    ; Close button
+    xBtn := guiApp.AddPicture("x" ((width - btnW - 71 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    staticFolder "\exit.png")
+    xBtn.OnEvent("Click", (*) => (ExitApp()))
+
+    dragBtn := guiApp.AddPicture("x" ((width - btnW - 40 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW + 2 " +0x4",
+    staticFolder "\drag.png")
+    dragBtn.OnEvent("Click", StartDrag)
+
+    ; Minimize button
+    mnmzBtn := guiApp.AddPicture("x" ((width - btnW - 10 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
     staticFolder "\minimize.png")
-    xBtn.OnEvent("Click", (*) => (guiApp.Minimize()))
+    mnmzBtn.OnEvent("Click", (*) => (
+        ToolTip("", , , 19)
+        guiApp.Minimize()))
 
     ; ======= Group styling =======
     leftPadding := 40 / scale
@@ -811,7 +870,7 @@ Init() {
         inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
         ; Nosave instruction text
-        txtNoSaveInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        txtNoSaveInstr := guiApp.AddLink("x" xInstr " y" y " w" instrW - 100 " cA9A9A9", "")
         ; Nosave event listeners
         picNoSave.OnEvent("Click", ToggleNoSaveStatus)
         inputNoSave.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputNoSave, "NoSave", noSaveKey))
@@ -933,7 +992,7 @@ Init() {
 
         ; Heist instruction text
         txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "Switch between Casino / Kortz and Cayo Perico heists (Usually handled by the script).")
+            "Switch between Cayo Perico and Casino / Kortz heists (Usually handled by the script).")
         ; Heist event listener
         picHeistToggle.OnEvent("Click", ToggleHeistMode)
         y += rowH
@@ -1050,7 +1109,7 @@ Init() {
         " Center Background222222 cWhite", delay)
         ; Delay instruction text
         txtDelayInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "Adjusts the speed of key-sending for automation (30-200 ms). 40ms is usually preferred.")
+            "Adjusts the speed of key-sending for automation (30-200 ms). 40ms is usually preferred")
         ; Delay event listeners
         inputDelay.OnEvent("Focus", (*) => (
             AttachUnfocusHandlers(inputDelay, delay, 0),
@@ -1067,7 +1126,7 @@ Init() {
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
-        linkText := guiApp.Add("Link", "xp-25 y" (height / scale - (height / scale - (groupY + groupH)) /
+        linkText := guiApp.Add("Link", "xp-55 y" (height / scale - (height / scale - (groupY + groupH)) /
         (1.5 / scale) " w" groupW " c8484db center"),
         'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
         linkText.SetFont("s" 10 / scale " bold")
@@ -1076,16 +1135,19 @@ Init() {
         A_TrayMenu.Delete()
         A_TrayMenu.Add("Show", (*) => (
             guiApp.Show(),
+            CenterGui(guiApp, width, height),
             ForceForeground(guiApp),
             SetTimer(() => ForceForeground(guiApp), -100)
         ))
         A_TrayMenu.Add("Exit", (*) => ExitApp())
-        A_TrayMenu.Default := ("Exit")
+        A_TrayMenu.Default := ("Show")
         A_TrayMenu.ClickCount := 1
     }
 
     ; ====================== Finalize GUI setup ======================
-    OnMessage(0x0006, GuiApp_OnActivate) ; 0x0006 = WM_ACTIVATE
+    OnMessage(0x0006, GuiApp_OnActivate)
+    OnMessage(0x0020, OnSetCursor)
+
     SetRoundedCorners(guiApp.Hwnd, width, height, borderRadius)
     SetHeistToggleBtnVisibility(false)
     SetEngineToggleBtnVisibility(false)
@@ -1121,7 +1183,12 @@ OnExit(SaveCacheOnExit)
 
 SaveCacheOnExit(*) {
     global isShuttingDown := true
-    ShowCenteredToolTip "Terminating vaultOps"
+    clearAllToolTips(1)
+    if (reloading) {
+        ShowCenteredToolTip "Reloading vaultOps"
+    } else {
+        ShowCenteredToolTip "Exiting vaultOps"
+    }
     try SaveCache()
     try PersistSettingsToAppData()
     try StopPython()

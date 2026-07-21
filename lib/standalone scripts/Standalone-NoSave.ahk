@@ -33,6 +33,10 @@ UpdateTooltip() {
 ToggleNoSaveMode(*) {
     global noSaveActive
 
+    if (cannotToggleNoSaveWhenGtaNotFocused(noSaveActive)) {
+        return
+    }
+
     if noSaveActive {
         if DisableNoSaveMode() {
             noSaveActive := false
@@ -56,7 +60,23 @@ init() {
     FocusGtaIfRunning()
 
     try Hotkey("~*" CanonicalToRegistration(noSaveKey), ToggleNoSaveMode, "On")
-    try Hotkey("~*" CanonicalToRegistration(terminateKey), (*) => ExitApp(), "On")
+    try Hotkey("~*" CanonicalToRegistration(terminateKey), ExitScript, "On")
+}
+
+ExitScript(*) {
+    static showedWarning := false
+
+    if (isGtaRunning()) {
+        if (!isGtaFocused(true, true)) {
+            if (!showedWarning) {
+                ShowCenteredToolTip "Exit hotkey inactive [GTA Not Focused]", 17
+                SetTimer(() => ToolTip("", , , 17), -5000)
+                showedWarning := true
+            }
+            return
+        }
+    }
+    ExitApp
 }
 
 ; =================================================================================================⏐
@@ -76,12 +96,21 @@ init() {
         }
     }
 
+    ; Enables the NoSave firewall rule and returns true when it is active.
     EnableNoSaveMode(*) {
         global NOSAVE_RULE_NAME, NOSAVE_REMOTE_IP, forMode
         fwPolicy := GetFirewallPolicy()
         if !fwPolicy {
             ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
             return false
+        }
+
+        NoSavePatchNoteShown := IniRead(iniFile, "Options", "NoSavePatchNoteShown", false)
+        if (!NoSavePatchNoteShown) {
+            shouldEnableNoSave := ShowNoSaveTutorialPrompt()
+            IniWrite(1, iniFile, "Options", "NoSavePatchNoteShown")
+            if (!shouldEnableNoSave)
+                return false
         }
 
         try fwPolicy.Rules.Remove(NOSAVE_RULE_NAME)
@@ -104,6 +133,7 @@ init() {
 
         enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
+            RegisterAltF4Handler()
             ShowCenteredToolTip("NoSave enabled [Works]", 17)
 
             try isRockstarServerBlocked()
@@ -112,6 +142,7 @@ init() {
             forMode := "enabled"
             return true
         } else {
+            UnregisterAltF4Handler()
             errMsg()
             return false
         }
@@ -120,61 +151,6 @@ init() {
         errMsg() {
             MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
                 "FIREWALL WARNING", 48
-        }
-
-        isRockstarServerBlocked() {
-            ip := NOSAVE_REMOTE_IP
-
-            ; Create ICMP handle
-            hPort := DllCall("Icmp.dll\IcmpCreateFile", "Ptr")
-            if (!hPort)
-                return false
-
-            ; Convert IP string -> uint
-            addr := DllCall("Ws2_32\inet_addr", "AStr", ip, "UInt")
-
-            ; Reply buffer
-            replySize := 1024
-            replyBuf := Buffer(replySize, 0)
-
-            ; Send ICMP echo
-            result := DllCall(
-                "Icmp.dll\IcmpSendEcho",
-                "Ptr", hPort,
-                "UInt", addr,
-                "Ptr", 0,
-                "UShort", 0,
-                "Ptr", 0,
-                "Ptr", replyBuf,
-                "UInt", replySize,
-                "UInt", 1000,
-                "UInt"
-            )
-
-            ; Read returned status code from ICMP_ECHO_REPLY
-            ; Status is at offset 4
-            status := NumGet(replyBuf, 4, "UInt")
-
-            DllCall("Icmp.dll\IcmpCloseHandle", "Ptr", hPort)
-
-            ; 11050 = IP_GENERAL_FAILURE
-            ; Means Windows/network stack blocked locally
-            if (status = 11050)
-                return true
-
-            ; anything else = traffic probably escaped
-            MsgBox(
-                "Warning: VaultOps detected that NoSave may not be working correctly.`n`n"
-                .
-                "This is usually caused by third-party antivirus or firewall apps overriding Windows Firewall settings."
-                .
-                "`n`nIf you use apps like Kaspersky, BitDefender, SimpleWall, etc., try temporarily disabling them or checking their firewall settings."
-                .
-                "`n`nYou can verify whether NoSave is working by pressing Alt + F4 in GTA Online."
-                .
-                "`nIf the game does not show a 'Save Failed' message, then NoSave is likely not active."
-                , "FIREWALL WARNING", 48
-            )
         }
 
     }
@@ -192,6 +168,7 @@ init() {
 
         disabled := !IsNoSaveRuleActive(fwPolicy)
         if (disabled) {
+            UnregisterAltF4Handler()
             ShowCenteredToolTip("NoSave disabled", 17)
             SetTimer () => clearNoSaveToolTip("disabled"), -2000
             forMode := "disabled"
@@ -206,6 +183,62 @@ init() {
                 "FIREWALL WARNING", 48
         }
 
+    }
+
+    ; Returns true if the Rockstar server is blocked (NoSave is working), false otherwise.
+    isRockstarServerBlocked() {
+        ip := NOSAVE_REMOTE_IP
+
+        ; Create ICMP handle
+        hPort := DllCall("Icmp.dll\IcmpCreateFile", "Ptr")
+        if (!hPort)
+            return false
+
+        ; Convert IP string -> uint
+        addr := DllCall("Ws2_32\inet_addr", "AStr", ip, "UInt")
+
+        ; Reply buffer
+        replySize := 1024
+        replyBuf := Buffer(replySize, 0)
+
+        ; Send ICMP echo
+        result := DllCall(
+            "Icmp.dll\IcmpSendEcho",
+            "Ptr", hPort,
+            "UInt", addr,
+            "Ptr", 0,
+            "UShort", 0,
+            "Ptr", 0,
+            "Ptr", replyBuf,
+            "UInt", replySize,
+            "UInt", 1000,
+            "UInt"
+        )
+
+        ; Read returned status code from ICMP_ECHO_REPLY
+        status := NumGet(replyBuf, 4, "UInt")
+
+        DllCall("Icmp.dll\IcmpCloseHandle", "Ptr", hPort)
+
+        ; 11050 = IP_GENERAL_FAILURE
+        ; Means Windows/network stack blocked locally
+        if (status = 11050)
+            return true
+
+        ; Show warning if NoSave is not working
+        MsgBox(
+            "Warning: VaultOps detected that NoSave may not be working correctly.`n`n"
+            .
+            "This is usually caused by third-party antivirus or firewall apps overriding Windows Firewall settings."
+            .
+            "`n`nIf you use apps like Kaspersky, BitDefender, SimpleWall, etc., try temporarily disabling them or checking their firewall settings."
+            .
+            "`n`nYou can verify whether NoSave is working by pressing Alt + F4 in GTA Online."
+            .
+            "`nIf the game does not show a 'Save Failed' message, then NoSave is likely not active."
+            , "FIREWALL WARNING", 48
+        )
+        return false
     }
 
     ; Returns true when every active Windows Firewall profile is enabled.
@@ -234,7 +267,7 @@ init() {
         if IsFirewallOnActiveProfile() {
             if (!isJustAToggle) {
                 ShowCenteredToolTip("Firewall check passed :]", 17)
-                SetTimer () => ToolTip("", , , 17), -2000
+                SetTimer () => CustomTooltip("", , , 17), -2000
                 CleanupLegacyDuplicateRules()
             }
             return true ; Already on, do nothing
@@ -253,7 +286,7 @@ init() {
         Sleep 300
         if IsFirewallOnActiveProfile() {
             ShowCenteredToolTip("Firewall check passed :]", 17)
-            SetTimer () => ToolTip("", , , 17), -2000
+            SetTimer () => CustomTooltip("", , , 17), -2000
 
             return true
 
@@ -320,9 +353,133 @@ init() {
         }
     }
 
+    ; Handles the Alt+F4 hotkey to warn the user about NoSave mode and prevent accidental saves.
+    HandleAltF4(*) {
+        static lastAltF4Caught := 0
+
+        ; Send("!{F4}") ; Send Alt+F4 to the game
+        ; SetTimer(() => (DeleteNewestPCSettingsBin()), -10000)
+        ; return
+
+        if (!isGtaFocused(true, true)) {
+            Send("!{F4}")
+            return
+        }
+
+        isNoSaveWorking := isRockstarServerBlocked()
+
+        if (
+            lastAltF4Caught
+            && isNoSaveWorking
+            && A_TickCount - lastAltF4Caught < 5000
+        ) {
+            lastAltF4Caught := 0
+            Send("!{F4}")
+            return
+        }
+
+        if (isNoSaveWorking) {
+            MsgBox "Do NOT press ALT + F4 to test if it's working.`n"
+                . "Doing so will immediately force a save and may reset your replay.`n`n"
+                . "If you still want to continue, press ALT + F4 again within the next 5 seconds.",
+                "NoSave Check", 48
+
+            lastAltF4Caught := A_TickCount
+            SetTimer(() => lastAltF4Caught := 0, -5000)
+        }
+        FocusGtaIfRunning()
+    }
+
+    ; Shows the NoSave tutorial prompt and returns true if the user wants to watch it, false otherwise.
+    ShowNoSaveTutorialPrompt() {
+        g := Gui("+AlwaysOnTop -Caption", "NoSave Update")
+        g.SetFont("s10", "Segoe UI")
+        if (IsSet(guiApp)) {
+            guiApp.Minimize()
+        }
+        g.MarginX := 15
+        g.MarginY := 15
+
+        g.AddText("w360",
+            "NoSave was partially patched on July 15.`n`n"
+            . "A new workaround is now required to replay heists.`n`n"
+            . "Would you like to watch the tutorial?`n"
+            . "This prompt will only be shown once."
+        )
+
+        btnWatch := g.AddButton("xm w170 h30", "Watch Tutorial")
+        btnSkip := g.AddButton("x+10 w170 h30", "No, I already know it")
+
+        result := ""
+
+        btnWatch.OnEvent("Click", (*) => (
+            result := 0,
+            g.Destroy()
+        ))
+
+        btnSkip.OnEvent("Click", (*) => (
+            result := 1,
+            g.Destroy()
+        ))
+
+        g.OnEvent("Close", (*) => (
+            result := 1,
+            g.Destroy()
+        ))
+
+        g.Show("AutoSize Center")
+
+        WinWaitClose("ahk_id " g.Hwnd)
+
+        if (result = 0) {
+            Run("https://infpdev.netlify.app?vaultOps=4")
+        }
+
+        return result
+    }
+
+    DeleteNewestPCSettingsBin() {
+        process := WinGetProcessName("A")
+        basePath := A_MyDocuments "\Rockstar Games\"
+
+        if InStr(StrLower(process), "enhanced")
+            searchPath := basePath "GTAV Enhanced\Profiles\*\pc_settings.bin"
+        else
+            searchPath := basePath "GTA V\Profiles\*\pc_settings.bin"
+
+        newestFile := ""
+        newestTime := ""
+
+        loop files searchPath, "F" {
+            if (!newestFile || A_LoopFileTimeModified > newestTime) {
+                newestFile := A_LoopFileFullPath
+                newestTime := A_LoopFileTimeModified
+            }
+        }
+
+        if (!newestFile)
+            return false
+
+        try {
+            MsgBox "Deleting the newest pc_settings.bin file:`n" newestFile, "NoSave Cleanup", 48
+            FileDelete(newestFile)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    RegisterAltF4Handler() {
+        Hotkey("!F4", HandleAltF4, "On")
+    }
+
+    UnregisterAltF4Handler() {
+        Hotkey("!F4", HandleAltF4, "Off")
+    }
+
     clearNoSaveToolTip(localMode) {
         if (forMode == localMode)
-            ToolTip("", , , 17)
+            CustomTooltip("", , , 17)
     }
 
     ; Cleans up the NoSave rule on exit.
@@ -330,7 +487,7 @@ init() {
         if FileExist(iniFile) {
             DisableNoSaveMode()
         }
-        ToolTip("", , , 17)
+        CustomTooltip("", , , 17)
     }
 
 }
