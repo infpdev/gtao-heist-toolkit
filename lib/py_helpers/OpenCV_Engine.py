@@ -78,10 +78,14 @@ def handle_request(data):
         if t == "heartbeat":
             touch_heartbeat()
             return None
+        
+        should_capture_window = data.get("wasGtaFocused", False)
+        
+        # write_crash_log(f"should_capture_window: {json.dumps(should_capture_window, ensure_ascii=True)}")
 
         if t == "get_fingerprint":
             touch_heartbeat()
-            result = get_fingerprints(None)
+            result = get_fingerprints(None, should_capture_window=should_capture_window)
 
             if not result:
                 return -1   # empty = no match
@@ -90,7 +94,7 @@ def handle_request(data):
         
         if t == "get_cayo":
             touch_heartbeat()
-            result = get_cayo_prints()
+            result = get_cayo_prints(should_capture_window=should_capture_window)
             if not result:
                 return ""
 
@@ -165,7 +169,7 @@ def handle_request(data):
             except (TypeError, ValueError):
                 col = None
 
-            result = detect_ring(debug=False, col=col)
+            result = detect_ring(col=col, debug=False, should_capture_window=should_capture_window)
             if result and result.get("found"):
                 return result["row"]
             return 0
@@ -180,7 +184,7 @@ def handle_request(data):
             isKortzHeist = data.get("isKortzHeist", False)
             cols = 5 if isKortzHeist else 6
             touch_heartbeat()
-            result = get_keypad(debug=False, cols=cols)
+            result = get_keypad(debug=False, cols=cols, should_capture_window=should_capture_window)
             if result:
                 return result
             return ""

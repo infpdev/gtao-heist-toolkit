@@ -240,7 +240,8 @@ class KeypadSolver {
         if (this.mode == "manual")
             return
 
-        this.ShowRingMap() ; Show row mapping during handoff
+        this.showMapIfStabilized() ; Show row mapping during handoff
+        this.showKeys() ; Show keys during handoff
 
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
@@ -920,8 +921,8 @@ class KeypadSolver {
             return false
 
         if (!this.stabilized) {
-            this.showMapIfStabilized()
             this.stabilized := true
+            this.showMapIfStabilized()
             this.handoffPending := true
             this.showKeys()
         }
@@ -935,6 +936,7 @@ class KeypadSolver {
      */
     ringDetected_AutoSelectOpenCV() {
         ; sleep 1000
+        ; this.clearCurrentColTooltip()
         ringResult := GetResFromOpenCV(REQ_DETECT_RING)
         ; MsgBox ringResult
 
@@ -958,6 +960,13 @@ class KeypadSolver {
             return false
         } catch {
             return false
+        }
+    }
+
+    clearCurrentColTooltip() {
+        for col in this.cols {
+            Tooltip "", , , col
+            return
         }
     }
 
@@ -997,7 +1006,7 @@ class KeypadSolver {
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
             if (this.mode == "auto") {
-                this.ShowRingMap()
+                this.showMapIfStabilized()
                 this.showkeys()
             }
             if (this.cols.Count == 0 || targetCol == this.colsCount) {
@@ -1084,7 +1093,7 @@ class KeypadSolver {
 
     showMapIfStabilized() {
         ; Show initial ring map on stabilization before any selection
-        if (!this.cols.Has(this.colsCount))
+        if (!this.stabilized || !this.cols.Has(this.colsCount))
             return
 
         this.ShowRingMap()

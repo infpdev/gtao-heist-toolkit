@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from PIL import Image
-from helpers import resolve_dump_dir, prepare_detection_image
+from helpers import resolve_dump_dir, prepare_image
 import os
 
 TARGETS = [
@@ -55,7 +55,7 @@ def _dump_debug_image(image, debug_overlay, filename):
 
 
 
-def get_cayo_prints(image=None, debug=False):
+def get_cayo_prints(image=None, debug=False, should_capture_window=False):
     """Detect the Cayo fingerprint solution and cursor row.
 
     Returns a dict with:
@@ -63,7 +63,7 @@ def get_cayo_prints(image=None, debug=False):
     - cursor_row: 1-based selected row, or -1 if unknown
     """
     if image is None:
-        image = prepare_detection_image(1.0)
+        image = prepare_image(scale=1.0, should_capture_window=should_capture_window)
     else:
         if not isinstance(image, np.ndarray):
             image = np.array(image)
@@ -71,7 +71,7 @@ def get_cayo_prints(image=None, debug=False):
         if image.ndim == 3 and image.shape[2] == 4:
             image = image[:, :, :3]
 
-        image = prepare_detection_image(1.0, image)
+        image = prepare_image(scale=1.0, image=image, should_capture_window=should_capture_window)
 
     # Prepare target parts (right side)
     target_parts = []

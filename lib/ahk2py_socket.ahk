@@ -167,7 +167,7 @@ LastRequestFinished(timeout := 2000) {
 ; Send a JSON request to the helper process and wait (short timeout) for reply.
 ; Returns the raw response line or empty string on timeout/failure.
 CallPython(puzzleType, params := 0, waitForResponse := true) {
-    global pyProc, ocvCallInProgress
+    global pyProc, ocvCallInProgress, wasGtaFocused
 
     if (ocvCallInProgress) {
         ; Prevent flooding the helper with requests if one is already in progress
@@ -180,6 +180,7 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
 
     ; send request
     req := '{"type":"' puzzleType '"'
+
     if IsObject(params) {
         for key, value in params {
             if (Type(value) = "String") {
@@ -190,6 +191,8 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
             }
         }
     }
+
+    req .= ',"wasGtaFocused":' (wasGtaFocused ? "true" : "false")
     req .= "}"
 
     if (!IsObject(pyProc)) {

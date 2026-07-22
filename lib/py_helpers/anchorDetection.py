@@ -3,7 +3,7 @@ import os
 import numpy as np
 import cv2
 
-from helpers import prepare_detection_image, _dump_debug_image
+from helpers import prepare_detection_image, dump_debug_image
 
 
 # HSV color ranges
@@ -500,7 +500,7 @@ def run_anchor_detectors(
     # DEBUG OUTPUT
     # ------------------------
     if debug:
-        _dump_debug_image(img, debug_regions)
+        dump_debug_image(img, debug_regions)
 
     # ------------------------
     # RETURN

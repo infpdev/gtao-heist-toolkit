@@ -42,9 +42,9 @@ def _grid_metrics(scale: float):
     return base_x1, base_y1, base_x2, base_y2, col_spacing, row_spacing, row_base, col_base
 
 
-def get_keypad(image=None, scale=0.5, debug=False, cols=6):
+def get_keypad(image=None, scale=0.5, debug=False, cols=6, should_capture_window=False):
     """Detect all 6 keypad columns in one call and return the row values."""
-    image = prepare_image(image, scale, debug)
+    image = prepare_image(image=image, scale=scale, should_capture_window=should_capture_window)
     if image is None:
         return False
     
@@ -165,7 +165,7 @@ def is_kortz_heist(image=None, scale=0.5, col=0, debug=False):
     """
 
     if image is None:
-        image = prepare_image(None, scale)
+        image = prepare_image(image=None, scale=scale, should_capture_window=False)
     if image is None:
         return False
 
@@ -236,7 +236,7 @@ def is_kortz_heist(image=None, scale=0.5, col=0, debug=False):
 
     return diff > 15
 
-def detect_ring(image=None, scale=0.5, debug=False, col=None):
+def detect_ring(image=None, scale=0.5, debug=False, col=None, should_capture_window=False):
     """Detect the keypad ring position and map it to row 1..5.
 
     Args:
@@ -244,12 +244,13 @@ def detect_ring(image=None, scale=0.5, debug=False, col=None):
         scale: Downscale factor used for circle search.
         debug: If true, dumps annotated ring debug image.
         col: Optional 1-based target column. If omitted, scans all columns.
+        should_capture_window: If true, captures the entire window for image processing.
 
     Returns:
         dict: {"found": True, "circle": (x, y, r), "row": int} when found.
         bool: False when no ring is detected.
     """
-    image = prepare_image(image, 1.0)
+    image = prepare_image(image=image, scale=1.0, should_capture_window=should_capture_window)
 
     if image is None:
         return False
@@ -410,7 +411,7 @@ def detect_ring(image=None, scale=0.5, debug=False, col=None):
     
 def detect_column_selected(image=None, col=1, scale=0.5, debug=False):
     """Check whether a requested column is selected by detecting cyan pixel patches."""
-    image = prepare_image(image, scale)
+    image = prepare_image(image=image, scale=scale)
     if image is None:
         return False
 

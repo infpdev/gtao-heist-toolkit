@@ -23,6 +23,8 @@ ForceForeground(guiApp) {
     try WinActivate("ahk_id " guiApp.Hwnd)
     try DllCall("SetForegroundWindow", "ptr", guiApp.Hwnd)
 
+    try bar.Focus()
+
     return WinActive("ahk_id " guiApp.Hwnd)
 }
 
@@ -86,7 +88,7 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
 
     switch mouseOverHwnd {
         case killBtn.Hwnd:
-            ToolTip("Kill GTA5", , , 19)
+            ToolTip("Kill GTA V", , , 19)
             DllCall("SetCursor", "Ptr", hCursorHand)
             return True
 
@@ -96,7 +98,7 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
             return True
 
         case dragBtn.Hwnd:
-            ToolTip("Click to Center App`nHold to drag App", , , 19)
+            ToolTip("Click to Center App`nHold to Drag App", , , 19)
             DllCall("SetCursor", "Ptr", hCursorDrag)
             return True
 

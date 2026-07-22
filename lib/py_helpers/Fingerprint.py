@@ -4,7 +4,7 @@ import cv2
 import time
 import numpy as np
 from PIL import ImageDraw, Image
-from helpers import resolve_dump_dir, prepare_detection_image
+from helpers import resolve_dump_dir, prepare_image
 
 tofind = (950, 155, 1335, 685)
 
@@ -62,7 +62,7 @@ def is_in(img, subimg, threshold=0.65):
     return max_val >= threshold
 
 
-def get_fingerprints(img=None, threshold=0.65, debug=False):
+def get_fingerprints(img=None, threshold=0.65, debug=False, should_capture_window=False):
     """Detect candidate fingerprint slots from the prepared game frame.
 
     Returns:
@@ -74,7 +74,7 @@ def get_fingerprints(img=None, threshold=0.65, debug=False):
 
     scale = 0.5
     if img is None: 
-        img = prepare_detection_image(scale)
+        img = prepare_image(scale=scale, should_capture_window=should_capture_window)
         
     im = Image.fromarray(img)
 
@@ -174,6 +174,6 @@ if __name__ == "__main__":
     # BGR -> RGB
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    processed = prepare_detection_image(0.5, img)
+    processed = prepare_image(scale=0.5, image=img)
 
     get_fingerprints(processed, debug=True)

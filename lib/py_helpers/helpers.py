@@ -3,9 +3,11 @@ import sys
 import numpy as np
 from PIL import ImageGrab, Image, ImageDraw
 import cv2
-# import win32gui
-# import win32ui
-# import ctypes
+import win32gui
+import win32ui
+import ctypes
+
+TARGET_WINDOW_TITLE = "Grand Theft Auto V"
 
 def runtime_dir():
     if getattr(sys, "frozen", False):
@@ -44,7 +46,7 @@ def prepare_detection_image(scale=1.0, img=None):
 
     return img
 
-def _dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
+def dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
     if search_img is None:
         return
     
@@ -85,72 +87,71 @@ def is_black_area_present_ledge_grab(search_img: np.ndarray = None, scale: float
     return np.max(roi) - np.min(roi) < 3
 
 
-# Set this once to your target app's window title (or a substring of it).
-# TARGET_WINDOW_TITLE = "Grand Theft Auto V"
 
-# def capture_window(window_title_substring):
-#     """Capture only the specified app window's contents, bypassing any
-#     overlapping windows (like an AHK tooltip) since those are separate
-#     top-level windows and are never drawn into this capture. Returns an
-#     RGB numpy array (matching ImageGrab.grab()'s channel order), or None
-#     if the window wasn't found or capture failed."""
+def capture_window(window_title_substring):
+    """Capture only the specified app window's contents, bypassing any
+    overlapping windows (like an AHK tooltip) since those are separate
+    top-level windows and are never drawn into this capture. Returns an
+    RGB numpy array (matching ImageGrab.grab()'s channel order), or None
+    if the window wasn't found or capture failed."""
 
-#     hwnd = None
-#     def enum_handler(h, _):
-#         nonlocal hwnd
-#         if win32gui.IsWindowVisible(h) and window_title_substring.lower() in win32gui.GetWindowText(h).lower():
-#             hwnd = h
-#     win32gui.EnumWindows(enum_handler, None)
+    hwnd = None
+    def enum_handler(h, _):
+        nonlocal hwnd
+        if win32gui.IsWindowVisible(h) and window_title_substring.lower() in win32gui.GetWindowText(h).lower():
+            hwnd = h
+    win32gui.EnumWindows(enum_handler, None)
 
-#     if hwnd is None:
-#         return None
+    if hwnd is None:
+        return None
 
-#     left, top, right, bottom = win32gui.GetClientRect(hwnd)
-#     left, top = win32gui.ClientToScreen(hwnd, (left, top))
-#     right, bottom = win32gui.ClientToScreen(hwnd, (right, bottom))
-#     width = right - left
-#     height = bottom - top
+    left, top, right, bottom = win32gui.GetClientRect(hwnd)
+    left, top = win32gui.ClientToScreen(hwnd, (left, top))
+    right, bottom = win32gui.ClientToScreen(hwnd, (right, bottom))
+    width = right - left
+    height = bottom - top
 
-#     if width <= 0 or height <= 0:
-#         return None
+    if width <= 0 or height <= 0:
+        return None
 
-#     hwnd_dc = win32gui.GetWindowDC(hwnd)
-#     mfc_dc = win32ui.CreateDCFromHandle(hwnd_dc)
-#     save_dc = mfc_dc.CreateCompatibleDC()
+    hwnd_dc = win32gui.GetWindowDC(hwnd)
+    mfc_dc = win32ui.CreateDCFromHandle(hwnd_dc)
+    save_dc = mfc_dc.CreateCompatibleDC()
 
-#     save_bitmap = win32ui.CreateBitmap()
-#     save_bitmap.CreateCompatibleBitmap(mfc_dc, width, height)
-#     save_dc.SelectObject(save_bitmap)
+    save_bitmap = win32ui.CreateBitmap()
+    save_bitmap.CreateCompatibleBitmap(mfc_dc, width, height)
+    save_dc.SelectObject(save_bitmap)
 
-#     result = ctypes.windll.user32.PrintWindow(hwnd, save_dc.GetSafeHdc(), 2)
+    result = ctypes.windll.user32.PrintWindow(hwnd, save_dc.GetSafeHdc(), 2)
 
-#     bmp_info = save_bitmap.GetInfo()
-#     bmp_str = save_bitmap.GetBitmapBits(True)
+    bmp_info = save_bitmap.GetInfo()
+    bmp_str = save_bitmap.GetBitmapBits(True)
 
-#     img = np.frombuffer(bmp_str, dtype=np.uint8)
-#     img.shape = (bmp_info["bmHeight"], bmp_info["bmWidth"], 4)  # BGRA
+    img = np.frombuffer(bmp_str, dtype=np.uint8)
+    img.shape = (bmp_info["bmHeight"], bmp_info["bmWidth"], 4)  # BGRA
 
-#     win32gui.DeleteObject(save_bitmap.GetHandle())
-#     save_dc.DeleteDC()
-#     mfc_dc.DeleteDC()
-#     win32gui.ReleaseDC(hwnd, hwnd_dc)
+    win32gui.DeleteObject(save_bitmap.GetHandle())
+    save_dc.DeleteDC()
+    mfc_dc.DeleteDC()
+    win32gui.ReleaseDC(hwnd, hwnd_dc)
 
-#     if not result:
-#         return None
+    if not result:
+        return None
 
-#     # RGB, not BGR -- matches ImageGrab.grab()'s channel order, which is
-#     # what the rest of the pipeline (prepare_detection_image, detection,
-#     # and display) assumes.
-#     return cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
+    # RGB, not BGR -- matches ImageGrab.grab()'s channel order, which is
+    # what the rest of the pipeline (prepare_detection_image, detection,
+    # and display) assumes.
+    return cv2.cvtColor(img, cv2.COLOR_BGRA2RGB)
 
-def prepare_image(image=None, scale: float = 0.5, debug: bool = False):
-    """Normalize input frame into RGB numpy array at requested scale."""
+def prepare_image(image=None, scale: float = 0.5, should_capture_window: bool = False) -> np.ndarray:
+    """Normalize input frame into RGB numpy array at requested scale.
+    Captures the GTA window if GTA is focused, otherwise uses the full screen."""
     if image is None:
         # Capture only the target app window (tooltip-free) instead of the
         # full screen. Falls back to the old full-screen pipeline if the
         # window capture fails for any reason (window closed/minimized/etc).
-        # if not debug:
-        #     image = capture_window(TARGET_WINDOW_TITLE)
+        if should_capture_window:
+            image = capture_window(TARGET_WINDOW_TITLE)
         if image is None:
             image = prepare_detection_image(scale)
         else:

@@ -86,6 +86,7 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
 
 global GTA_ENHANCED_EXE := "ahk_exe GTA5_Enhanced.exe"
 global GTA_LEGACY_EXE := "ahk_exe GTA5.exe"
+global wasGtaFocused := false
 
 getGtaHwnd() {
     static gtaMatchers := [
@@ -108,27 +109,31 @@ getGtaHwnd() {
 ; used to prevent sending inputs when the user is actively using another window.
 ; When strict is true, the debug override is ignored to ensure accurate focus checks during testing.
 isGtaFocused(excludeGui := false, strict := false) {
-    global guiApp, debug
+    global guiApp, debug, wasGtaFocused
 
     if (!IsSet(guiApp)) {
         return isGtaFocusedStandalone(true, strict)
     }
 
-    return ((!strict && debug) ||
-    WinActive(GTA_ENHANCED_EXE)
-    || WinActive(GTA_LEGACY_EXE)
-    || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
+    gtaFocused := (WinActive(GTA_LEGACY_EXE) || WinActive(GTA_ENHANCED_EXE))
+    wasGtaFocused := gtaFocused
+    linientIsFocused := gtaFocused || (debug && !strict) || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd))
+
+    return linientIsFocused
 }
 
 isGtaFocusedStandalone(excludeGui := true, strict := false) {
-    global debug
+    global debug, wasGtaFocused
 
     if (!IsSet(debug)) {
         debug := false
     }
 
-    return (WinActive(GTA_LEGACY_EXE)
-    || WinActive(GTA_ENHANCED_EXE) || (debug && !strict))
+    gtaFocused := (WinActive(GTA_LEGACY_EXE) || WinActive(GTA_ENHANCED_EXE))
+    wasGtaFocused := gtaFocused
+    linientIsFocused := gtaFocused || (debug && !strict)
+
+    return linientIsFocused
 }
 
 isGtaRunning() {

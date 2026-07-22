@@ -157,7 +157,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/0fadc8401b6fa254f0f2d0d91110c3d7dc3759c6d1bc2a3b55dfa0d492bb1e55
+> https://www.virustotal.com/gui/file/aed1c9cb406aa0c098fa4cc221d872732226b4f100cc5e4c5ae9b221f2e91093
 
 
 <p align="center">
@@ -389,6 +389,7 @@ _src/
 │
 ├─ lib/
 │  ├─ build_scripts/
+│  │  ├─ build_files.zip              # AHK and Inno Setup portable files for building the project
 │  │  ├─ dist.ahk                     # Build distribution (compile + package)
 │  │  ├─ virusTotalScan.ahk           # Post-build VirusTotal scanning
 │  │  └─ inno_setup.iss               # Inno Setup installer config
@@ -404,15 +405,16 @@ _src/
 │  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV detection engine
 │  │  ├─ Fingerprint.py               # Diamond Casino / Kortz fingerprint detection logic for OpenCV detection engine
 │  │  ├─ Keypad.py                    # Diamond Casino / Kortz keypad detection logic for OpenCV detection engine
-│  │  ├─ cayofingerprint.py           # Cayo Perico fingerprint detection logic for OpenCV detection engine
+│  │  ├─ Rubio.py                     # Cayo Perico fingerprint detection logic for OpenCV detection engine
 │  │  ├─ OpenCV_Engine.py             # OpenCV detection engine + IPC listener
 │  │  └─ requirements.txt             # Python deps for OpenCV detection engine
 │  │
 │  ├─ scripts/
+│  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
 │  │  ├─ Fingerprint.ahk              # Diamond Casino / Kortz fingerprint detection + solving
 │  │  ├─ Keypad.ahk                   # Diamond Casino / Kortz keypad sequence solving
-│  │  ├─ ElRubio.ahk                  # Cayo Perico multi-stage fingerprint
-│  │  └─ NoSave.ahk                   # Handles NoSave usage
+│  │  ├─ LedgeGrab.ahk                # Buffered Ledge Grab automation
+│  │  └─ NoSave.ahk                   # NoSave replay helper
 │  │
 │  ├─ standalone scripts/             # Individual scripts - Solvers and NoSave
 │  │
@@ -442,6 +444,7 @@ _src/
 - `vaultOps.ahk` — Main GUI, mode control, engine selection, and solver lifecycle
 
 **Core Utilities**
+- `ahk2py_socket.ahk` — AHK script for IPC communication with the OpenCV detection engine
 - `autoUpdate.ahk` — Minor patch updater
 - `checkResolution.ahk` — Resolution/aspect-ratio checks and engine availability
 - `commonFuncs.ahk` — Shared helpers and tooltip utilities
@@ -456,6 +459,7 @@ _src/
 - `Fingerprint.ahk` — Diamond Casino / Kortz fingerprint solver
 - `Keypad.ahk` — Diamond Casino / Kortz keypad solver
 - `ElRubio.ahk` — Cayo fingerprint cloner solver
+- `LedgeGrab.ahk` — Buffered Ledge Grab automation
 - `NoSave.ahk` — NoSave handling and firewall automation
 - `Util-AFK-Key-Holder.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
 - `Util-Solo-Public-Session.ahk` — Public to solo session helper

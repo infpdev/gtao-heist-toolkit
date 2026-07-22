@@ -72,9 +72,9 @@ KillGta() {
         ToggleNoSaveStatus()
 
     if (killed) {
-        ShowCenteredToolTip("GTA5 killed", 17)
+        ShowCenteredToolTip("GTA V killed", 17)
     } else {
-        ShowCenteredToolTip("GTA5 not running", 17)
+        ShowCenteredToolTip("GTA V not running", 17)
         SetTimer(() => ToolTip("", , , 17), -2000)
     }
 
