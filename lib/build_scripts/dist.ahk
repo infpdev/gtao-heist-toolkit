@@ -156,8 +156,8 @@ BuildOpenCVEngine(parentDir) {
     ; Prefer a project-local venv at the repository root (.venv-helper) so Nuitka
     ; freezes only the locally installed packages. Fall back to system Python.
     projectRoot := DirGetParent(parentDir)
-    venvPython := projectRoot "\.venv-helper\Scripts\python.exe"
-    venvActivate := projectRoot "\.venv-helper\Scripts\Activate.ps1"
+    venvPython := projectRoot "\.venv\Scripts\python.exe"
+    venvActivate := projectRoot "\.venv\Scripts\Activate.ps1"
 
     if FileExist(venvPython) {
         pythonExe := venvPython
@@ -575,7 +575,8 @@ buildGUI(isDev := false) {
         if (rOpenCVNo.Value == 1 && !hasExistingOpenCV) {
             if (showWarning) {
                 MsgBox "OpenCV_Engine.exe was not found at:`n" existingOpenCVHelper
-                    . "`n`nThe existing-exe option is disabled. Build OpenCV_Engine.exe has been forced to Yes.", "Warning", 48
+                    . "`n`nThe existing-exe option is disabled. Build OpenCV_Engine.exe has been forced to Yes.",
+                    "Warning", 48
             }
 
             rOpenCVNo.Enabled := false

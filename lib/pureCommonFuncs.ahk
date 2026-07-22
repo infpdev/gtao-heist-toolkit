@@ -104,6 +104,88 @@ getGtaHwnd() {
     return 0
 }
 
+; Checks if GTA or the script's GUI is currently focused,
+; used to prevent sending inputs when the user is actively using another window.
+; When strict is true, the debug override is ignored to ensure accurate focus checks during testing.
+isGtaFocused(excludeGui := false, strict := false) {
+    global guiApp, debug
+
+    if (!IsSet(guiApp)) {
+        return isGtaFocusedStandalone(true, strict)
+    }
+
+    return ((!strict && debug) ||
+    WinActive(GTA_ENHANCED_EXE)
+    || WinActive(GTA_LEGACY_EXE)
+    || (excludeGui ? false : WinActive("ahk_id " guiApp.Hwnd)))
+}
+
+isGtaFocusedStandalone(excludeGui := true, strict := false) {
+    global debug
+
+    if (!IsSet(debug)) {
+        debug := false
+    }
+
+    return (WinActive(GTA_LEGACY_EXE)
+    || WinActive(GTA_ENHANCED_EXE) || (debug && !strict))
+}
+
+isGtaRunning() {
+    return getGtaHwnd() != 0
+}
+
+/**
+ * Checks if GTA is focused to avoid usage of scripts when GTA is not focused
+ * @param checkOnly - If true, only checks if GTA is focused without toggling scripts or showing warnings
+ * @returns {boolean} - Returns true if GTA is not focused, false otherwise
+ */
+cannotUseScriptsWhenGtaNotFocused(checkOnly := false) {
+    static showedWarning := false
+    global scriptsEnabled
+
+    if (!isGtaFocused()) {
+
+        if (!checkOnly && IsSet(ToggleScriptsEnabled)) {
+            if (IsSet(scriptsEnabled) && scriptsEnabled) {
+                ToggleScriptsEnabled()
+            }
+        }
+
+        if (!checkOnly && !showedWarning) {
+            ShowCenteredToolTip "Solver Hotkeys Inactive [GTA Not Focused]", 17
+            showedWarning := true
+            SetTimer () => ToolTip("", , , 17), -5000
+        }
+
+        return true
+    } else {
+        showedWarning := false
+        return false
+    }
+}
+
+/**
+ * Checks if GTA is focused to avoid toggling NoSave hotkey when GTA is not focused
+ * @returns {boolean} - Returns true if GTA is not focused, false otherwise
+ */
+cannotToggleNoSaveWhenGtaNotFocused(noSave := false) {
+    static showedWarning := false
+    if (!isGtaFocused(false, true)) {
+        if (!isGtaRunning() && noSave)
+            return false
+        if (!showedWarning) {
+            ShowCenteredToolTip "NoSave Hotkey Inactive [GTA Not Focused]", 17
+            showedWarning := true
+            SetTimer(() => ToolTip("", , , 17), -5000)
+        }
+        return true
+    } else {
+        showedWarning := false
+        return false
+    }
+}
+
 ; Focuses the GTA window if it is running.
 FocusGtaIfRunning() {
     if (hwnd := getGtaHwnd()) {

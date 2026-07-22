@@ -7,7 +7,7 @@
  * 
  * ### FLOW:
  * ```text
- * AutoHack()/ManualMode() → findAnchor()/tryOpenCV() → start MainLoop(timer)
+ * SwitchToAuto()/SwitchToManual() → findAnchor()/tryOpenCV() → start MainLoop(timer)
  * 
  * MainLoop():
  *   InitDetected()            ; reset detection state
@@ -179,7 +179,7 @@ class FingerprintSolver {
 
         this.autoStarted := true
         this.prevFoundPixel := anchorPixelCoords
-        this.ManualMode(true)
+        this.SwitchToManual(true)
 
         ; SetTimer this.fnCheckFalsePositive, 0
         SetTimer this.fnCheckFalsePositive, -5000
@@ -201,7 +201,7 @@ class FingerprintSolver {
     /**
      * Starts / switches to manual mode and starts the main loop timer.
      */
-    ManualMode(autoStarted := false) {
+    SwitchToManual(autoStarted := false) {
         if (this.autoStarted && !autoStarted)
             this.autoStarted := false
 
@@ -214,7 +214,7 @@ class FingerprintSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
 
-        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.ManualMode()")
+        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.SwitchToManual()")
 
         this.findAnchor()
         this.MainLoop()
@@ -225,7 +225,7 @@ class FingerprintSolver {
     /**
      * Starts / switches to auto mode and starts the main loop timer.
      */
-    AutoHack() {
+    SwitchToAuto() {
         if (this.autoStarted)
             this.autoStarted := false
 
@@ -238,7 +238,7 @@ class FingerprintSolver {
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "auto"
 
-        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.AutoHack()")
+        updateGlobalStatus(this.foundAnchor, , , "Fingerprint.SwitchToAuto()")
 
         this.findAnchor()
         this.MainLoop()

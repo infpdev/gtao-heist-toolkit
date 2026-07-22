@@ -223,6 +223,7 @@ EnableInput() {
 ; Disables ledge-grab automation if GTA is not the focused window.
 ; Sends the key in order to not consume the ledge-grab key press when GTA is not focused.
 DisableLedgeGrabIfGtaNotFocused() {
+    static shownWarning := false
     global ledgeGrabInProgress, ledgeGrabEnabled
     if (!isGtaFocused(true, true)) {
         Send("{" ledgeGrabKey "}")
@@ -230,10 +231,20 @@ DisableLedgeGrabIfGtaNotFocused() {
 
         ledgeGrabInProgress := false
         LedgeGrabRunningSignal := false
+        if (ledgeGrabEnabled && IsSet(ToggleLedgeGrabEnabled)) {
+            ToggleLedgeGrabEnabled()
+            if (!shownWarning)
+                ShowCenteredToolTip "Ledge grab disabled [GTA not focused]", 17
+            shownWarning := true
+        } else {
+            if (!shownWarning)
+                ShowCenteredToolTip "Cannot initiate ledge grab [GTA not focused]", 17
+            shownWarning := true
+        }
         UpdateGlobalStatus(hackInProgress)
-        ShowCenteredToolTip "Ledge grab disabled (GTA not focused)", 17
         SetTimer(() => (ToolTip("", , , 17)), -2000)
         return true
     }
+    shownWarning := false
     return false
 }

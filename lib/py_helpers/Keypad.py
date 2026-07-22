@@ -1,8 +1,8 @@
 import os
 import cv2
 import numpy as np
-from PIL import Image, ImageGrab
-from helpers import resolve_dump_dir, prepare_detection_image
+from PIL import Image
+from helpers import prepare_image, resolve_dump_dir
 
 SCREEN_W = 1920
 SCREEN_H = 1080
@@ -29,32 +29,6 @@ def _dump_debug_image(image: np.ndarray, filename: str):
     os.makedirs(DEBUG_DUMP_DIR, exist_ok=True)
     Image.fromarray(image.astype(np.uint8), mode="RGB").save(os.path.join(DEBUG_DUMP_DIR, filename))
 
-
-def _prepare_image(image=None, scale: float = 0.5):
-    """Normalize input frame into RGB numpy array at requested scale."""
-    if image is None:
-        image = prepare_detection_image(scale)
-    else:
-        if not isinstance(image, np.ndarray):
-            image = np.array(image)
-
-        if image is None or image.size == 0:
-            return None
-
-        if image.ndim == 3 and image.shape[2] == 4:
-            image = image[:, :, :3]
-
-        # normalize externally supplied images too
-        image = prepare_detection_image(scale, image)
-
-    if image is None or image.size == 0:
-        return None
-
-    if image.ndim == 3 and image.shape[2] == 4:
-        image = image[:, :, :3]
-
-    return image
-
 def _grid_metrics(scale: float):
     """Return scaled keypad grid coordinates and spacing constants."""
     base_x1 = int(KEY_BASE_X1_RATIO * SCREEN_W * scale)
@@ -70,7 +44,7 @@ def _grid_metrics(scale: float):
 
 def get_keypad(image=None, scale=0.5, debug=False, cols=6):
     """Detect all 6 keypad columns in one call and return the row values."""
-    image = _prepare_image(image, scale)
+    image = prepare_image(image, scale, debug)
     if image is None:
         return False
     
@@ -191,7 +165,7 @@ def is_kortz_heist(image=None, scale=0.5, col=0, debug=False):
     """
 
     if image is None:
-        image = _prepare_image(None, scale)
+        image = prepare_image(None, scale)
     if image is None:
         return False
 
@@ -275,7 +249,7 @@ def detect_ring(image=None, scale=0.5, debug=False, col=None):
         dict: {"found": True, "circle": (x, y, r), "row": int} when found.
         bool: False when no ring is detected.
     """
-    image = _prepare_image(image, 1.0)
+    image = prepare_image(image, 1.0)
 
     if image is None:
         return False
@@ -436,7 +410,7 @@ def detect_ring(image=None, scale=0.5, debug=False, col=None):
     
 def detect_column_selected(image=None, col=1, scale=0.5, debug=False):
     """Check whether a requested column is selected by detecting cyan pixel patches."""
-    image = _prepare_image(image, scale)
+    image = prepare_image(image, scale)
     if image is None:
         return False
 
@@ -545,9 +519,9 @@ if __name__ == "__main__":
     # # BGR -> RGB
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     
-    # result = detect_keypad(image=None, scale=0.5, debug=True, cols=6)
+    result = get_keypad(image=None, scale=0.5, debug=True, cols=6)
     
-    result = detect_ring(image=None, scale=0.5, debug=True)
+    # result = detect_ring(image=None, scale=0.5, debug=True)
 
     # result = detect_column_selected(image=None, debug=True, col=2)
     

@@ -28,13 +28,16 @@ Done!
 > This means you no longer need to extract updates into the same folder to keep your configuration.
 
 <details>
-<summary><b>vaultOps v4.67.69 changes</b></summary>
+<summary><b>vaultOps v4.69.67 changes</b></summary>
 
-Please read the [v4.67.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.67.69) for detailed information about:
+Please read the [v4.69.67 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.67) for detailed information about:
 
 * Compatibility with the **Kortz Center** heist
 * Updated standalone **Fingerprint** and **Keypad** solvers for Kortz compatibility
 * Improved **Keypad** solver reliability
+* Updated **NoSave** workflow and in-app tutorial link for Rockstar's latest patch
+* New **GUI controls**, including drag, quick exit, and force-close GTA buttons
+* Protection against accidentally pressing **Alt + F4** while NoSave is active
 
 </details>
 
