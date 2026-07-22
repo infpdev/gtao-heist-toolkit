@@ -17,7 +17,7 @@ CoordMode "Pixel", "Screen"
 #SingleInstance Force
 SetTitleMatchMode 2
 SetControlDelay 1
-SetWinDelay 0
+SetWinDelay 100
 SetMouseDelay -1
 SetBatchLines := -1
 global vaultOps := true
@@ -61,11 +61,457 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
     fnToggleNoSave := ToggleNoSaveStatus, fnToggleScripts := ToggleScriptsEnabled, fnToggleLedgeGrab :=
     ToggleLedgeGrabInProgress
 
+; ⏐==========================================================================================================⏐
+; ⏐============================================= Initialization =============================================⏐
+; ⏐==========================================================================================================⏐
+Init() {
+    ; ===========Hotkeys===========
+    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey, sendPgUpKey
+
+    ; ========= GUI objects =========
+    global Title := "vaultOps"
+    global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
+    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
+    global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
+        inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
+
+    ; Text labels
+    global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtPgUpLabel,
+        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo, inputLedgeGrabText,
+        txtEngineLabel, txtAHKLabel, txtOpenCVLabel
+
+    ; Instruction text variables (global scope)
+    global instrNoSave := "Lets you do the replay glitch in heists / missions.",
+        instrScripts := "Enable the scripts to show the heist, engine, and mode toggle buttons.",
+        instrLedgeGrab := "Automate the ledge grab glitch.",
+        instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
+        instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
+        instrOpenCVEngine := "OpenCV detection. Works on all resolutions, with AHK fallback.",
+        instrOpenCVOnly := "OpenCV only (fallback to AHK unsupported).",
+        instrManual := "Let the script find the prints without selecting them automatically.",
+        instrAuto := "Automatically hack the fingerprints / keypad.",
+        instrReset := "Resets the current script's progress. Use in case of errors.",
+        instrPgUp := "Lets you use the plasma cutters during the heist."
+    ; Instruction text control variables (global scope)
+    global txtNoSaveInstr := "", txtScriptsInstr := "", txtLedgeGrabInstr := "", txtModeInstr := "",
+        txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
+        txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
+        txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
+
+    ; ======== Boolean flags and state variables ========
+    global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
+        delay, iniFile, debug, isBeta
+    global anchorFound := false, pgUpSent := false, hackInProgress := false,
+        pgUpDisabled := false, ledgeGrabInProgress := false, LedgeGrabRunningSignal :=
+        false,
+        cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
+        hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
+        hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
+
+    ; ======= GUI Styling and dimension variables =======
+    global width := 960, height := 540, borderRadius := 20
+    global scrW := A_ScreenWidth, scrH := A_ScreenHeight
+    global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
+
+    ; ======= Resource folder path (for images, etc.) ========
+    global folder, unsupportedResolution, higherRes
+    global staticFolder := A_ScriptDir "\lib\static\"
+
+    ; ==== TEMP DEBUG BUILD ====
+    ; higherRes := true
+    ; debug := true
+
+    ; ======= Parent GUI creation =======
+    guiApp := Gui("-Caption -DPIScale", Title)
+    guiApp.BackColor := "222222"
+    overallFontSize := 11
+    guiApp.SetFont("s" overallFontSize " cWhite")
+
+    ; ======= Top bar =======
+    topbarH := 30 / scale, btnW := 22 / scale
+    topbarW := width, titleW := topbarW - btnW
+
+    bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
+        "vaultOps ● Heist toolkit by .dev17 " (isBeta ? "(v" ver " beta)" : "(v" ver ")"))
+
+    if (unsupportedResolution)
+        guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",
+            "*App running in unsupported resolution mode")
+
+    ; Kill GTA button
+    killBtn := guiApp.AddPicture("x" ((width - btnW - 100 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    staticFolder "\kill_gta.png")
+    killBtn.OnEvent("Click", (*) => (KillGta()))
+
+    ; Close button
+    xBtn := guiApp.AddPicture("x" ((width - btnW - 71 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    staticFolder "\exit.png")
+    xBtn.OnEvent("Click", (*) => (ExitApp()))
+
+    dragBtn := guiApp.AddPicture("x" ((width - btnW - 40 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW + 2 " +0x4",
+    staticFolder "\drag.png")
+    dragBtn.OnEvent("Click", StartDrag)
+
+    ; Minimize button
+    mnmzBtn := guiApp.AddPicture("x" ((width - btnW - 10 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    staticFolder "\minimize.png")
+    mnmzBtn.OnEvent("Click", (*) => (
+        ToolTip("", , , 19)
+        guiApp.Minimize()))
+
+    ; ======= Group styling =======
+    leftPadding := 40 / scale
+    groupY := topbarH / scale
+    groupH := (height - topbarH - leftPadding) / scale
+    groupW := (width - leftPadding) / scale
+
+    ; ======= Labels / fields styling =======
+    numSettings := 9 ; Includes Engine and mode rows
+    labelW := 140 / scale
+    fieldW := 90 / scale
+    instrW := groupW - labelW - fieldW - 120 / scale
+    rowH := (groupH - 65 / scale) / numSettings
+
+    xLabel := 40 / scale
+    xField := xLabel + labelW + 55 / scale
+    xField2 := xField - 40 / scale
+    xInstr := xField + fieldW + 75 / scale
+    toggleX := xField - 87 / scale
+    y := groupY + 30 / scale
+    toggleStartY := y + rowH * 3
+    adjustmentYOffset := 4 / scale
+
+    settingsGroup := guiApp.AddGroupBox("x" leftPadding / (2 * scale) " y" groupY " w" groupW " h" groupH,
+    "Settings")
+
+    ; ⏐===================================================================================⏐
+    ; ⏐===== Row format: Label > Toggle / Field > Instruction Text > Event listeners =====⏐
+    ; ⏐===================================================================================⏐
+
+    ; ⏐===================================================================================⏐
+    ; ⏐======================== ROW 1: NoSave toggle and keybind =========================⏐
+    ; ⏐===================================================================================⏐
+    {
+
+        ; Nosave label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable NoSave:")
+        ; Nosave toggle
+        picNoSave := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 / scale " +0x4",
+        noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
+        ; Nosave hotkey field
+        inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
+        ; Nosave instruction text
+        txtNoSaveInstr := guiApp.AddLink("x" xInstr " y" y " w" instrW - 100 " cA9A9A9", "")
+        ; Nosave event listeners
+        picNoSave.OnEvent("Click", ToggleNoSaveStatus)
+        inputNoSave.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputNoSave, "NoSave", noSaveKey))
+        inputNoSave.OnEvent("Change", (*) => AutoSaveKeybind(inputNoSave, "NoSave"))
+
+        UpdateNoSaveInstrText()
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐============================ ROW 2: Toggle Ledge-Grab =============================⏐
+    ; ⏐===================================================================================⏐
+    {
+        ; Ledge-Grab label
+        ledgeGrabInstrOffset := 20 / scale
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Ledge Grab:")
+        ; Ledge-Grab toggle
+        picLedgeGrabEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
+        scale " +0x4",
+        ledgeGrabEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
+        ; Ledge-Grab hotkey field
+        inputLedgeGrabText := guiApp.AddText("x" xField " y" y, "Cover Key:")
+        inputLedgeGrabAutomation := guiApp.AddEdit("x+15 y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(ledgeGrabKey))
+        ; Ledge-Grab instruction text
+        txtLedgeGrabInstr := guiApp.AddText("x" xInstr + ledgeGrabInstrOffset " y" y " w" instrW " cA9A9A9 BackgroundTrans",
+            "")
+        ; Ledge-Grab event listeners
+        picLedgeGrabEnabled.OnEvent("Click", ToggleLedgeGrabEnabled)
+        inputLedgeGrabAutomation.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputLedgeGrabAutomation,
+            "LedgeGrab",
+            ledgeGrabKey))
+        inputLedgeGrabAutomation.OnEvent("Change", (*) => AutoSaveKeybind(inputLedgeGrabAutomation, "LedgeGrab"))
+
+        inputLedgeGrabAutomation.Visible := ledgeGrabEnabled
+        UpdateLedgeGrabInstrText(xInstr, ledgeGrabInstrOffset)
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐======================== ROW 3: Scripts toggle and keybind ========================⏐
+    ; ⏐===================================================================================⏐
+    {
+        ; Scripts label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Scripts:")
+        ; Scripts toggle
+        picScriptsEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
+        scale " +0x4",
+        scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
+        ; Scripts hotkey field
+        inputToggleScripts := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(toggleScriptsKey))
+        ; Scripts instruction text
+        txtScriptsInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        ; Scripts event listeners
+        picScriptsEnabled.OnEvent("Click", ToggleScriptsEnabled)
+        inputToggleScripts.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputToggleScripts, "ToggleScripts",
+            toggleScriptsKey))
+        inputToggleScripts.OnEvent("Change", (*) => AutoSaveKeybind(inputToggleScripts, "ToggleScripts"))
+
+        UpdateScriptsInstrText()
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐===================== ROW 4: Engine Selection (AHK / OpenCV) ======================⏐
+    ; ⏐===================================================================================⏐
+    {
+        engineX := toggleX - 5
+
+        y := toggleStartY
+        txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
+
+        if (higherRes) {
+            engine := OpenCV_ENGINE
+            txtOpenCVLabel := guiApp.AddText(
+                "x" (engineX + 70 / scale) " y" y " c648f64",
+                "OpenCV"
+            )
+        } else {
+            txtAHKLabel := guiApp.AddText(
+                "x" (engineX + 35 / scale) " y" y " c" (engine == AHK_ENGINE ? "c648f64" : "White"),
+                "AHK"
+            )
+
+            picEngineToggle := guiApp.AddPicture(
+                "x" (engineX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
+                engine == AHK_ENGINE ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
+            )
+
+            txtOpenCVLabel := guiApp.AddText(
+                "x" (engineX + 130 / scale) " y" y " c" (engine != AHK_ENGINE ? "c648f64" : "White"),
+                "OpenCV"
+            )
+            picEngineToggle.OnEvent("Click", ToggleEngineMode)
+
+        }
+        txtEngineInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+
+        UpdateEngineInstrText()
+        y += rowH
+    }
+
+    ; ⏐===================================================================================⏐
+    ; ⏐=============================== ROW 5: Heist Toggle ===============================⏐
+    ; ⏐===================================================================================⏐
+    {
+        heistX := toggleX - 5
+        ; Heist label 1
+        txtHeistLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Heist:")
+        txtCayoLabel := guiApp.AddText("x" (heistX - 10 / scale) " y" y " c" (heist == CAYO_PERICO ? "c648f64" :
+            "White"), "Cayo Perico")
+        ; Heist toggle
+        picHeistToggle := guiApp.AddPicture("x" (heistX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 /
+        scale " +0x4", heist == DCH_OR_KORTZ ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png")
+        ; Heist label 2
+        txtCasinoKortzLabel := guiApp.AddText("x" (heistX + 123 / scale) " y" y " c"
+        (heist == DCH_OR_KORTZ ? "c648f64" : "White"), "DC / Kortz")
+
+        ; Heist instruction text
+        txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
+            "Switch between Cayo Perico and Casino / Kortz heists (Usually handled by the script).")
+        ; Heist event listener
+        picHeistToggle.OnEvent("Click", ToggleHeistMode)
+        y += rowH
+
+        ; --- Info Text: Enable scripts to toggle heist and mode ---
+        txtEnableScriptsInfo := guiApp.AddText("x" xLabel + 25 " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        "Enable scripts to toggle heist, engine, and mode")
+        txtEnableScriptsInfo.SetFont("s12")
+        txtEnableScriptsInfo.Opt("BackgroundTrans")
+        txtEnableScriptsInfo.Visible := false
+    }
+
+    ; ⏐========================================================================================================⏐
+    ; ⏐======================== ROW 6: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
+    ; ⏐========================================================================================================⏐
+    {
+        fingerprintX := toggleX - 5, modeY := y, modeW := labelW
+        ; --- Casino / Kortz mode options ---
+        ; Mode label (row header)
+        txtModeLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Mode:")
+        ; Fingerprint mode label
+        txtFingerprintLabel := guiApp.AddText("x" fingerprintX " y" y
+            " c" (fingerprintMode ? "c648f64" : "White"), "Fingerprint")
+        ; Fingerprint mode toggle
+        picFingerprintToggle := guiApp.AddPicture("x" (fingerprintX + 75 / scale) " y"
+        (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
+        fingerprintMode ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
+        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 134 / scale) " y" y
+        ; Keypad mode label
+        " c" (!fingerprintMode ? "c648f64" : "White"), "Keypad")
+        ; Mode instruction text
+        txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+
+        ; --- Cayo Perico options ---
+        ; label
+        txtPgUpLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Send PgUp keybind:")
+        ; hotkey field to send PgUp
+        inputPgUp := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(sendPgUpKey))
+        ; cayo perico pgup instruction text
+        txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+
+        ; Casino / Cayo options event listeners
+        picFingerprintToggle.OnEvent("Click", ToggleFingerprintMode)
+        inputPgUp.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputPgUp, "SendPgUp", sendPgUpKey))
+        inputPgUp.OnEvent("Change", (*) => AutoSaveKeybind(inputPgUp, "SendPgUp"))
+        UpdateModeInstrText()
+        UpdatePgUpInstrText()
+        y += rowH
+    }
+
+    ; ⏐==========================================================================⏐
+    ; ⏐===========================ROW 7: Manual Keybind =========================⏐
+    ; ⏐==========================================================================⏐
+    {
+        ; Manual keybind label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Manual keybind:")
+        ; Manual keybind field
+        inputManual := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(manualKey))
+        ; Manual keybind instruction text
+        txtManualInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        ; Manual keybind event listeners
+        inputManual.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputManual, "Manual", manualKey))
+        inputManual.OnEvent("Change", (*) => AutoSaveKeybind(inputManual, "Manual"))
+        UpdateManualInstrText()
+        y += rowH
+    }
+
+    ; ⏐==========================================================================⏐
+    ; ⏐========================= ROW 8: AutoHack Keybind ========================⏐
+    ; ⏐==========================================================================⏐
+    {
+        ; AutoHack keybind label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Auto hack keybind:")
+        ; AutoHack keybind field
+        inputAuto := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(autoHackKey))
+        ; AutoHack keybind instruction text
+        txtAutoInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        ; AutoHack keybind event listeners
+        inputAuto.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputAuto, "AutoHack", autoHackKey))
+        inputAuto.OnEvent("Change", (*) => AutoSaveKeybind(inputAuto, "AutoHack"))
+        UpdateAutoInstrText()
+        y += rowH
+    }
+
+    ; ⏐==========================================================================⏐
+    ; ⏐========================== ROW 9: Reset Keybind ==========================⏐
+    ; ⏐==========================================================================⏐
+    {
+        ; Reset keybind label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Reset script keybind:")
+        ; Reset keybind field
+        inputReset := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", CanonicalToDisplay(resetKey))
+        ; Reset keybind instruction text
+        txtResetInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        ; Reset keybind event listeners
+        inputReset.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputReset, "Reset", resetKey))
+        inputReset.OnEvent("Change", (*) => AutoSaveKeybind(inputReset, "Reset"))
+        UpdateResetInstrText()
+        y += rowH
+    }
+
+    ; ⏐==========================================================================⏐
+    ; ⏐=============================== ROW 10: Delay =============================⏐
+    ; ⏐==========================================================================⏐
+    {
+        ; Delay label
+        guiApp.AddText("x" xLabel " y" y " w" labelW, "Delay:")
+        ; Delay field
+        inputDelay := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
+        " Center Background222222 cWhite", delay)
+        ; Delay instruction text
+        txtDelayInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
+            "Adjusts the speed of key-sending for automation (30-200 ms). 40ms is usually preferred")
+        ; Delay event listeners
+        inputDelay.OnEvent("Focus", (*) => (
+            AttachUnfocusHandlers(inputDelay, delay, 0),
+            SetTimer(() => (
+                inputDelay.Focus()
+            ), -10)
+        ))
+        inputDelay.OnEvent("Change", (*) => AutoSaveDelay(inputDelay))
+        y += rowH
+    }
+
+    ; ⏐==========================================================================⏐
+    ; ⏐================================== Links =================================⏐
+    ; ⏐==========================================================================⏐
+    {
+        ; Link to GitHub repo for issues and suggestions
+        linkText := guiApp.Add("Link", "xp-55 y" (height / scale - (height / scale - (groupY + groupH)) /
+        (1.5 / scale) " w" groupW " c8484db center"),
+        'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
+        linkText.SetFont("s" 10 / scale " bold")
+
+        ; Tray menu setup
+        A_TrayMenu.Delete()
+        A_TrayMenu.Add("Show", (*) => (
+            guiApp.Show(),
+            CenterGui(guiApp, width, height),
+            ForceForeground(guiApp),
+            SetTimer(() => ForceForeground(guiApp), -100)
+        ))
+        A_TrayMenu.Add("Exit", (*) => ExitApp())
+        A_TrayMenu.Default := ("Show")
+        A_TrayMenu.ClickCount := 1
+    }
+
+    ; ====================== Finalize GUI setup ======================
+    OnMessage(0x0006, GuiApp_OnActivate)
+    OnMessage(0x0020, OnSetCursor)
+
+    SetRoundedCorners(guiApp.Hwnd, width, height, borderRadius)
+    SetHeistToggleBtnVisibility(false)
+    SetEngineToggleBtnVisibility(false)
+    SetModeToggleBtnVisibility(false)
+
+    LoadCache()
+
+    isFirewallEnabled()
+
+    TryRegisterHotkeys()
+
+    if (ledgeGrabEnabled)
+        try Hotkey(CanonicalToRegistration(ledgeGrabKey), ToggleLedgeGrabInProgress, "On")
+
+    ; Show and focus the GUI
+    guiApp.Opt("+Caption")
+
+    ForceForeground(guiApp)
+
+    guiApp.Opt("-Caption")
+    CenterGui(guiApp, width, height, scale)
+
+    FocusGtaIfRunning()
+
+    UpdateGlobalStatus(false)
+
+}
+
 ; ⏐===========================================================================================================⏐
 ; ⏐==================================== Casino Script Instance Management ====================================⏐
 ; ⏐===========================================================================================================⏐
 {
-
     /**
      * Creates or destroys the current heist instance based on user settings and anchor detection.
      * - If scripts are disabled, destroys any existing instance.
@@ -621,7 +1067,7 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 
     ToggleHeistMode(*) {
         global heist, picHeistToggle, txtCasinoKortzLabel, txtCayoLabel, DCH_OR_KORTZ, CAYO_PERICO, scriptsEnabled
-        global txtModeLabel, txtFingerprintLabel, picFingerprintToggle, txtKeypadLabel, txtModeInstr, hackInProgress
+        global txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtModeInstr, hackInProgress
         heist := (heist == DCH_OR_KORTZ) ? CAYO_PERICO : DCH_OR_KORTZ
         picHeistToggle.Value := (heist == DCH_OR_KORTZ) ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png"
         txtCasinoKortzLabel.Opt("c" (heist == DCH_OR_KORTZ ? "c648f64" : "White"))
@@ -730,458 +1176,6 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 }
 ; ⏐==========================================================================================================⏐
 
-; ⏐==========================================================================================================⏐
-; ⏐============================================= Initialization =============================================⏐
-; ⏐==========================================================================================================⏐
-Init() {
-    ; ===========Hotkeys===========
-    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey, sendPgUpKey
-
-    ; ========= GUI objects =========
-    global Title := "vaultOps"
-    global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
-    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
-    global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
-        inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
-
-    ; Text labels
-    global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtPgUpLabel,
-        txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo, inputLedgeGrabText,
-        txtEngineLabel, txtAHKLabel, txtOpenCVLabel
-
-    ; Instruction text variables (global scope)
-    global instrNoSave := "Lets you do the replay glitch in heists / missions.",
-        instrScripts := "Enable the scripts to show the heist, engine, and mode toggle buttons.",
-        instrLedgeGrab := "Automate the ledge grab glitch.",
-        instrMode := "Switch between Fingerprint and Keypad script modes (Usually handled by the script).",
-        instrAHKEngine := "Legacy AHK detection. Battle-tested and reliable (Auto-switched if required).",
-        instrOpenCVEngine := "OpenCV detection. Works on all resolutions, with AHK fallback.",
-        instrOpenCVOnly := "OpenCV only (fallback to AHK unsupported).",
-        instrManual := "Let the script find the prints without selecting them automatically.",
-        instrAuto := "Automatically hack the fingerprints / keypad.",
-        instrReset := "Resets the current script's progress. Use in case of errors.",
-        instrPgUp := "Lets you use the plasma cutters during the heist."
-    ; Instruction text control variables (global scope)
-    global txtNoSaveInstr := "", txtScriptsInstr := "", txtLedgeGrabInstr := "", txtModeInstr := "",
-        txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
-        txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
-        txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
-
-    ; ======== Boolean flags and state variables ========
-    global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
-        delay, iniFile, debug, isBeta
-    global anchorFound := false, pgUpSent := false, hackInProgress := false,
-        pgUpDisabled := false, ledgeGrabInProgress := false, LedgeGrabRunningSignal :=
-        false,
-        cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
-        hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
-        hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
-
-    ; ======= GUI Styling and dimension variables =======
-    global width := 960, height := 540, borderRadius := 20
-    global scrW := A_ScreenWidth, scrH := A_ScreenHeight
-    global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
-
-    ; ======= Resource folder path (for images, etc.) ========
-    global folder, unsupportedResolution, higherRes
-    global staticFolder := A_ScriptDir "\lib\static\"
-
-    ; ==== TEMP DEBUG BUILD ====
-    ; higherRes := true
-    ; debug := true
-
-    ; ======= Parent GUI creation =======
-    guiApp := Gui("-Caption -DPIScale", Title)
-    guiApp.BackColor := "222222"
-    overallFontSize := 11
-    guiApp.SetFont("s" overallFontSize " cWhite")
-
-    ; ======= Top bar =======
-    topbarH := 30 / scale, btnW := 22 / scale
-    topbarW := width, titleW := topbarW - btnW
-
-    bar := guiApp.AddText("xm y0 w" titleW " h" topbarH " c648f64 Background222222 Left 0x200",
-        "vaultOps ● Heist toolkit by .dev17 " (isBeta ? "(v" ver " beta)" : "(v" ver ")"))
-
-    if (unsupportedResolution)
-        guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",
-            "*App running in unsupported resolution mode")
-
-    ; Kill GTA button
-    killBtn := guiApp.AddPicture("x" ((width - btnW - 100 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
-    staticFolder "\kill_gta.png")
-    killBtn.OnEvent("Click", (*) => (KillGta()))
-
-    ; Close button
-    xBtn := guiApp.AddPicture("x" ((width - btnW - 71 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
-    staticFolder "\exit.png")
-    xBtn.OnEvent("Click", (*) => (ExitApp()))
-
-    dragBtn := guiApp.AddPicture("x" ((width - btnW - 40 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW + 2 " +0x4",
-    staticFolder "\drag.png")
-    dragBtn.OnEvent("Click", StartDrag)
-
-    ; Minimize button
-    mnmzBtn := guiApp.AddPicture("x" ((width - btnW - 10 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
-    staticFolder "\minimize.png")
-    mnmzBtn.OnEvent("Click", (*) => (
-        ToolTip("", , , 19)
-        guiApp.Minimize()))
-
-    ; ======= Group styling =======
-    leftPadding := 40 / scale
-    groupY := topbarH / scale
-    groupH := (height - topbarH - leftPadding) / scale
-    groupW := (width - leftPadding) / scale
-
-    ; ======= Labels / fields styling =======
-    numSettings := 9 ; Includes Engine and mode rows
-    labelW := 140 / scale
-    fieldW := 90 / scale
-    instrW := groupW - labelW - fieldW - 120 / scale
-    rowH := (groupH - 65 / scale) / numSettings
-
-    xLabel := 40 / scale
-    xField := xLabel + labelW + 55 / scale
-    xField2 := xField - 40 / scale
-    xInstr := xField + fieldW + 75 / scale
-    toggleX := xField - 87 / scale
-    y := groupY + 30 / scale
-    toggleStartY := y + rowH * 3
-    adjustmentYOffset := 4 / scale
-
-    settingsGroup := guiApp.AddGroupBox("x" leftPadding / (2 * scale) " y" groupY " w" groupW " h" groupH,
-    "Settings")
-
-    ; ⏐===================================================================================⏐
-    ; ⏐===== Row format: Label > Toggle / Field > Instruction Text > Event listeners =====⏐
-    ; ⏐===================================================================================⏐
-
-    ; ⏐===================================================================================⏐
-    ; ⏐======================== ROW 1: NoSave toggle and keybind =========================⏐
-    ; ⏐===================================================================================⏐
-    {
-
-        ; Nosave label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable NoSave:")
-        ; Nosave toggle
-        picNoSave := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 / scale " +0x4",
-        noSave ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
-        ; Nosave hotkey field
-        inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
-        ; Nosave instruction text
-        txtNoSaveInstr := guiApp.AddLink("x" xInstr " y" y " w" instrW - 100 " cA9A9A9", "")
-        ; Nosave event listeners
-        picNoSave.OnEvent("Click", ToggleNoSaveStatus)
-        inputNoSave.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputNoSave, "NoSave", noSaveKey))
-        inputNoSave.OnEvent("Change", (*) => AutoSaveKeybind(inputNoSave, "NoSave"))
-
-        UpdateNoSaveInstrText()
-        y += rowH
-    }
-
-    ; ⏐===================================================================================⏐
-    ; ⏐============================ ROW 2: Toggle Ledge-Grab =============================⏐
-    ; ⏐===================================================================================⏐
-    {
-        ; Ledge-Grab label
-        ledgeGrabInstrOffset := 20 / scale
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Ledge Grab:")
-        ; Ledge-Grab toggle
-        picLedgeGrabEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
-        scale " +0x4",
-        ledgeGrabEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
-        ; Ledge-Grab hotkey field
-        inputLedgeGrabText := guiApp.AddText("x" xField " y" y, "Cover Key:")
-        inputLedgeGrabAutomation := guiApp.AddEdit("x+15 y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(ledgeGrabKey))
-        ; Ledge-Grab instruction text
-        txtLedgeGrabInstr := guiApp.AddText("x" xInstr + ledgeGrabInstrOffset " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "")
-        ; Ledge-Grab event listeners
-        picLedgeGrabEnabled.OnEvent("Click", ToggleLedgeGrabEnabled)
-        inputLedgeGrabAutomation.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputLedgeGrabAutomation,
-            "LedgeGrab",
-            ledgeGrabKey))
-        inputLedgeGrabAutomation.OnEvent("Change", (*) => AutoSaveKeybind(inputLedgeGrabAutomation, "LedgeGrab"))
-
-        inputLedgeGrabAutomation.Visible := ledgeGrabEnabled
-        UpdateLedgeGrabInstrText(xInstr, ledgeGrabInstrOffset)
-        y += rowH
-    }
-
-    ; ⏐===================================================================================⏐
-    ; ⏐======================== ROW 3: Scripts toggle and keybind ========================⏐
-    ; ⏐===================================================================================⏐
-    {
-        ; Scripts label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Enable Scripts:")
-        ; Scripts toggle
-        picScriptsEnabled := guiApp.AddPicture("x" xField2 " y" (y - adjustmentYOffset / 2) " w" 20 / scale " h" 20 /
-        scale " +0x4",
-        scriptsEnabled ? staticFolder "\checkboxFilled.png" : staticFolder "\checkboxEmpty.png")
-        ; Scripts hotkey field
-        inputToggleScripts := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(toggleScriptsKey))
-        ; Scripts instruction text
-        txtScriptsInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-        ; Scripts event listeners
-        picScriptsEnabled.OnEvent("Click", ToggleScriptsEnabled)
-        inputToggleScripts.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputToggleScripts, "ToggleScripts",
-            toggleScriptsKey))
-        inputToggleScripts.OnEvent("Change", (*) => AutoSaveKeybind(inputToggleScripts, "ToggleScripts"))
-
-        UpdateScriptsInstrText()
-        y += rowH
-    }
-
-    ; ⏐===================================================================================⏐
-    ; ⏐===================== ROW 4: Engine Selection (AHK / OpenCV) ======================⏐
-    ; ⏐===================================================================================⏐
-    {
-        engineX := toggleX - 5
-
-        y := toggleStartY
-        txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
-
-        if (higherRes) {
-            engine := OpenCV_ENGINE
-            txtOpenCVLabel := guiApp.AddText(
-                "x" (engineX + 70 / scale) " y" y " c648f64",
-                "OpenCV"
-            )
-        } else {
-            txtAHKLabel := guiApp.AddText(
-                "x" (engineX + 35 / scale) " y" y " c" (engine == AHK_ENGINE ? "c648f64" : "White"),
-                "AHK"
-            )
-
-            picEngineToggle := guiApp.AddPicture(
-                "x" (engineX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
-                engine == AHK_ENGINE ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png"
-            )
-
-            txtOpenCVLabel := guiApp.AddText(
-                "x" (engineX + 130 / scale) " y" y " c" (engine != AHK_ENGINE ? "c648f64" : "White"),
-                "OpenCV"
-            )
-            picEngineToggle.OnEvent("Click", ToggleEngineMode)
-
-        }
-        txtEngineInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-
-        UpdateEngineInstrText()
-        y += rowH
-    }
-
-    ; ⏐===================================================================================⏐
-    ; ⏐=============================== ROW 5: Heist Toggle ===============================⏐
-    ; ⏐===================================================================================⏐
-    {
-        heistX := toggleX - 5
-        ; Heist label 1
-        txtHeistLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Heist:")
-        txtCayoLabel := guiApp.AddText("x" (heistX - 10 / scale) " y" y " c" (heist == CAYO_PERICO ? "c648f64" :
-            "White"), "Cayo Perico")
-        ; Heist toggle
-        picHeistToggle := guiApp.AddPicture("x" (heistX + 75 / scale) " y" (y - 2) " w" 40 / scale " h" 22 /
-        scale " +0x4", heist == DCH_OR_KORTZ ? staticFolder "\toggleFlipped.png" : staticFolder "\toggle.png")
-        ; Heist label 2
-        txtCasinoKortzLabel := guiApp.AddText("x" (heistX + 123 / scale) " y" y " c"
-        (heist == DCH_OR_KORTZ ? "c648f64" : "White"), "DC / Kortz")
-
-        ; Heist instruction text
-        txtHeistInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "Switch between Cayo Perico and Casino / Kortz heists (Usually handled by the script).")
-        ; Heist event listener
-        picHeistToggle.OnEvent("Click", ToggleHeistMode)
-        y += rowH
-
-        ; --- Info Text: Enable scripts to toggle heist and mode ---
-        txtEnableScriptsInfo := guiApp.AddText("x" xLabel + 25 " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
-        "Enable scripts to toggle heist, engine, and mode")
-        txtEnableScriptsInfo.SetFont("s12")
-        txtEnableScriptsInfo.Opt("BackgroundTrans")
-        txtEnableScriptsInfo.Visible := false
-    }
-
-    ; ⏐========================================================================================================⏐
-    ; ⏐======================== ROW 6: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
-    ; ⏐========================================================================================================⏐
-    {
-        fingerprintX := toggleX - 5, modeY := y, modeW := labelW
-        ; --- Casino / Kortz mode options ---
-        ; Mode label (row header)
-        txtModeLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Mode:")
-        ; Fingerprint mode label
-        txtFingerprintLabel := guiApp.AddText("x" fingerprintX " y" y
-            " c" (fingerprintMode ? "c648f64" : "White"), "Fingerprint")
-        ; Fingerprint mode toggle
-        picFingerprintToggle := guiApp.AddPicture("x" (fingerprintX + 75 / scale) " y"
-        (y - 2) " w" 40 / scale " h" 22 / scale " +0x4",
-        fingerprintMode ? staticFolder "\toggle.png" : staticFolder "\toggleFlipped.png")
-        txtKeypadLabel := guiApp.AddText("x" (fingerprintX + 134 / scale) " y" y
-        ; Keypad mode label
-        " c" (!fingerprintMode ? "c648f64" : "White"), "Keypad")
-        ; Mode instruction text
-        txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-
-        ; --- Cayo Perico options ---
-        ; label
-        txtPgUpLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Send PgUp keybind:")
-        ; hotkey field to send PgUp
-        inputPgUp := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(sendPgUpKey))
-        ; cayo perico pgup instruction text
-        txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-
-        ; Casino / Cayo options event listeners
-        picFingerprintToggle.OnEvent("Click", ToggleFingerprintMode)
-        inputPgUp.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputPgUp, "SendPgUp", sendPgUpKey))
-        inputPgUp.OnEvent("Change", (*) => AutoSaveKeybind(inputPgUp, "SendPgUp"))
-        UpdateModeInstrText()
-        UpdatePgUpInstrText()
-        y += rowH
-    }
-
-    ; ⏐==========================================================================⏐
-    ; ⏐===========================ROW 7: Manual Keybind =========================⏐
-    ; ⏐==========================================================================⏐
-    {
-        ; Manual keybind label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Manual keybind:")
-        ; Manual keybind field
-        inputManual := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(manualKey))
-        ; Manual keybind instruction text
-        txtManualInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-        ; Manual keybind event listeners
-        inputManual.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputManual, "Manual", manualKey))
-        inputManual.OnEvent("Change", (*) => AutoSaveKeybind(inputManual, "Manual"))
-        UpdateManualInstrText()
-        y += rowH
-    }
-
-    ; ⏐==========================================================================⏐
-    ; ⏐========================= ROW 8: AutoHack Keybind ========================⏐
-    ; ⏐==========================================================================⏐
-    {
-        ; AutoHack keybind label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Auto hack keybind:")
-        ; AutoHack keybind field
-        inputAuto := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(autoHackKey))
-        ; AutoHack keybind instruction text
-        txtAutoInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-        ; AutoHack keybind event listeners
-        inputAuto.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputAuto, "AutoHack", autoHackKey))
-        inputAuto.OnEvent("Change", (*) => AutoSaveKeybind(inputAuto, "AutoHack"))
-        UpdateAutoInstrText()
-        y += rowH
-    }
-
-    ; ⏐==========================================================================⏐
-    ; ⏐========================== ROW 9: Reset Keybind ==========================⏐
-    ; ⏐==========================================================================⏐
-    {
-        ; Reset keybind label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Reset script keybind:")
-        ; Reset keybind field
-        inputReset := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(resetKey))
-        ; Reset keybind instruction text
-        txtResetInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
-        ; Reset keybind event listeners
-        inputReset.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputReset, "Reset", resetKey))
-        inputReset.OnEvent("Change", (*) => AutoSaveKeybind(inputReset, "Reset"))
-        UpdateResetInstrText()
-        y += rowH
-    }
-
-    ; ⏐==========================================================================⏐
-    ; ⏐=============================== ROW 10: Delay =============================⏐
-    ; ⏐==========================================================================⏐
-    {
-        ; Delay label
-        guiApp.AddText("x" xLabel " y" y " w" labelW, "Delay:")
-        ; Delay field
-        inputDelay := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", delay)
-        ; Delay instruction text
-        txtDelayInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans",
-            "Adjusts the speed of key-sending for automation (30-200 ms). 40ms is usually preferred")
-        ; Delay event listeners
-        inputDelay.OnEvent("Focus", (*) => (
-            AttachUnfocusHandlers(inputDelay, delay, 0),
-            SetTimer(() => (
-                inputDelay.Focus()
-            ), -10)
-        ))
-        inputDelay.OnEvent("Change", (*) => AutoSaveDelay(inputDelay))
-        y += rowH
-    }
-
-    ; ⏐==========================================================================⏐
-    ; ⏐================================== Links =================================⏐
-    ; ⏐==========================================================================⏐
-    {
-        ; Link to GitHub repo for issues and suggestions
-        linkText := guiApp.Add("Link", "xp-55 y" (height / scale - (height / scale - (groupY + groupH)) /
-        (1.5 / scale) " w" groupW " c8484db center"),
-        'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
-        linkText.SetFont("s" 10 / scale " bold")
-
-        ; Tray menu setup
-        A_TrayMenu.Delete()
-        A_TrayMenu.Add("Show", (*) => (
-            guiApp.Show(),
-            CenterGui(guiApp, width, height),
-            ForceForeground(guiApp),
-            SetTimer(() => ForceForeground(guiApp), -100)
-        ))
-        A_TrayMenu.Add("Exit", (*) => ExitApp())
-        A_TrayMenu.Default := ("Show")
-        A_TrayMenu.ClickCount := 1
-    }
-
-    ; ====================== Finalize GUI setup ======================
-    OnMessage(0x0006, GuiApp_OnActivate)
-    OnMessage(0x0020, OnSetCursor)
-
-    SetRoundedCorners(guiApp.Hwnd, width, height, borderRadius)
-    SetHeistToggleBtnVisibility(false)
-    SetEngineToggleBtnVisibility(false)
-    SetModeToggleBtnVisibility(false)
-
-    LoadCache()
-
-    isFirewallEnabled()
-
-    TryRegisterHotkeys()
-
-    if (ledgeGrabEnabled)
-        try Hotkey(CanonicalToRegistration(ledgeGrabKey), ToggleLedgeGrabInProgress, "On")
-
-    ; Show and focus the GUI
-    guiApp.Opt("+Caption")
-
-    ForceForeground(guiApp)
-
-    guiApp.Opt("-Caption")
-    CenterGui(guiApp, width, height, scale)
-
-    FocusGtaIfRunning()
-
-    UpdateGlobalStatus(false)
-
-}
-
-initPython()
-Init()
-
-OnExit(SaveCacheOnExit)
-
 SaveCacheOnExit(*) {
     global isShuttingDown := true
     clearAllToolTips(1)
@@ -1194,3 +1188,8 @@ SaveCacheOnExit(*) {
     try PersistSettingsToAppData()
     try StopPython()
 }
+
+initPython()
+Init()
+
+OnExit(SaveCacheOnExit)

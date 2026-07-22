@@ -74,63 +74,70 @@ SetRoundedCorners(hwnd, w, h, r) {
 }
 
 OnSetCursor(wParam, lParam, msg, hwnd) {
+    static errorShown := false
     static hCursorHand := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32649, "Ptr")
     static hCursorDrag := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32646, "Ptr")
     static hCursorArrow := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32512, "Ptr")
     static hCursorIBeam := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32513, "Ptr")
 
-    global xBtn, mnmzBtn, killBtn, dragBtn
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
 
     mouseOverHwnd := wParam
 
-    switch mouseOverHwnd {
-        case killBtn.Hwnd:
-            ToolTip("Kill GTA V", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorHand)
-            return True
+    try {
+        switch mouseOverHwnd {
+            case killBtn.Hwnd:
+                ToolTip("Kill GTA V", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
 
-        case xBtn.Hwnd:
-            ToolTip("Terminate", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorHand)
-            return True
+            case xBtn.Hwnd:
+                ToolTip("Terminate", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
 
-        case dragBtn.Hwnd:
-            ToolTip("Click to Center App`nHold to Drag App", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorDrag)
-            return True
+            case dragBtn.Hwnd:
+                ToolTip("Click to Center App`nHold to Drag App", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorDrag)
+                return True
 
-        case mnmzBtn.Hwnd:
-            ToolTip("Minimize", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorHand)
-            return True
+            case mnmzBtn.Hwnd:
+                ToolTip("Minimize", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
 
-        case picFingerprintToggle.Hwnd,
-            picScriptsEnabled.Hwnd,
-            picNoSave.Hwnd,
-            picLedgeGrabEnabled.Hwnd,
-            picHeistToggle.Hwnd,
-            picEngineToggle.Hwnd:
-            ToolTip("", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorHand)
-            return True
-        case inputManual.Hwnd,
-            inputAuto.Hwnd,
-            inputReset.Hwnd,
-            inputDelay.Hwnd,
-            inputNoSave.Hwnd,
-            inputToggleScripts.Hwnd,
-            inputLedgeGrabAutomation.Hwnd,
-            inputPgUp.Hwnd:
-            ToolTip("", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorIBeam)
-            return True
-        default:
-            ToolTip("", , , 19)
-            DllCall("SetCursor", "Ptr", hCursorArrow)
-            return False
+            case picFingerprintToggle.Hwnd,
+                picScriptsEnabled.Hwnd,
+                picNoSave.Hwnd,
+                picLedgeGrabEnabled.Hwnd,
+                picHeistToggle.Hwnd,
+                picEngineToggle.Hwnd:
+                ToolTip("", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
+            case inputManual.Hwnd,
+                inputAuto.Hwnd,
+                inputReset.Hwnd,
+                inputDelay.Hwnd,
+                inputNoSave.Hwnd,
+                inputToggleScripts.Hwnd,
+                inputLedgeGrabAutomation.Hwnd,
+                inputPgUp.Hwnd:
+                ToolTip("", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorIBeam)
+                return True
+            default:
+                ToolTip("", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorArrow)
+                return False
+        }
+    } catch as e {
+        if !errorShown {
+            errorShown := true
+            MsgBox("Error in OnSetCursor: " e.Message)
+        }
     }
 }
 
