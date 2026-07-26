@@ -8,9 +8,6 @@ init() {
 
     try Hotkey("~*" CanonicalToRegistration(autoHackKey), standalone_switch_to_auto, "On")
     try Hotkey("~*" CanonicalToRegistration(manualKey), standalone_switch_to_manual, "On")
-    pgUpReg := CanonicalToRegistration(sendPgUpKey)
-    try Hotkey("~" pgUpReg, PgUpDown, "On")
-    try Hotkey("~" pgUpReg " up", PgUpUp, "On")
 
     CreateHeistInstance()
 

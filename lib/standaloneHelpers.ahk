@@ -23,14 +23,12 @@ global hackMode := "idle", hackInProgress := false
 global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DCH_OR_KORTZ
 global engine := OPENCV_ENGINE
-global pgUpSent := false
 global ledgeGrabEnabled := true, ledgeGrabInProgress := false, LedgeGrabRunningSignal := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
 
 global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
 global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
-global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
 global readableManualKey := CanonicalToDisplay(manualKey)
 global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
 global readableResetKey := CanonicalToDisplay(resetKey)
@@ -158,6 +156,7 @@ resetSolver(*) {
 
 ExitScript(*) {
     static showedWarning := false
+    global isShuttingDown := true
 
     if (isGtaRunning()) {
         if (!isGtaFocused()) {
@@ -209,15 +208,12 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     static previousStatus := ""
     static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
-    global hackInProgress, readableNoSaveKey, readableScriptsKey, readableSendPgUpKey, readableManualKey,
-        readableAutoHackKey, readableResetKey, pgUpSent, unsupportedResolution
+    global hackInProgress, readableNoSaveKey, readableScriptsKey, readableManualKey,
+        readableAutoHackKey, readableResetKey, unsupportedResolution
 
     pos := getToolTipPos(toolTipPos)
     x := pos.x
     y := pos.y
-
-    if (pgUpSent)
-        return ; Don't update status while PgUp is being sent to avoid tooltip interference
 
     noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
 
@@ -268,10 +264,8 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
         }
     }
     indicator := "🟢 "
-    keys := (heist == CAYO_PERICO ? "Send PgUp: " readableSendPgUpKey "`n" :
-        "")
 
-    keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
+    keys := (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
         "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
     aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" ledgeGrabText "`n" keys
@@ -345,46 +339,6 @@ ToggleNoSaveStatus(*) {
 clearAllToolTips() {
     loop 19
         CustomTooltip "", , , A_Index
-}
-
-PgUpDown(*) {
-    global pgUpSent, sendPgUpKey
-    pos := getToolTipPos(toolTipPos)
-    x := pos.x
-    y := pos.y
-
-    if !isGtaFocused(, true) {
-        CustomTooltip "[PgUp] GTA not focused", x, y, 20
-        return
-    }
-
-    if (sendPgUpKey == "LButton") {
-        if (!GetKeyState("RButton", "P")) {
-            pgUpSent := true
-            Send "{PgUp down}"
-            CustomTooltip "PgUp pressed (LMB)", x, y, 20
-        }
-        ; If RButton is pressed, do nothing (block PgUp)
-        return
-    }
-
-    pgUpSent := true
-    Send "{PgUp down}"
-    CustomTooltip "PgUp pressed (" sendPgUpKey ")", x, y, 20
-
-}
-
-PgUpUp(*) {
-    global pgUpSent, hackInProgress
-
-    if !pgUpSent {
-        UpdateGlobalStatus(hackInProgress, , , true)
-        return
-    }
-
-    Send "{PgUp up}"
-    pgUpSent := false
-    UpdateGlobalStatus(hackInProgress, , , true)
 }
 
 ; Toggle debug mode with Alt+F12.

@@ -138,6 +138,7 @@ RestartPython(err := "") {
     static errCount := 0
     errCount++
     MsgBox "An error occured. Restarting OpenCV helper.`n`n" . err
+    MsgBox isShuttingDown
 
     if (errCount > 3) {
         MsgBox "OpenCV helper has failed to restart multiple times. Exiting script."
@@ -214,6 +215,8 @@ CallPython(puzzleType, params := 0, waitForResponse := true, killCall := false) 
     try {
         pyProc.StdIn.WriteLine(req)
     } catch as err {
+        if (isShuttingDown)
+            return ""
         ocvCallInProgress := false
         ; MsgBox("Err @204")
         RestartPython(err.Message)
@@ -252,6 +255,8 @@ CallPython(puzzleType, params := 0, waitForResponse := true, killCall := false) 
 ; High-level wrapper that sends a request and returns the helper's response.
 GetResFromOpenCV(type, params := 0) {
     result := CallPython(type, params)
+    if (isShuttingDown)
+        return "ShuttingDown"
 
     if (result = "")
         return OpenCVCmd.ERRMSG ; fallback trigger

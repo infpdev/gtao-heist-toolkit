@@ -115,12 +115,6 @@ global toggleScriptsKey := NormalizeHotkeyValue(IniRead(iniFile, "ToolHotkeys", 
 "ToggleScripts",
 "ToolHotkeys")
 
-/** @vaultOps
- *  Hotkey to send the PgUp key (Cayo Perico only)
- */
-global sendPgUpKey := NormalizeHotkeyValue(IniRead(iniFile, "ToolHotkeys", "SendPgUp", "LButton"), "SendPgUp",
-"ToolHotkeys")
-
 ; Delay (in ms) between key-presses, can be adjusted in the GUI (if using vaultOps)
 ; or directly in the INI file. Lower values will speed up the hack but may cause it
 ; to be less reliable, especially on slower computers.
@@ -180,9 +174,6 @@ CreateDefaultSettings() {
         . "NoSave=vkDDsc01B`n`n"
         . "; (vkDBsc01A) Physical key: [ (Left Bracket)`n"
         . "ToggleScripts=vkDBsc01A`n`n"
-        . "; Send the PgUp key, used for the Cayo Perico heist.`n"
-        . "; Can be set to any key or mouse button based on the notation reference above.`n"
-        . "SendPgUp=LButton`n`n"
         . "[Hotkeys]`n`n"
         . "; Enter manual mode for fingerprint/keypad.`n"
         . "; (vk4Dsc032) Physical key: M`n"

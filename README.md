@@ -81,7 +81,6 @@ This repository includes:
 - Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist
 - Supports both **AHK-based** and **OpenCV-based** detection methods  
 - Supports all common **16:9** and **21:9 ultrawide** resolutions  
-- Cayo Perico **PgUp** bug fix  
 - Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit  
 - Manual and auto solving modes  
 - GUI app with labels/tooltips and customizable hotkeys — designed for non-technical users  
@@ -277,20 +276,19 @@ Provided as-is, with no guarantees.
      - Shown as "**DC / Kortz**" in the GUI
      - Solves Fingerprint and Keypad puzzles
      - Both heists use the same Fingerprint and Keypad puzzles, so the same solver (**DC / Kortz**) works for either heist
-
+     - Switches to Manual mode by default when the puzzle is detected
+  
    - **Cayo Perico**
-     - Solves the fingerprint cloner puzzle  
-     - Enables PgUp forwarding for the plasma cutter  
-     - Default PgUp key: **Left Mouse Button** `LMB`  
-     - Can be changed to another key (e.g. `Enter`)  
-
-   **Note:** When using the PgUp feature, Manual mode is generally recommended to avoid unintended auto-switching  <br><br>
+     - Solves the fingerprint cloner puzzle
+     - Switches to Auto mode by default when the puzzle is detected
+     - Pressing `M` switches to Manual mode and shows the number of left / right clicks needed to solve the puzzle, allowing you to select the prints yourself
 
 4. **Choose Mode (Diamond Casino / Kortz Center only)**
    - **Fingerprint** — Detects and solves the fingerprint puzzle  
    - **Keypad** — Detects and solves the keypad puzzle  
 
-   **Note:** Switching to **Manual mode** disables automatic puzzle detection, preventing unintended mode changes  
+> [!NOTE]
+> Switching to **Manual mode** disables automatic puzzle detection, preventing unintended mode changes  
 
 
 ### Hotkeys & Controls
@@ -304,8 +302,6 @@ All hotkeys are customizable.
 | Manual | `M` | Detects patterns without selecting them | Useful for full manual control |
 | Auto Hack | `H` | Automatically solves detected puzzles | Can be enabled before starting for smoother flow |
 | Reset | `R` | Stops current solving and resets state | Re-enables auto detection and sets solver to `(idle)` |
-| Send PgUp *(Cayo Perico only)* | `LMB` | Forwards another key as `PgUp` | Default: Left Mouse Button (`LMB`) |
-
 
 ### Options
 

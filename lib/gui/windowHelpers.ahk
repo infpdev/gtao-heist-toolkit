@@ -83,7 +83,7 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
         picRichPresenceEnabled
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
-        inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
+        inputToggleScripts, inputLedgeGrabAutomation
 
     mouseOverHwnd := wParam
 
@@ -129,8 +129,7 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
                 inputDelay.Hwnd,
                 inputNoSave.Hwnd,
                 inputToggleScripts.Hwnd,
-                inputLedgeGrabAutomation.Hwnd,
-                inputPgUp.Hwnd:
+                inputLedgeGrabAutomation.Hwnd:
                 ToolTip("", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorIBeam)
                 return True

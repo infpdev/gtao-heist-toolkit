@@ -69,12 +69,11 @@ global fnManualHotkey := ManualHotkey, fnAutoHackHotkey := AutoHackHotkey, fnRes
 ; ⏐==========================================================================================================⏐
 Init() {
     ; ===========Hotkeys===========
-    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey, sendPgUpKey
+    global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey
 
     global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
     global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
     global readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
-    global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
     global readableManualKey := CanonicalToDisplay(manualKey)
     global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
     global readableResetKey := CanonicalToDisplay(resetKey)
@@ -85,10 +84,10 @@ Init() {
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
         picRichPresenceEnabled
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
-        inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
+        inputToggleScripts, inputLedgeGrabAutomation
 
     ; Text labels
-    global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtPgUpLabel,
+    global txtHeistLabel, txtCasinoKortzLabel, txtCayoLabel, txtCayoOptionLabel,
         txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtEnableScriptsInfo, inputLedgeGrabText,
         txtEngineLabel, txtAHKLabel, txtOpenCVLabel
 
@@ -102,20 +101,19 @@ Init() {
         instrOpenCVOnly := "OpenCV only (fallback to AHK unsupported).",
         instrManual := "Let the script find the prints without selecting them automatically.",
         instrAuto := "Automatically hack the fingerprints / keypad.",
-        instrReset := "Resets the current script's progress. Use in case of errors.",
-        instrPgUp := "Lets you use the plasma cutters during the heist."
+        instrReset := "Resets the current script's progress. Use in case of errors."
+
     ; Instruction text control variables (global scope)
     global txtNoSaveInstr := "", txtScriptsInstr := "", txtLedgeGrabInstr := "", txtModeInstr := "",
         txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
-        txtPgUpInstr := "", txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
+        txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
         txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
 
     ; ======== Boolean flags and state variables ========
     global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,
         delay, iniFile, debug, isBeta
-    global anchorFound := false, pgUpSent := false, hackInProgress := false,
-        pgUpDisabled := false, ledgeGrabInProgress := false, LedgeGrabRunningSignal :=
-        false,
+    global anchorFound := false, hackInProgress := false,
+        ledgeGrabInProgress := false, LedgeGrabRunningSignal := false,
         cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0,
         hackMode := "idle", heistInstance := "", autoSaveTimers := Map(),
         hotkeyCaptureField := "", hotkeyCaptureKeyName := ""
@@ -358,7 +356,7 @@ Init() {
     }
 
     ; ⏐========================================================================================================⏐
-    ; ⏐======================== ROW 6: Mode Options (Fingerprint / Keypad / Send PgUp) ========================⏐
+    ; ⏐============================== ROW 6: Mode Options (Fingerprint / Keypad) ==============================⏐
     ; ⏐========================================================================================================⏐
     {
         fingerprintX := toggleX - 5, modeY := y, modeW := labelW
@@ -379,20 +377,13 @@ Init() {
         txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
 
         ; --- Cayo Perico options ---
-        ; label
-        txtPgUpLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Send PgUp keybind:")
-        ; hotkey field to send PgUp
-        inputPgUp := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
-        " Center Background222222 cWhite", CanonicalToDisplay(sendPgUpKey))
-        ; cayo perico pgup instruction text
-        txtPgUpInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
+        txtCayoOptionLabel := guiApp.AddText("x" xLabel - 30 " yp-5 h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        "Switch to Casino / Kortz to toggle mode")
+        txtCayoOptionLabel.SetFont("s12")
 
         ; Casino / Cayo options event listeners
         picFingerprintToggle.OnEvent("Click", ToggleFingerprintMode)
-        inputPgUp.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputPgUp, "SendPgUp", sendPgUpKey))
-        inputPgUp.OnEvent("Change", (*) => AutoSaveKeybind(inputPgUp, "SendPgUp"))
         UpdateModeInstrText()
-        UpdatePgUpInstrText()
         y += rowH
     }
 
@@ -541,7 +532,7 @@ Init() {
      */
     CreateHeistInstance() {
         global fingerprintMode, heistInstance, scriptsEnabled, delay, heist,
-            hackMode, pgUpSent, txtPgUpLabel, engine, higherRes
+            hackMode, txtCayoOptionLabel, engine, higherRes
 
         hackMode := "idle"
 
@@ -565,8 +556,6 @@ Init() {
                 engine)
 
         } else if (heist == DCH_OR_KORTZ) {
-            pgUpSent := false ; Reset PgUp sent status when switching to casino
-            txtPgUpLabel.Opt("cWhite")
             if (fingerprintMode) {
                 heistInstance := FingerprintSolver(delay, UpdateGlobalStatus,
                     cachedFingerprintAnchor, "", higherRes, engine)
@@ -727,9 +716,6 @@ Init() {
                 regResetKey := resetKey
         }
 
-        ; if (heist == CAYO_PERICO)
-        ;     TryRegisterPgUpHotkey()
-
         UpdateGlobalStatus(hackInProgress)
     }
 
@@ -881,14 +867,11 @@ Init() {
         y := pos.y
 
         global hackMode, fingerprintMode, scriptsEnabled, ledgeGrabEnabled, noSave, manualKey, noSaveKey, ledgeGrabKey,
-            autoHackKey, resetKey, hackInProgress, heist, sendPgUpKey, pgUpSent, unsupportedResolution,
+            autoHackKey, resetKey, hackInProgress, heist, unsupportedResolution,
             ledgeGrabInProgress
 
         global readableAutoHackKey, readableManualKey, readableResetKey,
-            readableNoSaveKey, readableLedgeGrabKey, readableSendPgUpKey, readableScriptsKey
-
-        if (pgUpSent)
-            return ; Don't update status while PgUp is being sent to avoid tooltip interference
+            readableNoSaveKey, readableLedgeGrabKey, readableScriptsKey
 
         ; noSaveText := noSave ? "NoSave enabled" : "NoSave disabled"
         noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
@@ -933,7 +916,6 @@ Init() {
                 if (heist == CAYO_PERICO) {
                     hackStatus := "El Rubio mode "
                     hackStatus .= (hackMode == "manual") ? "(Manual)" : "(Hacking)"
-                    ; hackStatus .= (hackMode == "manual" ? "`nSend PgUp: " sendPgUpKey : "")
                     hackInProgress := true
                 }
                 else if (heist == DCH_OR_KORTZ) {
@@ -946,7 +928,6 @@ Init() {
             } else {
                 if (heist == CAYO_PERICO) {
                     hackStatus := "El Rubio mode " (hackMode == "manual" ? "(Manual)" : "(Auto)")
-                    ; hackStatus .= (hackMode == "manual" ? "`nSend PgUp: " sendPgUpKey : "")
                 }
                 else if (heist == DCH_OR_KORTZ) {
                     hackStatus := "Waiting for " (fingerprintMode ? "fingerprint" : "keypad") " " ((hackMode ==
@@ -960,10 +941,8 @@ Init() {
         }
 
         indicator := "🟢 "
-        keys := (heist == CAYO_PERICO && hackMode != "auto" ? "Send PgUp: " readableSendPgUpKey "`n" :
-            "")
 
-        keys .= (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
+        keys := (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ?
             indicator : "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
 
         aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" ledgeGrabText "`n" keys
@@ -1006,9 +985,7 @@ Init() {
      */
     ToggleScriptsEnabled(*) {
         static showedWarning := false
-        global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, hackInProgress, pgUpSent :=
-            false
-        global txtPgUpLabel
+        global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, hackInProgress
 
         if (!scriptsEnabled && cannotUseScriptsWhenGtaNotFocused(true)) {
             if (!showedWarning) {
@@ -1020,8 +997,6 @@ Init() {
         }
 
         showedWarning := false
-
-        txtPgUpLabel.Opt("cWhite")
 
         hackMode := "idle"
         hackInProgress := false
@@ -1156,22 +1131,14 @@ Init() {
     }
 
     SetModeToggleBtnVisibility(enabled) {
-        global picFingerprintToggle, txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtModeInstr, txtPgUpLabel,
-            inputPgUp, txtPgUpInstr
+        global picFingerprintToggle, txtModeLabel, txtFingerprintLabel, txtKeypadLabel, txtModeInstr
         if !IsSet(picFingerprintToggle) || !picFingerprintToggle
             return
         global heist
 
-        if IsSet(txtPgUpLabel) && IsSet(inputPgUp) && IsSet(txtPgUpInstr) {
+        if IsSet(txtCayoOptionLabel) {
             show := (heist == CAYO_PERICO) && scriptsEnabled
-            txtPgUpLabel.Visible := show
-            inputPgUp.Visible := show
-            txtPgUpInstr.Visible := show
-            if show {
-                TryRegisterPgUpHotkey()
-            } else {
-                UnregisterPgUpHotkey()
-            }
+            txtCayoOptionLabel.Visible := show
         }
 
         if enabled {

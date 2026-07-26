@@ -1,7 +1,5 @@
-#Requires AutoHotkey v2.0
-
 ; Initialized here for static analysis across includes; real control assignment happens in Init().
-global inputPgUp := "", txtPgUpLabel := ""
+global txtCayoOptionLabel := ""
 
 ; ⏐==========================================================================================================⏐
 ; ⏐====================================== UI Input Management Functions =====================================⏐
@@ -11,14 +9,11 @@ global inputPgUp := "", txtPgUpLabel := ""
     ; =============== Unfocus handlers ===============
 
     AttachUnfocusHandlers(field, prevValue, saveBtn) {
-        global unfocusField, unfocusPrevValue, unfocusSaveBtn, sendPgUpKey, pgUpDisabled
+        global unfocusField, unfocusPrevValue, unfocusSaveBtn
         unfocusField := field
         unfocusPrevValue := prevValue
         unfocusSaveBtn := saveBtn
-        ; Temporarily unregister PgUp hotkeys if LButton to prevent clicks from triggering PgUp
-        if (sendPgUpKey == "LButton")
-        ; UnregisterPgUpHotkey()
-            pgUpDisabled := true
+
         OnMessage(0x100, EscUnfocusHandler)
         OnMessage(0x104, EscUnfocusHandler)
         OnMessage(0x101, KeyUpUnfocusHandler)
@@ -110,9 +105,9 @@ global inputPgUp := "", txtPgUpLabel := ""
     }
 
     IsCustomHotkeyField(field) {
-        global inputManual, inputAuto, inputReset, inputNoSave, inputToggleScripts, inputPgUp
+        global inputManual, inputAuto, inputReset, inputNoSave, inputToggleScripts
         return field = inputManual || field = inputAuto || field = inputReset
-            || field = inputNoSave || field = inputToggleScripts || field = inputPgUp
+            || field = inputNoSave || field = inputToggleScripts
     }
 
     BeginCustomHotkeyEdit(field, keyName, currentAHKValue) {
@@ -166,11 +161,6 @@ global inputPgUp := "", txtPgUpLabel := ""
         global autoSaveTimers
         static delayMs := 500
 
-        ; Prevent saving while temporarily disabled to avoid conflicts with PgUp as LButton
-        ; tends to send PgUp even though it's disabled, so this prevents saving when that happens.
-        if (pgUpDisabled && pgUpSent)
-            return
-
         ; Cancel previous timer for this field
         if autoSaveTimers.Has(keyName) {
             SetTimer(autoSaveTimers[keyName], 0)
@@ -217,9 +207,6 @@ global inputPgUp := "", txtPgUpLabel := ""
             case "LedgeGrab":
                 global ledgeGrabKey
                 prevKey := ledgeGrabKey
-            case "SendPgUp":
-                global sendPgUpKey
-                prevKey := sendPgUpKey
         }
 
         ; Convert display value to canonical format for saving
@@ -255,13 +242,9 @@ global inputPgUp := "", txtPgUpLabel := ""
             case "LedgeGrab":
                 ledgeGrabKey := val
                 UpdateLedgeGrabInstrText()
-            case "SendPgUp":
-                sendPgUpKey := val
-                UpdatePgUpInstrText()
-                TryRegisterPgUpHotkey(prevKey)
         }
 
-        toolOnlyHotkey := (keyName == "NoSave" || keyName == "ToggleScripts" || keyName == "SendPgUp")
+        toolOnlyHotkey := (keyName == "NoSave" || keyName == "ToggleScripts")
         section := toolOnlyHotkey ? "ToolHotkeys" : "Hotkeys"
         IniWrite(val, iniFile, section, keyName)
         sleep 100
@@ -325,7 +308,7 @@ global inputPgUp := "", txtPgUpLabel := ""
 
     DelayedCleanup() {
         global settingsGroup, unfocusField, unfocusPrevValue, unfocusSaveBtn, hotkeyCaptureField,
-            hotkeyCaptureKeyName, sendPgUpKey, pgUpDisabled
+            hotkeyCaptureKeyName
         global autoSaveTimers
         if !unfocusField
             return
@@ -353,10 +336,6 @@ global inputPgUp := "", txtPgUpLabel := ""
         OnMessage(0x105, KeyUpUnfocusHandler, 0)
         hotkeyCaptureField := ""
         hotkeyCaptureKeyName := ""
-        ; Re-register PgUp hotkeys if LButton after input is unfocused
-        if (sendPgUpKey == "LButton")
-        ; TryRegisterPgUpHotkey()
-            pgUpDisabled := false
     }
 
     ; ============== Hotkey / visual format functions ===============
@@ -384,79 +363,6 @@ global inputPgUp := "", txtPgUpLabel := ""
         return includePlus ? out : SubStr(out, 1, -1)
     }
 
-}
-
-; =============== PgUp hotkey management ===============
-TryRegisterPgUpHotkey(oldKey := "") {
-    global sendPgUpKey, heist, scriptsEnabled, txtPgUpLabel
-    pgUpSent := false
-    txtPgUpLabel.Opt("cWhite")
-    UnregisterPgUpHotkey(oldKey)
-    if (heist == CAYO_PERICO && sendPgUpKey && scriptsEnabled) {
-        finalFormat := CanonicalToRegistration(sendPgUpKey)
-        try {
-            Hotkey("~" finalFormat, PgUpDown, "On")
-            Hotkey("~" finalFormat " up", PgUpUp, "On")
-        } catch as err {
-            MsgBox "Failed to register PgUp hotkey: " err.What, "PgUp Hotkey Registration Failed", 48
-        }
-    }
-}
-
-PgUpDown(*) {
-    global txtPgUpLabel, pgUpSent, sendPgUpKey
-
-    if (pgUpDisabled || pgUpSent)
-        return
-
-    if !isGtaFocused(false, true)
-        return
-
-    pos := getToolTipPos(toolTipPos)
-    x := pos.x
-    y := pos.y
-
-    if (sendPgUpKey == "LButton") {
-        if (!GetKeyState("RButton", "P")) {
-            pgUpSent := true
-            Send "{PgUp down}"
-            txtPgUpLabel.Opt("c648f64")
-            CustomTooltip "PgUp pressed (LMB)", x, y, 20
-        }
-        ; If RButton is pressed, do nothing (block PgUp)
-        return
-    }
-
-    ; For all other keys, always send PgUp
-    txtPgUpLabel.Opt("c648f64")
-    pgUpSent := true
-    Send "{PgUp down}"
-    CustomTooltip "PgUp pressed (" sendPgUpKey ")", x, y, 20
-}
-
-PgUpUp(*) {
-    global txtPgUpLabel, pgUpSent
-    txtPgUpLabel.Opt("cWhite")
-
-    if (!pgUpSent)
-        return
-
-    Send "{PgUp up}"
-    pgUpSent := false
-    UpdateGlobalStatus(hackInProgress, , , , true)
-
-}
-
-UnregisterPgUpHotkey(keyToRemove := "") {
-    global sendPgUpKey
-    key := (keyToRemove != "") ? keyToRemove : sendPgUpKey
-    if key {
-        finalFormat := CanonicalToRegistration(key)
-        try {
-            Hotkey("~" finalFormat, PgUpDown, "Off")
-            Hotkey("~" finalFormat " up", PgUpUp, "Off")
-        }
-    }
 }
 
 ; Toggle debug mode with Alt+F12.

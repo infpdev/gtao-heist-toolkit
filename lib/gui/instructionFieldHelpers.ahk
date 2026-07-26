@@ -5,13 +5,6 @@
 ; ⏐==========================================================================================================⏐
 {
 
-    UpdatePgUpInstrText() {
-        global txtPgUpInstr, sendPgUpKey
-        hotKeyTextPgUp := " Hold " CanonicalToDisplay(sendPgUpKey) " to test PgUp."
-        if IsSet(txtPgUpInstr)
-            txtPgUpInstr.Text := "Lets you use the plasma cutters during the heist." hotKeyTextPgUp
-    }
-
     UpdateNoSaveInstrText() {
         global instrNoSave, noSaveKey, txtNoSaveInstr
         hotKeyTextNoSave := " Press " CanonicalToDisplay(noSaveKey) " to toggle. " .
