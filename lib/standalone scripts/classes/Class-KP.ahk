@@ -240,7 +240,8 @@ class KeypadSolver {
         if (this.mode == "manual")
             return
 
-        this.ShowRingMap() ; Show row mapping during handoff
+        this.showMapIfStabilized() ; Show row mapping during handoff
+        this.showKeys() ; Show keys during handoff
 
         SetTimer this.fnCheckFalsePositive, 0
         this.mode := "manual"
@@ -265,7 +266,7 @@ class KeypadSolver {
 
         try {
             ; Verify anchor is still present using OpenCV
-            this.foundAnchor := GetResFromOpenCV(ANCHOR_KEYPAD)
+            this.foundAnchor := GetResFromOpenCV(OpenCVCmd.KEYPAD_ANCHOR)
             ; ShowCenteredToolTip this.foundAnchor, 15
             if (!this.foundAnchor || this.foundAnchor == "ERR") {
                 this.foundAnchor := false
@@ -278,7 +279,7 @@ class KeypadSolver {
                 CustomTooltip "[class (kp) | opencv] Keypad anchor found!", 0, 0, 18
 
             ; Detect all columns and rows using OpenCV
-            gridResult := GetResFromOpenCV(REQ_KEYPAD, Map("isKortzHeist", this.isKortzHeist))
+            gridResult := GetResFromOpenCV(OpenCVCmd.KEYPAD, Map("isKortzHeist", this.isKortzHeist))
             rows := StrSplit(Trim(gridResult), ",")
             if (rows.Length >= 5) {
                 this.colsCount := rows.Length
@@ -289,7 +290,7 @@ class KeypadSolver {
             }
 
             ; MsgBox gridResult
-            if (gridResult = ERRMSG) {
+            if (gridResult = OpenCVCmd.ERRMSG) {
                 if (debug)
                     MsgBox "grid threw"
                 this.foundAnchor := false
@@ -301,7 +302,7 @@ class KeypadSolver {
                 this.autoStarted := false
 
             if (this.needStatusUpdate && this.foundAnchor) {
-                updateGlobalStatus(true, , , "Keypad.tryOpenCV()")
+                updateGlobalStatus(true, , , "Keypad.tryOpenCV()", true)
                 this.needStatusUpdate := false
             }
 
@@ -425,7 +426,7 @@ class KeypadSolver {
 
         if this.findAnchor() {
             if (this.needStatusUpdate && this.foundAnchor) {
-                updateGlobalStatus(true, , , "Keypad.validateAnchor()")
+                updateGlobalStatus(true, , , "Keypad.validateAnchor()", true)
 
                 this.needStatusUpdate := false
             }
@@ -920,8 +921,8 @@ class KeypadSolver {
             return false
 
         if (!this.stabilized) {
-            this.showMapIfStabilized()
             this.stabilized := true
+            this.showMapIfStabilized()
             this.handoffPending := true
             this.showKeys()
         }
@@ -935,10 +936,11 @@ class KeypadSolver {
      */
     ringDetected_AutoSelectOpenCV() {
         ; sleep 1000
-        ringResult := GetResFromOpenCV(REQ_DETECT_RING)
+        ; this.clearCurrentColTooltip()
+        ringResult := GetResFromOpenCV(OpenCVCmd.DETECT_RING)
         ; MsgBox ringResult
 
-        if (ringResult = ERRMSG || ringResult = "-1") {
+        if (ringResult = OpenCVCmd.ERRMSG || ringResult = "-1") {
             return false
         }
 
@@ -958,6 +960,13 @@ class KeypadSolver {
             return false
         } catch {
             return false
+        }
+    }
+
+    clearCurrentColTooltip() {
+        for col in this.cols {
+            Tooltip "", , , col
+            return
         }
     }
 
@@ -983,13 +992,13 @@ class KeypadSolver {
         if (!targetCol)
             return
 
-        colResult := GetResFromOpenCV(REQ_IS_COLUMN_SELECTED, Map("col", targetCol))
+        colResult := GetResFromOpenCV(OpenCVCmd.IS_COLUMN_SELECTED, Map("col", targetCol))
         if (debug)
             ShowCenteredToolTip "Column " targetCol " selected? " colResult, 15
         if (this.mode == "auto" && targetCol == this.colsCount && colResult = 0) {
-            ringRow := GetResFromOpenCV(REQ_DETECT_RING)
+            ringRow := GetResFromOpenCV(OpenCVCmd.DETECT_RING)
             ; MsgBox ringRow
-            if (ringRow != "-1" && ringRow != ERRMSG) {
+            if (ringRow != "-1" && ringRow != OpenCVCmd.ERRMSG) {
                 ; MsgBox "Ring detected at row " ringRow " but last column not selected. Resetting state."
                 this.ResetState()
             }
@@ -997,7 +1006,7 @@ class KeypadSolver {
         if (colResult = "1" || colResult = 1) {
             try this.cols.Delete(targetCol)
             if (this.mode == "auto") {
-                this.ShowRingMap()
+                this.showMapIfStabilized()
                 this.showkeys()
             }
             if (this.cols.Count == 0 || targetCol == this.colsCount) {
@@ -1084,7 +1093,7 @@ class KeypadSolver {
 
     showMapIfStabilized() {
         ; Show initial ring map on stabilization before any selection
-        if (!this.cols.Has(this.colsCount))
+        if (!this.stabilized || !this.cols.Has(this.colsCount))
             return
 
         this.ShowRingMap()

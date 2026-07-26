@@ -38,11 +38,11 @@ if !IsObject(buildOpts)
 buildVaultOpsExe := buildOpts.buildVaultOps
 shouldBuildOpenCVEngine := buildOpts.buildOpenCVEngine
 compileStandalone := buildOpts.compileStandalone
-packageBuilds := buildOpts.packageBuilds
+packageStandalone := buildOpts.packageBuilds
 useOriginalClasses := buildOpts.useOriginalClasses
 scanVirusTotal := buildOpts.scanVirusTotal
 
-if (compileStandalone && packageBuilds && !FileExist(rarExe)) {
+if (compileStandalone && packageStandalone && !FileExist(rarExe)) {
     MsgBox "WinRAR.exe was not found, please select the correct path.", "Error", 48
 
     pickedRar := FileSelect(1, , "Select WinRAR.exe", "Executables (*.exe)")
@@ -58,7 +58,7 @@ if (compileStandalone && packageBuilds && !FileExist(rarExe)) {
 buildVaultOps()
 
 buildVaultOps() {
-    global parentDir, buildVaultOpsExe, shouldBuildOpenCVEngine, packageBuilds, useOriginalClasses, scanVirusTotal,
+    global parentDir, buildVaultOpsExe, shouldBuildOpenCVEngine, packageStandalone, useOriginalClasses, scanVirusTotal,
         baseExe, AHK2EXEPath, iconPath, isccExe, issScript
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
@@ -67,7 +67,7 @@ buildVaultOps() {
     updaterOutFile := parentDir "\lib\vaultOpsUpdater.exe"
     vaultOpsInstaller := parentDir "\dist\vaultOps-Setup.exe"
 
-    cmd := '"' AHK2EXEPath '" /in "' inFile '" /out "' outFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
+    vaultOpsCmd := '"' AHK2EXEPath '" /in "' inFile '" /out "' outFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     updaterCmd := '"' AHK2EXEPath '" /in "' updaterInFile '" /out "' updaterOutFile '" /icon "' iconPath '" /compress 0 /base ' quotedBase
     innoCmd := '"' isccExe '" "' issScript '"'
 
@@ -81,6 +81,7 @@ buildVaultOps() {
 
         if (shouldBuildOpenCVEngine) {
             BuildOpenCVEngine(parentDir)
+            BuildDiscordRPC(parentDir)
         } else {
             RequireExistingFile(parentDir "\lib\py_helpers\OpenCV_Engine.exe", "Existing OpenCV helper")
             ShowCenteredToolTip "Using existing OpenCV_Engine.exe"
@@ -90,7 +91,8 @@ buildVaultOps() {
         ; === Compile and package the main vaultOps executable ===
         ToolTip "", , , 1
         ShowCenteredToolTip "Packaging vaultOps"
-        RunWait cmd, , "Hide"
+        RunWait vaultOpsCmd, , "Hide"
+        BloatExe(outFile, 1500)
         RunWait updaterCmd, , "Hide"
         RunWait innoCmd, , "Hide"
 
@@ -117,8 +119,9 @@ buildVaultOps() {
     }
 
     if (compileStandalone)
-        createStandalonePackages(quotedBase, parentDir, packageBuilds, useOriginalClasses, buildVaultOpsExe)
+        createStandalonePackages(quotedBase, parentDir, packageStandalone, useOriginalClasses, buildVaultOpsExe)
 
+    UpdateSizesOfEachScript()
     FocusOrOpenFolder(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled
@@ -131,8 +134,8 @@ buildVaultOps() {
             exePath := A_ScriptDir "\compile_scripts.exe"
             quotedBase := '"' baseExe '"'
 
-            cmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
-            RunWait cmd, , "Hide"
+            distCmd := '"' AHK2EXEPath '" /in "' scriptPath '" /out "' exePath '" /compress 0 /base ' quotedBase
+            RunWait distCmd, , "Hide"
 
             if FileExist(exePath) {
                 ShowCenteredToolTip "compiled dist.ahk"
@@ -141,6 +144,31 @@ buildVaultOps() {
     }
     sleep 2000
     ExitApp
+}
+
+UpdateSizesOfEachScript() {
+    distDir := parentDir "\dist"
+    targetSizes := Map()
+
+    if (buildVaultOpsExe)
+        targetSizes.Set(distDir "\vaultOps-Setup.exe", 55000)
+
+    if (packageStandalone)
+        targetSizes.Set(distDir "\vaultOps-Standalone-Pack.exe", 48000)
+
+    if (compileStandalone) {
+        targetSizes.Set(distDir "\NoSave-Standalone.exe", 1500)
+        targetSizes.Set(distDir "\Util-AFK-Key-Holder.exe", 1500)
+        targetSizes.Set(distDir "\Util-Solo-Public-Session.exe", 1500)
+        targetSizes.Set(distDir "\Util-TriggerBot.exe", 1500)
+    }
+
+    for exePath, targetKB in targetSizes {
+        if !FileExist(exePath)
+            continue
+
+        BloatExe(exePath, targetKB)
+    }
 }
 
 BuildOpenCVEngine(parentDir) {
@@ -228,6 +256,87 @@ BuildOpenCVEngine(parentDir) {
 
     if !FileExist(outputFile) {
         MsgBox "OpenCV_Engine.exe was not copied into the py_helpers folder.", "Error", 48
+        ExitApp
+    }
+}
+
+BuildDiscordRPC(parentDir) {
+    global iconPath
+
+    pyHelpersDir := parentDir "\lib\py_helpers"
+    sourceFile := pyHelpersDir "\DiscordRPC.py"
+    outputFile := pyHelpersDir "\DiscordRPC.exe"
+    buildDir := pyHelpersDir "\nuitka_build"
+    builtExe := buildDir "\DiscordRPC.exe"
+
+    RequireExistingFile(sourceFile, "Discord RPC helper")
+
+    ; Prefer a project-local venv
+    projectRoot := DirGetParent(parentDir)
+    venvPython := projectRoot "\.venv\Scripts\python.exe"
+
+    if FileExist(venvPython) {
+        pythonExe := venvPython
+        ShowCenteredToolTip "Using project venv for Nuitka build"
+    } else {
+        pythonExe := FindPythonExe()
+        if (pythonExe = "") {
+            MsgBox "No Python executable was found for the Nuitka build step. Please ensure Python is installed or on PATH.",
+                "Error", 48
+            ExitApp
+        }
+    }
+
+    try CleanOldNuitkaTempFolders()
+
+    if FileExist(outputFile)
+        try FileDelete(outputFile)
+
+    if !DirExist(buildDir)
+        try DirCreate(buildDir)
+
+    ShowCenteredToolTip "Compiling DiscordRPC.py with Nuitka..."
+
+    quotedPython := '"' pythonExe '"'
+
+    nuitkaCmd := quotedPython
+        . ' -m nuitka'
+        . ' --onefile'
+        . ' --windows-console-mode=disable'
+        . ' --assume-yes-for-downloads'
+        ; . ' --report="' buildDir '\DiscordRPC-report.xml"'
+        ; . ' --report-diffable'
+        ; . ' --disable-plugin=multiprocessing'
+        . ' --nofollow-import-to=tkinter'
+        . ' --nofollow-import-to=matplotlib'
+        . ' --nofollow-import-to=scipy'
+        . ' --nofollow-import-to=pytest'
+        . ' --nofollow-import-to=unittest'
+        . ' --windows-icon-from-ico="' iconPath '"'
+        . ' --output-filename="DiscordRPC.exe"'
+        . ' --output-dir="' buildDir '"'
+        . ' "' sourceFile '"'
+
+    RunWait nuitkaCmd, , "Hide"
+
+    Sleep 3000
+
+    if !FileExist(builtExe) {
+        MsgBox "Nuitka finished but DiscordRPC.exe was not created.`n`nCommand:`n" nuitkaCmd,
+            "Error",
+            48
+        ExitApp
+    }
+
+    FileCopy builtExe, outputFile, true
+
+    try DirDelete(buildDir "\nuitka_temp", true)
+    try FileDelete(builtExe)
+
+    if !FileExist(outputFile) {
+        MsgBox "DiscordRPC.exe was not copied into the py_helpers folder.",
+            "Error",
+            48
         ExitApp
     }
 }
@@ -418,6 +527,8 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
                 continue
             }
 
+            BloatExe(outExe, 1500)
+
             ; track compiled exe
             compiledExeList.Push(exeName)
         }
@@ -527,6 +638,44 @@ createStandalonePackages(quotedBase, parentDir, packageBuilds := true, useOrigin
             "Error"
         )
     }
+}
+
+BloatExe(exePath, targetKB) {
+    if !FileExist(exePath)
+        throw Error("File not found: " exePath)
+
+    SplitPath exePath, &scriptName
+
+    ShowCenteredToolTip "Bloating " scriptName " to " targetKB " KB"
+
+    targetBytes := targetKB * 1024
+    currentBytes := FileGetSize(exePath)
+
+    if (currentBytes >= targetBytes) {
+        MsgBox scriptName " is already " (currentBytes // 1024) " KB. Couldn't bloat to " targetKB " KB.",
+        "Info", 64
+        return false
+    }
+
+    bytesToAdd := targetBytes - currentBytes
+
+    file := FileOpen(exePath, "a")
+    if !file
+        throw Error("Failed to open file.")
+
+    file.Pos := file.Length
+
+    ; Write in 64 KB chunks.
+    chunk := Buffer(65536, 0)
+
+    while (bytesToAdd > 0) {
+        writeSize := Min(bytesToAdd, chunk.Size)
+        file.RawWrite(chunk, writeSize)
+        bytesToAdd -= writeSize
+    }
+
+    file.Close()
+    return true
 }
 
 buildGUI(isDev := false) {

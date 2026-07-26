@@ -136,6 +136,9 @@ isGtaFocusedStandalone(excludeGui := true, strict := false) {
     return linientIsFocused
 }
 
+/**
+ * @returns {boolean} - Returns true if GTA is running, false otherwise.
+ */
 isGtaRunning() {
     return getGtaHwnd() != 0
 }
@@ -158,9 +161,9 @@ cannotUseScriptsWhenGtaNotFocused(checkOnly := false) {
         }
 
         if (!checkOnly && !showedWarning) {
-            ShowCenteredToolTip "Solver Hotkeys Inactive [GTA Not Focused]", 17
+            ShowCenteredToolTip "Solver Hotkeys Inactive [GTA Not Focused]", 1
             showedWarning := true
-            SetTimer () => ToolTip("", , , 17), -5000
+            SetTimer () => ToolTip(), -5000
         }
 
         return true
@@ -177,12 +180,12 @@ cannotUseScriptsWhenGtaNotFocused(checkOnly := false) {
 cannotToggleNoSaveWhenGtaNotFocused(noSave := false) {
     static showedWarning := false
     if (!isGtaFocused(false, true)) {
-        if (!isGtaRunning() && noSave)
+        if (!isGtaRunning())
             return false
         if (!showedWarning) {
-            ShowCenteredToolTip "NoSave Hotkey Inactive [GTA Not Focused]", 17
+            ShowCenteredToolTip "NoSave Hotkey Inactive [GTA Not Focused]", 1
             showedWarning := true
-            SetTimer(() => ToolTip("", , , 17), -5000)
+            SetTimer(() => ToolTip(), -5000)
         }
         return true
     } else {

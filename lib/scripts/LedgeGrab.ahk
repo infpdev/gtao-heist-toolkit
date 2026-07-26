@@ -2,14 +2,14 @@
 ToggleLedgeGrabInProgress(*) {
     global ledgeGrabInProgress, hackInProgress, hackMode, LedgeGrabRunningSignal
 
+    if (DisableLedgeGrabIfGtaNotFocused())
+        return
+
     if (hackInProgress || hackMode != "idle") {
         ShowCenteredToolTip "Cannot use ledge grab while hack is in progress", 17
         SetTimer(() => (ToolTip("", , , 17)), -2000)
         return
     }
-
-    if (DisableLedgeGrabIfGtaNotFocused())
-        return
 
     BlockInput 0
 
@@ -154,7 +154,7 @@ SleepIfBlack() {
         }
 
         ; sleep while the screen is black
-        if (GetResFromOpenCV(REQ_LEDGE_GRAB_BLACK) = 1) {
+        if (GetResFromOpenCV(OpenCVCmd.BLACK_LEDGE_GRAB) = 1) {
             blackFoundOnce := true
             startTime += 100 ; extend timeout by 0.1 second for each black frame detected
             Sleep 100

@@ -251,9 +251,9 @@ class FingerprintSolver {
             return false
 
         try {
-            this.foundAnchor := Integer(GetResFromOpenCV(ANCHOR_FINGERPRINT))
+            this.foundAnchor := Integer(GetResFromOpenCV(OpenCVCmd.DETECT_ANCHOR))
             ; ShowCenteredToolTip this.foundAnchor
-            if (!this.foundAnchor || this.foundAnchor == ERRMSG) {
+            if (!this.foundAnchor || this.foundAnchor == OpenCVCmd.ERRMSG) {
                 this.foundAnchor := false
                 this.needStatusUpdate := true
                 this.prevFoundPixel := 0
@@ -264,13 +264,13 @@ class FingerprintSolver {
                     CustomTooltip "[class (fp) | opencv] Fingerprint anchor found!", 0, 0, 18
             }
 
-            positions := GetResFromOpenCV(REQ_FINGERPRINT)
+            positions := GetResFromOpenCV(OpenCVCmd.FINGERPRINT)
             if (positions != -1) {
                 if (this.autoStarted)
                     this.autoStarted := false
 
                 if (this.needStatusUpdate && this.foundAnchor) {
-                    UpdateGlobalStatus(true, , , "Fingerprint.tryOpenCV()")
+                    UpdateGlobalStatus(true, , , "Fingerprint.tryOpenCV()", true)
                     this.needStatusUpdate := false
                 }
 
@@ -467,7 +467,7 @@ class FingerprintSolver {
         if (this.lastFoundTick != 0 && !this.foundAnchor) {
             this.clearAll()
             timeLeft := Integer((timeoutMs - (A_TickCount - this.lastFoundTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft, "Fingerprint.checkTimeout()")
+            updateGlobalStatus(false, true, timeLeft, "Fingerprint.checkTimeout()", true)
             this.needStatusUpdate := true
             if (A_TickCount - this.lastFoundTick > timeoutMs) {
                 ResetHackMode()
@@ -596,7 +596,7 @@ class FingerprintSolver {
                 if ImageSearch(&Px, &Py, x1, y1, x2, y2, "*" this.anchorTolerance " " file) {
 
                     if (this.needStatusUpdate && this.foundAnchor) { ; update status only on first found print to avoid excessive updates
-                        updateGlobalStatus(true, , , "Fingerprint.DetectAnchorGroup()")
+                        updateGlobalStatus(true, , , "Fingerprint.DetectAnchorGroup()", true)
                         this.needStatusUpdate := false
                     }
 

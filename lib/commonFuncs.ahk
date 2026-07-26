@@ -75,7 +75,7 @@ KillGta() {
         ShowCenteredToolTip("GTA V killed", 17)
     } else {
         ShowCenteredToolTip("GTA V not running", 17)
-        SetTimer(() => ToolTip("", , , 17), -2000)
     }
+    SetTimer(() => ToolTip("", , , 17), -2000)
 
 }

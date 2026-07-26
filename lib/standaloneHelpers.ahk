@@ -162,8 +162,8 @@ ExitScript(*) {
     if (isGtaRunning()) {
         if (!isGtaFocused()) {
             if (!showedWarning) {
-                ShowCenteredToolTip "Exit hotkey Inactive [GTA Not Focused]", 17
-                SetTimer(() => ToolTip("", , , 17), -5000)
+                ShowCenteredToolTip "Exit hotkey Inactive [GTA Not Focused]", 1
+                SetTimer(() => ToolTip(), -5000)
                 showedWarning := true
             }
             return

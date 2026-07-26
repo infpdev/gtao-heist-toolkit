@@ -162,10 +162,10 @@ class ElRubioSolver {
             return false
 
         try {
-            anchorRes := GetResFromOpenCV(ANCHOR_CAYO)
+            anchorRes := GetResFromOpenCV(OpenCVCmd.CAYO)
 
             this.foundAnchor := (
-                anchorRes != ERRMSG
+                anchorRes != OpenCVCmd.ERRMSG
                 && anchorRes != "0"
                 && anchorRes
             )
@@ -182,8 +182,8 @@ class ElRubioSolver {
             if (debug)
                 CustomTooltip("Rubio Anchor (opencv)", 0, 0, 18)
 
-            res := GetResFromOpenCV(REQ_CAYO)
-            if (res = ERRMSG || res = "" || !res)
+            res := GetResFromOpenCV(OpenCVCmd.CAYO)
+            if (res = OpenCVCmd.ERRMSG || res = "" || !res)
                 return false
 
             if (this.autoStarted)
@@ -244,7 +244,7 @@ class ElRubioSolver {
         if (this.lastSeenTick != 0) {
             this.clearAll()
             timeLeft := Integer((10000 - (A_TickCount - this.lastSeenTick)) / 1000) + 1
-            updateGlobalStatus(false, true, timeLeft, "ElRubioSolver.checkTimeout()")
+            updateGlobalStatus(false, true, timeLeft, "ElRubioSolver.checkTimeout()", true)
             if (A_TickCount - this.lastSeenTick > 10000) {
                 ResetHackMode()
                 this.Idle()

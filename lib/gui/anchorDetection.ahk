@@ -166,12 +166,12 @@ foundAnchorOpenCV() {
     if (ledgeGrabInProgress)
         return 0
 
-    puzzle := GetResFromOpenCV(REQ_ALL_ANCHORS)
+    puzzle := GetResFromOpenCV(OpenCVCmd.DETECT_ANCHOR)
     if (puzzle) {
         ; MsgBox puzzle
         return { mode: puzzle, x: 0, y: 0 }
     }
-    else if (puzzle = ERRMSG) {
+    else if (puzzle = OpenCVCmd.ERRMSG) {
         ShowCenteredToolTip "ERR AT anchorDetection.ahk (line 169)", 15
         return 0
     }
@@ -411,12 +411,12 @@ is_black_area_present_cayo() {
                 ; return true ; OpenCV now handles both detection and black area verification for all modes
                 if (temp_heist == DCH_OR_KORTZ) {
                     if (temp_fingerprintMode) {
-                        res := GetResFromOpenCV(REQ_BLACK_FP)
+                        res := GetResFromOpenCV(OpenCVCmd.BLACK_FINGERPRINT)
                         if (debug)
                             ShowCenteredToolTip "Fingerprint(Opencv): " res, 15
                         return res
                     } else {
-                        res := GetResFromOpenCV(REQ_BLACK_KP)
+                        res := GetResFromOpenCV(OpenCVCmd.BLACK_KEYPAD)
                         if (debug)
                             ShowCenteredToolTip "Keypad(Opencv): " res, 15
                         return res
@@ -424,7 +424,7 @@ is_black_area_present_cayo() {
 
                 } else {
                     if (temp_heist == CAYO_PERICO) {
-                        res := GetResFromOpenCV(REQ_BLACK_CAYO)
+                        res := GetResFromOpenCV(OpenCVCmd.BLACK_CAYO)
                         if (debug)
                             ShowCenteredToolTip "Cayo(Opencv): " res, 15
                         return res

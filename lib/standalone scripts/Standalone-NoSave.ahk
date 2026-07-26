@@ -69,8 +69,8 @@ ExitScript(*) {
     if (isGtaRunning()) {
         if (!isGtaFocused(true, true)) {
             if (!showedWarning) {
-                ShowCenteredToolTip "Exit hotkey inactive [GTA Not Focused]", 17
-                SetTimer(() => ToolTip("", , , 17), -5000)
+                ShowCenteredToolTip "Exit hotkey inactive [GTA Not Focused]", 1
+                SetTimer(() => ToolTip(), -5000)
                 showedWarning := true
             }
             return
@@ -226,8 +226,10 @@ ExitScript(*) {
             return true
 
         ; Show warning if NoSave is not working
+        firstLine := (isNoSaveStandalone ? "Warning: NoSave may not be working correctly.`n`n" :
+            "Warning: VaultOps detected that NoSave may not be working correctly.`n`n")
         MsgBox(
-            "Warning: VaultOps detected that NoSave may not be working correctly.`n`n"
+            firstLine
             .
             "This is usually caused by third-party antivirus or firewall apps overriding Windows Firewall settings."
             .

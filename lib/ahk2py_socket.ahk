@@ -20,43 +20,61 @@ global isShuttingDown := false
 global ocvCallInProgress := false
 
 ; Request type constants so callers do not need to repeat raw strings.
+class OpenCVCmd {
+    ; Returns the positions of the fingerprints.
+    static FINGERPRINT := "get_fingerprint"
 
-; Returns the positions of the fingerprints
-global REQ_FINGERPRINT := "get_fingerprint"
-; Returns the positions of the keypad, or -1 if not found or partial match
-global REQ_KEYPAD := "get_keypad"
-; Returns the clicks needed to solve Cayo Perico, or 0 if not found
-global REQ_CAYO := "get_cayo"
+    ; Returns the positions of the keypad, or -1 if not found or only a partial match.
+    static KEYPAD := "get_keypad"
 
-; Returns the type of puzzle, e.g. "fingerprint", "keypad", "cayo", or 0
-global REQ_ALL_ANCHORS := "detect_anchor"
-; Return 1 if the current puzzle is casino fingerprint, 0 if not
-global ANCHOR_FINGERPRINT := "fpAnchor"
-; Return 1 if the current puzzle is casino keypad, 0 if not
-global ANCHOR_KEYPAD := "kpAnchor"
-; Return 1 if the current puzzle is Cayo Perico, 0 if not
-global ANCHOR_CAYO := "cayoAnchor"
+    ; Returns the clicks needed to solve Cayo Perico, or 0 if not found.
+    static CAYO := "get_cayo"
 
-; Returns the row of the ring position, or -1 if not found
-global REQ_DETECT_RING := "detect_ring"
-/** Returns 1 if the specified column is selected, 0 if not<br>
- * @param col (1-based index of column to check)
- */
-global REQ_IS_COLUMN_SELECTED := "is_column_selected"
+    ; Returns the type of puzzle, e.g. "fingerprint", "keypad", "cayo", or 0.
+    static DETECT_ANCHOR := "detect_anchor"
 
-; Return 1 if a black area is detected in the fingerprint puzzle, 0 if not. Used for false positive reduction.
-global REQ_BLACK_FP := "is_black_area_present_fingerprint"
-; Return 1 if a black area is detected in the keypad puzzle, 0 if not. Used for false positive reduction.
-global REQ_BLACK_KP := "is_black_area_present_keypad"
-; Return 1 if a black area is detected in the cayo puzzle, 0 if not. Used for false positive reduction.
-global REQ_BLACK_CAYO := "is_black_area_present_cayo"
+    ; Returns 1 if the current puzzle is a Diamond Casino fingerprint puzzle, otherwise 0.
+    static FINGERPRINT_ANCHOR := "fpAnchor"
 
-global REQ_LEDGE_GRAB_BLACK := "is_black_area_present_ledge_grab"
+    ; Returns 1 if the current puzzle is a Diamond Casino keypad puzzle, otherwise 0.
+    static KEYPAD_ANCHOR := "kpAnchor"
 
-; Error code returned when anything goes wrong
-global ERRMSG := "ErrNoResponse"
-; Helper ping request used to keep the OpenCV engine alive while the host is running.
-global REQ_HEARTBEAT := "heartbeat"
+    ; Returns 1 if the current puzzle is a Cayo Perico fingerprint puzzle, otherwise 0.
+    static CAYO_ANCHOR := "cayoAnchor"
+
+    ; Returns the row of the keypad ring position, or -1 if not found.
+    static DETECT_RING := "detect_ring"
+
+    /**
+     * Returns 1 if the specified keypad column is currently selected, otherwise 0.
+     * @param col 1-based index of the column to check.
+     */
+    static IS_COLUMN_SELECTED := "is_column_selected"
+
+    ; Returns 1 if a black area is detected in the fingerprint puzzle, otherwise 0.
+    ; Used for false-positive reduction.
+    static BLACK_FINGERPRINT := "is_black_area_present_fingerprint"
+
+    ; Returns 1 if a black area is detected in the keypad puzzle, otherwise 0.
+    ; Used for false-positive reduction.
+    static BLACK_KEYPAD := "is_black_area_present_keypad"
+
+    ; Returns 1 if a black area is detected in the Cayo Perico puzzle, otherwise 0.
+    ; Used for false-positive reduction.
+    static BLACK_CAYO := "is_black_area_present_cayo"
+
+    ; Returns 1 if a black area is detected during the ledge-grab sequence, otherwise 0.
+    static BLACK_LEDGE_GRAB := "is_black_area_present_ledge_grab"
+
+    ; Helper ping request used to keep the OpenCV engine alive while the host is running.
+    static HEARTBEAT := "heartbeat"
+
+    ; Requests the OpenCV engine to terminate gracefully.
+    static STOP := "STOP"
+
+    ; Error code returned when anything goes wrong.
+    static ERRMSG := "ErrNoResponse"
+}
 
 ; =========================
 ; STARTUP / DETECTION
@@ -115,21 +133,6 @@ StartPython() {
     SetTimer(() => HeartbeatOpenCV(), 1000)
 }
 
-; Stop the helper process if running and clear the `pyProc` handle.
-StopPython(*) {
-    global pyProc
-
-    SetTimer(() => HeartbeatOpenCV(), 0)
-
-    try pyProc.Terminate()
-
-    ; force-kill any remaining helper
-    ; if (useCompiledExe)
-    ;     RunWait 'taskkill /F /IM OpenCV_Engine.exe >nul 2>&1', , "Hide"
-
-    pyProc := 0
-}
-
 ; Restart the helper process (stop then start). Useful after timeouts.
 RestartPython(err := "") {
     static errCount := 0
@@ -146,6 +149,12 @@ RestartPython(err := "") {
     StartPython()
 }
 
+; Stop the helper process if running and clear the `pyProc` handle.
+StopPython(*) {
+    CallPython("STOP", , false, true)
+}
+
+; Wait for the last request to finish (or timeout) before returning. Returns true if finished, false if timed out.
 LastRequestFinished(timeout := 2000) {
     global ocvCallInProgress
 
@@ -166,10 +175,10 @@ LastRequestFinished(timeout := 2000) {
 
 ; Send a JSON request to the helper process and wait (short timeout) for reply.
 ; Returns the raw response line or empty string on timeout/failure.
-CallPython(puzzleType, params := 0, waitForResponse := true) {
+CallPython(puzzleType, params := 0, waitForResponse := true, killCall := false) {
     global pyProc, ocvCallInProgress, wasGtaFocused
 
-    if (ocvCallInProgress) {
+    if (ocvCallInProgress && !killCall) {
         ; Prevent flooding the helper with requests if one is already in progress
         return ""
     }
@@ -237,7 +246,7 @@ CallPython(puzzleType, params := 0, waitForResponse := true) {
 }
 
 ; =========================
-; HIGH LEVEL HELPER
+; PUBLIC
 ; =========================
 
 ; High-level wrapper that sends a request and returns the helper's response.
@@ -245,7 +254,7 @@ GetResFromOpenCV(type, params := 0) {
     result := CallPython(type, params)
 
     if (result = "")
-        return ERRMSG ; fallback trigger
+        return OpenCVCmd.ERRMSG ; fallback trigger
 
     return result
 }
@@ -256,7 +265,7 @@ HeartbeatOpenCV(*) {
     if (isShuttingDown || !IsObject(pyProc) || ocvCallInProgress)
         return
 
-    try CallPython(REQ_HEARTBEAT, , false) ; fire-and-forget heartbeat to keep helper alive
+    try CallPython(OpenCVCmd.HEARTBEAT, , false) ; fire-and-forget heartbeat to keep helper alive
 }
 
 ; =========================

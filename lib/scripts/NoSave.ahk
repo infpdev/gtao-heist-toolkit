@@ -159,8 +159,10 @@ if !A_IsAdmin {
             return true
 
         ; Show warning if NoSave is not working
+        firstLine := (isNoSaveStandalone ? "Warning: NoSave may not be working correctly.`n`n" :
+            "Warning: VaultOps detected that NoSave may not be working correctly.`n`n")
         MsgBox(
-            "Warning: VaultOps detected that NoSave may not be working correctly.`n`n"
+            firstLine
             .
             "This is usually caused by third-party antivirus or firewall apps overriding Windows Firewall settings."
             .

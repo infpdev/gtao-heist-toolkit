@@ -27,6 +27,7 @@ global vaultOps := true
 #Include <updateCheck>
 #Include <initHotkeys>
 #Include <ahk2py_socket>
+#Include <ahk2dc_socket>
 #Include <commonFuncs>
 
 ; vaultOps scripts
@@ -37,6 +38,7 @@ global vaultOps := true
 #Include <scripts\LedgeGrab>
 
 ; GUI imports
+#Include <gui\richPresence>
 #Include <gui\hotkeyHelpers>
 #Include <gui\windowHelpers>
 #Include <gui\tooltipsHelpers>
@@ -54,6 +56,7 @@ global reloading := false
 
 ReloadVaultOps(*) {
     global reloading := true
+    ShowCenteredToolTip "Reloading vaultOps", 15
     Reload()
 }
 
@@ -68,10 +71,19 @@ Init() {
     ; ===========Hotkeys===========
     global manualKey, autoHackKey, resetKey, noSaveKey, toggleScriptsKey, ledgeGrabKey, sendPgUpKey
 
+    global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
+    global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
+    global readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
+    global readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
+    global readableManualKey := CanonicalToDisplay(manualKey)
+    global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
+    global readableResetKey := CanonicalToDisplay(resetKey)
+
     ; ========= GUI objects =========
     global Title := "vaultOps"
     global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
-    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
+    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
+        picRichPresenceEnabled
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
 
@@ -138,10 +150,18 @@ Init() {
         guiApp.AddText("xm y0 w" titleW " h" topbarH " Center cff0000 BackgroundTrans 0x200",
             "*App running in unsupported resolution mode")
 
+    picRichPresenceEnabled := guiApp.AddPicture("x" ((width - btnW - 150 / scale) / scale) " y" 7 / scale " w" btnW *
+    1.1 " h" btnW * 1.1 " +0x4",
+    staticFolder (richPresenceEnabled ? "\discord.png" : "\discordMuted.png"))
+    picRichPresenceEnabled.OnEvent("Click", ToggleRichPresence)
+
     ; Kill GTA button
-    killBtn := guiApp.AddPicture("x" ((width - btnW - 100 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
+    killBtn := guiApp.AddPicture("x" ((width - btnW - 120 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
     staticFolder "\kill_gta.png")
     killBtn.OnEvent("Click", (*) => (KillGta()))
+
+    guiApp.AddPicture("x" ((width - btnW - 87 / scale) / scale) " y" 7 / scale " w" 3 " h" btnW " +0x4",
+    staticFolder "\separator.png")
 
     ; Close button
     xBtn := guiApp.AddPicture("x" ((width - btnW - 71 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
@@ -731,10 +751,7 @@ Init() {
             if (heist == CAYO_PERICO)
                 heistInstance.switchToManual()
             else if (heist == DCH_OR_KORTZ) {
-                if (fingerprintMode)
-                    heistInstance.ManualMode()
-                else
-                    heistInstance.switchToManual()
+                heistInstance.switchToManual()
             }
 
             UpdateGlobalStatus(hackInProgress)
@@ -867,13 +884,8 @@ Init() {
             autoHackKey, resetKey, hackInProgress, heist, sendPgUpKey, pgUpSent, unsupportedResolution,
             ledgeGrabInProgress
 
-        readableNoSaveKey := CanonicalToDisplay(noSaveKey)
-        readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
-        readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
-        readableSendPgUpKey := CanonicalToDisplay(sendPgUpKey)
-        readableManualKey := CanonicalToDisplay(manualKey)
-        readableAutoHackKey := CanonicalToDisplay(autoHackKey)
-        readableResetKey := CanonicalToDisplay(resetKey)
+        global readableAutoHackKey, readableManualKey, readableResetKey,
+            readableNoSaveKey, readableLedgeGrabKey, readableSendPgUpKey, readableScriptsKey
 
         if (pgUpSent)
             return ; Don't update status while PgUp is being sent to avoid tooltip interference
@@ -903,6 +915,7 @@ Init() {
 
         if (earlyReturn) {
             MakeAllToolTipsClickThrough(hackMode == "idle" && !noSave)
+            UpdateCurrentActivity()
             return
         }
 
@@ -964,6 +977,7 @@ Init() {
 
             MakeAllToolTipsClickThrough(hackMode == "idle" && !noSave)
         }
+        UpdateCurrentActivity()
     }
 
 }
@@ -974,13 +988,26 @@ Init() {
 ; ⏐==========================================================================================================⏐
 {
 
+    ToggleRichPresence(*) {
+        global richPresenceEnabled, iniFile, picRichPresenceEnabled
+
+        if (richPresenceEnabled)
+            DisableRichPresence()
+        else
+            EnableRichPresence()
+
+        UpdateCurrentActivity()
+        picRichPresenceEnabled.Value := richPresenceEnabled ? staticFolder "\discord.png" : staticFolder "\discordMuted.png"
+    }
+
     /**
      * Toggles the solver scripts on/off, updates the UI elements, and registers/unregisters the associated hotkeys.
      * If GTA is not focused, shows a warning and does not toggle scripts.
      */
     ToggleScriptsEnabled(*) {
         static showedWarning := false
-        global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, pgUpSent := false
+        global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, hackInProgress, pgUpSent :=
+            false
         global txtPgUpLabel
 
         if (!scriptsEnabled && cannotUseScriptsWhenGtaNotFocused(true)) {
@@ -1102,8 +1129,8 @@ Init() {
             heistInstance
         if (to == AHK_ENGINE) {
             engine := AHK_ENGINE
-        } else if (to == OpenCV_ENGINE) {
-            engine := OpenCV_ENGINE
+        } else if (to == OPENCV_ENGINE) {
+            engine := OPENCV_ENGINE
         } else
             engine := !engine
 
@@ -1176,8 +1203,8 @@ Init() {
 }
 ; ⏐==========================================================================================================⏐
 
-SaveCacheOnExit(*) {
-    global isShuttingDown := true
+CleanUpVaultOps(*) {
+    global isShuttingDown := true, reloading
     clearAllToolTips(1)
     if (reloading) {
         ShowCenteredToolTip "Reloading vaultOps"
@@ -1186,10 +1213,13 @@ SaveCacheOnExit(*) {
     }
     try SaveCache()
     try PersistSettingsToAppData()
+    ClearRichPresence()
+    try StopDiscordRPC()
     try StopPython()
 }
 
 initPython()
+StartDiscordRPC()
 Init()
 
-OnExit(SaveCacheOnExit)
+OnExit(CleanUpVaultOps)

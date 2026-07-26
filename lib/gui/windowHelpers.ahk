@@ -80,7 +80,8 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
     static hCursorArrow := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32512, "Ptr")
     static hCursorIBeam := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32513, "Ptr")
 
-    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle
+    global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
+        picRichPresenceEnabled
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation, inputPgUp
 
@@ -105,6 +106,11 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
 
             case mnmzBtn.Hwnd:
                 ToolTip("Minimize", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
+
+            case picRichPresenceEnabled.Hwnd:
+                ToolTip((richPresenceEnabled ? "Disable" : "Enable") " Discord Rich Presence", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
 

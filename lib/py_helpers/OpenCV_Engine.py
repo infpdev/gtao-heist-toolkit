@@ -7,10 +7,7 @@ import threading
 import time
 
 from helpers import is_black_area_present_ledge_grab
-
-
 crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
-
 
 def write_crash_log(message):
     try:
@@ -25,14 +22,16 @@ def write_crash_log(message):
 def log_exception(exc_type, exc_value, exc_tb):
     write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
 
-
 try:
     faulthandler.enable(all_threads=True)
 except Exception:
     pass
 
-
 sys.excepthook = log_exception
+
+##############################################
+# Imports and Initialization with Error Handling
+##############################################
 
 try:
     from Fingerprint import get_fingerprints
@@ -54,13 +53,13 @@ except Exception:
 last_heartbeat = time.monotonic()
 busy = False
 
-
 def touch_heartbeat():
     global last_heartbeat
     last_heartbeat = time.monotonic()
 
 
 def watchdog_loop():
+    """Monitors the heartbeat and exits the process if no heartbeat is received for 5 seconds."""
     while True:
         time.sleep(1)
         if busy:
@@ -71,7 +70,13 @@ def watchdog_loop():
 
 threading.Thread(target=watchdog_loop, daemon=True).start()
 
+
+##############################################
+# IPC Request Handling
+##############################################
+
 def handle_request(data):
+    """Handles incoming requests based on the 'type' field in the data dictionary."""
     try:
         t = data.get("type")
 
@@ -198,6 +203,9 @@ def handle_request(data):
 
 
 def run():
+    """Main loop to read requests from stdin and handle them.
+    Exits the loop if a request of type 'STOP' is received.
+    """
     while True:
         try:
             line = sys.stdin.readline()
@@ -220,7 +228,13 @@ def run():
             global busy
             busy = True
             try:
+                
+                request_type_str = data.get("type")
+                if(request_type_str == "STOP"):
+                    break
+                
                 response = handle_request(data)
+
                 if response is not None:
                     if isinstance(response, str):
                         sys.stdout.write(str(response) + "\n")

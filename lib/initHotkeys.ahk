@@ -95,6 +95,11 @@ global fingerprintMode := IniRead(iniFile, "Options", "FingerprintMode", 1)
 global engine := IniRead(iniFile, "Options", "Engine", 1)
 
 /** @vaultOps
+ *  Boolean state that determines whether rich presence is enabled, 1 for enabled, 0 for disabled.
+ */
+global richPresenceEnabled := IniRead(iniFile, "Options", "richPresence", 0)
+
+/** @vaultOps
  * Hotkey to toggle noSave mode which prevents the script from saving progress, useful during heists
  * to trigger the replay glitch.<br>
  * (vkDDsc01B - physical key is Right Bracket "]")
@@ -157,6 +162,7 @@ CreateDefaultSettings() {
         . "ledgeGrab=0`n"
         . "FingerprintMode=1`n"
         . "Engine=0`n"
+        . "richPresence=0`n"
         . "Delay=40`n`n"
         . "; ToolTip position: 1=Top Left, 2=Middle Left, 3=Bottom Left, 4=Top Right, 5=Middle Right, 6=Bottom Right`n"
         . "ToolTipPos=4`n"
