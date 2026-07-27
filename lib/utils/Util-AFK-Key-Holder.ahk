@@ -124,6 +124,7 @@ StopAfkHold(*) {
     global afkHolding, recallDelay, afkKeyReg
     if (recallDelay = 0)
         Send "{" afkKeyReg " up}"
+    Hotkey("$" afkKeyReg, SendAfkKeyDown, "Off")
 
     if (!isGtaFocusedForUtilities(false)) {
         ShowCenteredToolTip("GTA must be focused to disable the script", 1)
@@ -182,14 +183,16 @@ SendAfkKeyOnce(*) {
             DllCall("mouse_event", "UInt", 0x0001, "Int", Random(-500, 500), "Int", 0, "UInt", 0, "UPtr", 0)
             Send "{" afkKeyReg "}"
         } else {
-            Send "{" afkKeyReg " down}"
+            SendAfkKeyDown()
+            Hotkey("$" afkKeyReg, SendAfkKeyDown, "On")
+
         }
 
         global lastAntiAfkSent := A_TickCount
 
         UpdateTooltip()
-    } catch {
-        MsgBox "Failed to send AFK key.", "AFK Helper", 48
+    } catch as err {
+        MsgBox "Failed to send AFK key:" . err.Message, "AFK Helper", 48
     }
 
     if !gtaIsCurrent && previousHwnd && WinExist("ahk_id " previousHwnd) {
@@ -203,6 +206,13 @@ SendAfkKeyOnce(*) {
         SetTimer SendAfkKeyOnce, -(recallDelay - 5000)
     else
         SetTimer SendAfkKeyOnce, -recallDelay
+}
+
+SendAfkKeyDown(*) {
+    while (GetKeyState(afkKeyReg, "P")) {
+        Sleep 100
+    }
+    Send "{" afkKeyReg " down}"
 }
 
 Terminate(*) {

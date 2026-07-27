@@ -11,27 +11,36 @@ class RichPresenceCmd {
     static LEDGE_GRAB := "LEDGE_GRAB"
 }
 
+; DISCORD_EXE := "ahk_exe Discord.exe"
+DISCORD_NOT_RUNNING := "DiscordNotRunning"
+
+IsDiscordRunning() {
+    return ProcessExist("Discord.exe")
+}
+
 ; Enable rich presence and write to ini file
 EnableRichPresence() {
     global iniFile, richPresenceEnabled
-    IniWrite(1, iniFile, "Options", "richPresence")
+
+    if (!IsDiscordRunning()) {
+        MsgBox "Discord is not running. Please start Discord to enable rich presence.", "Error", 16
+        return
+    }
+
+    try IniWrite(1, iniFile, "Options", "richPresence")
     richPresenceEnabled := true
     UpdateCurrentActivity()
-    StartDiscordRPC()
-
 }
 
 ; Disable rich presence and write to ini file
-DisableRichPresence() {
+DisableRichPresence(shouldClearActivity := true) {
     global richPresenceEnabled, currentActivity
     global iniFile
 
+    if (shouldClearActivity)
+        SetActivity(RichPresenceCmd.DISABLE)
     richPresenceEnabled := false
-    currentActivity := ""
-    IniWrite(0, iniFile, "Options", "richPresence")
-    LastDiscordCallFinished()
-    KillDiscordRPC()
-
+    try IniWrite(0, iniFile, "Options", "richPresence")
 }
 
 /**
@@ -39,12 +48,12 @@ DisableRichPresence() {
  * Priority: NoSave > Solver > LedgeGrab > Clear
  */
 UpdateCurrentActivity() {
-    global hackMode, noSave, scriptsEnabled, heist, fingerprintMode
+    global hackMode, noSave, scriptsEnabled, heist, fingerprintMode, debug
 
     if (!richPresenceEnabled)
         return
 
-    if (!isGtaRunning()) {
+    if (!debug && !isGtaRunning()) {
         ClearRichPresence()
         return
     }
@@ -80,6 +89,7 @@ UpdateCurrentActivity() {
 
 ; Sets the current rich presence activity to the specified type.
 SetActivity(type) {
+    static shownWarning := false
     global richPresenceEnabled, currentActivity
 
     if (richPresenceEnabled && !isShuttingDown) {
@@ -92,11 +102,22 @@ SetActivity(type) {
         ; MsgBox "Previous Activity: " previousActivity "`nCurrent Activity: " currentActivity
         if (previousActivity != currentActivity) {
             res := SetDiscordActivity(type)
-            if (res != "OK") {
-                ShowCenteredToolTip "Failed to set Discord rich presence activity: " res, 17
-                Sleep 500
-                ToolTip("", 0, 0, 17)
+            if (res != "OK" && debug) {
+                if (res = DISCORD_NOT_RUNNING && !shownWarning) {
+                    ShowCenteredToolTip "Discord is not running. Please start Discord to show rich presence activity",
+                        17
+                    shownWarning := true
+                    SetTimer(() => ToolTip("", 0, 0, 17), -2000)
+                    return
+                }
+                else if (res != DISCORD_NOT_RUNNING) {
+                    ShowCenteredToolTip "Failed to set Discord rich presence activity: " res, 17
+                }
+                SetTimer(() => ToolTip("", 0, 0, 17), -2000)
             }
+
+            shownWarning := false
+            return res
         }
     }
 }
@@ -104,14 +125,13 @@ SetActivity(type) {
 ; Clears the current rich presence activity.
 ClearRichPresence() {
     global currentActivity, richPresenceEnabled
-
     if (currentActivity = "")
         return
 
     currentActivity := ""
 
     if (richPresenceEnabled)
-        SetActivity(RichPresenceCmd.CLEAR)
+        res := SetActivity(RichPresenceCmd.CLEAR)
 }
 
 ShowNoSaveActivity() {

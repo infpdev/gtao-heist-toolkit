@@ -4,7 +4,6 @@
 #Include scripts\NoSave.ahk
 #Include sharedCanonicalHelpers.ahk
 #Include ahk2py_socket.ahk
-#Include scripts\LedgeGrab.ahk
 
 SendMode("Event")
 SetWorkingDir A_ScriptDir
@@ -23,16 +22,14 @@ global hackMode := "idle", hackInProgress := false
 global fingerprintMode := true, debug := !A_IsCompiled
 global heist := DCH_OR_KORTZ
 global engine := OPENCV_ENGINE
-global ledgeGrabEnabled := true, ledgeGrabInProgress := false, LedgeGrabRunningSignal := false
 
 global cachedFingerprintAnchor := 0, cachedKeypadAnchor := 0, cachedRubioAnchor := 0
 
 global readableNoSaveKey := CanonicalToDisplay(noSaveKey)
-global readableScriptsKey := CanonicalToDisplay(toggleScriptsKey)
 global readableManualKey := CanonicalToDisplay(manualKey)
 global readableAutoHackKey := CanonicalToDisplay(autoHackKey)
 global readableResetKey := CanonicalToDisplay(resetKey)
-global readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
+global readableTerminateKey := CanonicalToDisplay(terminateKey)
 
 FocusGtaIfRunning()
 
@@ -61,8 +58,6 @@ try {
     MsgBox "Failed to register debug hotkeys. Please check your settings.", "Hotkey Registration Failed", 48
 }
 
-RegisterLedgeGrabHotkey(true)
-
 LoadCache()
 initPython()
 
@@ -71,25 +66,9 @@ SetTimer(() => (isFirewallEnabled()), -100)
 ; --- Common Functions ---
 
 standalone_switch_to_auto(*) {
-    ; static showedWarning := false
-
-    ; if (!isGtaFocused()) {
-    ;     ShowCenteredToolTip "Cannot use solvers while GTA is not focused", 17
-    ;     SetTimer(() => CustomTooltip(), -5000)
-    ;     showedWarning := true
-    ;     return
-    ; }
-
-    ; showedWarning := false
 
     if (cannotUseScriptsWhenGtaNotFocused())
         return
-
-    if (ledgeGrabInProgress) {
-        ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 17
-        SetTimer () => ToolTip(), -2000
-        return
-    }
 
     global hackMode := "auto"
     UpdateGlobalStatus(hackInProgress)
@@ -97,25 +76,9 @@ standalone_switch_to_auto(*) {
 }
 
 standalone_switch_to_manual(*) {
-    ; static showedWarning := false
-
-    ; if (!isGtaFocused()) {
-    ;     ShowCenteredToolTip "Cannot use solvers while GTA is not focused", 17
-    ;     SetTimer(() => CustomTooltip(), -5000)
-    ;     showedWarning := true
-    ;     return
-    ; }
-
-    ; showedWarning := false
 
     if (cannotUseScriptsWhenGtaNotFocused())
         return
-
-    if (ledgeGrabInProgress) {
-        ShowCenteredToolTip "Cannot use solvers while ledge grab is in progress", 1
-        SetTimer () => ToolTip(), -2000
-        return
-    }
 
     global hackMode := "manual"
     UpdateGlobalStatus(hackInProgress)
@@ -144,10 +107,6 @@ resetSolver(*) {
         try heistInstance.Destroy()
         heistInstance := ""
     }
-
-    if (ledgeGrabInProgress) {
-        ToggleLedgeGrabInProgress()
-    }
     sleep 500
     CreateHeistInstance()
     UpdateGlobalStatus(false, , , , true)
@@ -172,11 +131,6 @@ ExitScript(*) {
     if (IsObject(heistinstance))
         heistinstance.Destroy()
 
-    if (ledgeGrabInProgress) {
-        ToggleLedgeGrabInProgress()
-    }
-
-    OnExitCleanup()
     ExitApp
 }
 
@@ -208,17 +162,14 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     static previousStatus := ""
     static unsupportedResolutionText := unsupportedResolution ? "(Unsupported resolution)`n" : ""
 
-    global hackInProgress, readableNoSaveKey, readableScriptsKey, readableManualKey,
-        readableAutoHackKey, readableResetKey, unsupportedResolution
+    global hackInProgress, readableNoSaveKey, readableManualKey,
+        readableAutoHackKey, readableResetKey, readableTerminateKey, unsupportedResolution
 
     pos := getToolTipPos(toolTipPos)
     x := pos.x
     y := pos.y
 
     noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
-
-    ledgeGrabText := ledgeGrabEnabled ? "Press " readableLedgeGrabKey " to " (ledgeGrabInProgress ? "stop" :
-        "initiate") " Ledge Grab" : "Ledge grab disabled"
 
     if (isTimingOut) {
         status := "Timeout in " timeoutProgress "s"
@@ -266,9 +217,9 @@ UpdateGlobalStatus(isHacking, isTimingOut := false, timeoutProgress := 0, force 
     indicator := "🟢 "
 
     keys := (hackMode == "manual" ? indicator : "") "Manual: " readableManualKey "`n" (hackMode == "auto" ? indicator :
-        "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey
+        "") "Auto: " readableAutoHackKey "`nReset: " readableResetKey "`nTerminate: " readableTerminateKey
 
-    aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" ledgeGrabText "`n" keys
+    aggregatedStatus := unsupportedResolutionText . hackStatus "`n" noSaveText "`n" keys
 
     if (force || aggregatedStatus != previousStatus) { ; Only update tooltip if status has changed to reduce flickering
         previousStatus := aggregatedStatus

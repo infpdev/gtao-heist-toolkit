@@ -508,6 +508,9 @@ Init() {
     ; Show and focus the GUI
     guiApp.Opt("+Caption")
 
+    if (richPresenceEnabled && IsDiscordRunning())
+        EnableRichPresence()
+
     ForceForeground(guiApp)
 
     guiApp.Opt("-Caption")
@@ -722,7 +725,7 @@ Init() {
     ManualHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
 
-        if (cannotUseScriptsWhenGtaNotFocused()) {
+        if (cannotUseScriptsWhenGtaNotFocused(, scriptsEnabled)) {
             return
         }
 
@@ -751,7 +754,7 @@ Init() {
     AutoHackHotkey(*) {
         global fingerprintMode, heistInstance, hackMode, heist
 
-        if (cannotUseScriptsWhenGtaNotFocused()) {
+        if (cannotUseScriptsWhenGtaNotFocused(, scriptsEnabled)) {
             return
         }
 
@@ -783,7 +786,7 @@ Init() {
     ResetScriptsHotkey(*) {
         global hackMode, hackInProgress
 
-        if (cannotUseScriptsWhenGtaNotFocused()) {
+        if (cannotUseScriptsWhenGtaNotFocused(, scriptsEnabled)) {
             return
         }
 
@@ -975,7 +978,6 @@ Init() {
         else
             EnableRichPresence()
 
-        UpdateCurrentActivity()
         picRichPresenceEnabled.Value := richPresenceEnabled ? staticFolder "\discord.png" : staticFolder "\discordMuted.png"
     }
 
@@ -987,7 +989,7 @@ Init() {
         static showedWarning := false
         global scriptsEnabled, picScriptsEnabled, iniFile, heistInstance, noSave, hackMode, hackInProgress
 
-        if (!scriptsEnabled && cannotUseScriptsWhenGtaNotFocused(true)) {
+        if (!scriptsEnabled && cannotUseScriptsWhenGtaNotFocused(true, scriptsEnabled)) {
             if (!showedWarning) {
                 ShowCenteredToolTip "Toggle Script Hotkey Inactive [GTA Not Focused]", 1
                 SetTimer(() => CustomTooltip(), -5000)

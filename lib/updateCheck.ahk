@@ -14,7 +14,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-global ver := "4.69.67"
+global ver := "4.69.69"
 global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -119,8 +119,7 @@ CheckForUpdate() {
             }
             else {
                 ShowCenteredToolTip("No updates found. Enjoy :)")
-                Sleep 1000
-                ToolTip("", , , 10)
+                SetTimer(() => ToolTip("", , , 10), -1000)
             }
         }
         else {

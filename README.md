@@ -4,7 +4,7 @@
 
 > "Because remembering fingerprints was more annoying than writing a script xd"
 
-> A local automation tool for GTA Online heist puzzles, built with AutoHotkey v2<br>
+> An automation tool for GTA Online heist puzzles, built with AutoHotkey v2<br>
 > An upgraded version of the standalone script **"GTA Casino Solver v2"**<br>
 > Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine
 
@@ -19,6 +19,15 @@
 </p>
 
 <p align="center">
+
+  <a href="https://youtu.be/Ji7xUHhz8Wo">
+    Cluckin' Bell Replay Guide
+  </a>
+  <br>
+  <a href="https://youtu.be/ltR8B3GL8Nc">
+    Dr. Dre Contract Replay Guide
+  </a>
+  <br><br>
   <a href="https://youtu.be/Cd5V64UiiGY">
     Cayo Perico Replay Guide
   </a>
@@ -41,7 +50,7 @@
 
 This repository includes:
 
-* **[VaultOps](#plug-and-play-tldr)**: Main all-in-one toolkit with GUI support, multi-heist automation, and both AHK/OpenCV detection engines
+* **[VaultOps](#plug-and-play-tldr)**: Main all-in-one toolkit with GUI support, multi-heist automation, Discord rich presence, and both AHK/OpenCV detection engines
 * **[Standalone Scripts](#standalone-scripts)**: Independent puzzle solvers for specific heists (Fingerprint, Keypad, etc.)
 * **[NoSave Replay Script](#standalone-scripts)**: Standalone replay script without the full toolkit
 * **[AFK Key Holder](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/utilities)**: Holds or periodically sends a selected key to avoid AFK kicks during jobs, races, freeroam activities, or other long idle sessions in GTA Online
@@ -77,13 +86,14 @@ This repository includes:
 ## Features
 
 - Auto-solves **Fingerprint** and **Keypad** puzzles in the **Diamond Casino** and **Kortz Center** heists
-- Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle  
+- Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle
 - Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist
-- Supports both **AHK-based** and **OpenCV-based** detection methods  
-- Supports all common **16:9** and **21:9 ultrawide** resolutions  
-- Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit  
-- Manual and auto solving modes  
-- GUI app with labels/tooltips and customizable hotkeys — designed for non-technical users  
+- Supports both **AHK-based** and **OpenCV-based** detection methods
+- Supports all common **16:9** and **21:9 ultrawide** resolutions
+- Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit
+- Manual and auto solving modes
+- Discord Rich Presence support — shows your current activity with randomly selected heist-themed status messages
+- GUI app with labels/tooltips and customizable hotkeys — designed for non-technical users
 
 ## What This Script Is (and Isn't)
 
@@ -156,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/842e3505f3011dbcdf589d5e640d5bac1a100aec6dfb4e1ba77835a2a1145fbe
+> https://www.virustotal.com/gui/file/b41f9fc843f13d5e4c9bf07c58f005c4657a4cc8cc3104bcb3878e6839e02421
 
 
 <p align="center">
@@ -290,7 +300,6 @@ Provided as-is, with no guarantees.
 > [!NOTE]
 > Switching to **Manual mode** disables automatic puzzle detection, preventing unintended mode changes  
 
-
 ### Hotkeys & Controls
 
 All hotkeys are customizable.
@@ -314,6 +323,7 @@ All hotkeys are customizable.
 ### Title Bar Controls
 
 <p align="center">
+  <img src="lib/static/discord.png" width="5%" alt="Discord RPC">
   <img src="lib/static/kill_gta.png" width="5%" alt="Kill GTA Button">
   <img src="lib/static/exit.png" width="5%" alt="Exit Button">
   <img src="lib/static/drag.png" width="5%" alt="Drag Button">
@@ -326,6 +336,14 @@ All hotkeys are customizable.
   - Click and hold to drag the app around the screen.
   - Click once to center the app on the screen.
 - Clicking <img src="lib/static/kill_gta.png" width="13" alt="Kill GTA Button"> forcefully terminates GTA V and disables **NoSave** if it is enabled.
+- Using the <img src="lib/static/discordMuted.png" width="15" alt="Discord RPC"> button:
+  - Click once to enable **Discord Rich Presence**.
+  - Discord Rich Presence:
+    - Automatically updates your Discord profile based on the active vaultOps feature.
+    - Randomly selects a heist-themed status message for the active feature.
+    - Activity priority: **NoSave** → **Solvers** → **Ledge Grab** → **Idle**.
+    - **Idle** status is only shown when **Scripts** are enabled.
+  - Click <img src="lib/static/discord.png" width="15" alt="Discord RPC"> again to disable **Discord Rich Presence**.
 
 ## Standalone Scripts
 
@@ -394,10 +412,12 @@ _src/
 │  │  ├─ anchorDetection.ahk          # Anchor detection logic for AHK mode
 │  │  ├─ hotkeyHelpers.ahk            # Hotkey event callbacks
 │  │  ├─ instructionFieldHelpers.ahk  # GUI field text management
+│  │  ├─ richPresenceHelpers.ahk      # Rich Presence management
 │  │  ├─ tooltipsHelpers.ahk          # Status tooltip updates
 │  │  └─ windowHelpers.ahk            # Window focus + activation handling
 │  │
 │  ├─ py_helpers/                     # Python/OpenCV helpers
+│  │  ├─ DiscordRPC.py                # Discord Rich Presence helper
 │  │  ├─ anchorDetection.py           # Anchor detection logic for OpenCV detection engine
 │  │  ├─ Fingerprint.py               # Diamond Casino / Kortz fingerprint detection logic for OpenCV detection engine
 │  │  ├─ Keypad.py                    # Diamond Casino / Kortz keypad detection logic for OpenCV detection engine
@@ -416,6 +436,7 @@ _src/
 │  │
 │  ├─ utils/                          # Utility scripts (AFK Key Holder, Public to Solo Session Helper, Triggerbot)
 │  │
+│  ├─ ahk2dc_socket.ahk               # AHK script for IPC communication with the Discord Rich Presence helper
 │  ├─ ahk2py_socket.ahk               # AHK script for IPC communication with the OpenCV detection engine
 │  ├─ autoUpdate.ahk                  # Auto-update helper for minor patch releases
 │  ├─ checkResolution.ahk             # Resolution detection and fallback handling
@@ -440,7 +461,19 @@ _src/
 - `vaultOps.ahk` — Main GUI, mode control, engine selection, and solver lifecycle
 
 **Core Utilities**
+- `Fingerprint.ahk` — Diamond Casino / Kortz fingerprint solver
+- `Keypad.ahk` — Diamond Casino / Kortz keypad solver
+- `ElRubio.ahk` — Cayo fingerprint cloner solver
+- `LedgeGrab.ahk` — Buffered Ledge Grab automation
+- `richPresence.ahk` — Discord Rich Presence helper
+- `NoSave.ahk` — NoSave handling and firewall automation
+- `Util-AFK-Key-Holder.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
+- `Util-Solo-Public-Session.ahk` — Public to solo session helper
+- `Util-TB.ahk` — Triggerbot with customizable hotkeys and configurable pixels
+
+**Helper Scripts**
 - `ahk2py_socket.ahk` — AHK script for IPC communication with the OpenCV detection engine
+- `ahk2dc_socket.ahk` — AHK script that communicates with the Discord Rich Presence helper and updates the status based on the active feature
 - `autoUpdate.ahk` — Minor patch updater
 - `checkResolution.ahk` — Resolution/aspect-ratio checks and engine availability
 - `commonFuncs.ahk` — Shared helpers and tooltip utilities
@@ -451,18 +484,9 @@ _src/
 - `updateCheck.ahk` — Version checking and update notifications
 - `standaloneUpdate.ahk` — Auto-updater for standalone scripts
 
-**AHK Scripts**
-- `Fingerprint.ahk` — Diamond Casino / Kortz fingerprint solver
-- `Keypad.ahk` — Diamond Casino / Kortz keypad solver
-- `ElRubio.ahk` — Cayo fingerprint cloner solver
-- `LedgeGrab.ahk` — Buffered Ledge Grab automation
-- `NoSave.ahk` — NoSave handling and firewall automation
-- `Util-AFK-Key-Holder.ahk` — AFK key holder with customizable hotkeys and on-screen instructions for AFK jobs
-- `Util-Solo-Public-Session.ahk` — Public to solo session helper
-- `Util-TB.ahk` — Triggerbot with customizable hotkeys and configurable pixels
-
-**OpenCV Detection Engine (`lib/py_helpers/`)**
+**Python Helpers (`lib/py_helpers/`)**
 - `OpenCV_Engine.py` — IPC listener/backend entry point
+- `DiscordRPC.py` — Discord Rich Presence helper
 - `anchorDetection.py` — Puzzle anchor detection
 - `Fingerprint.py` — Diamond Casino / Kortz fingerprint detection
 - `Keypad.py` — Diamond Casino / Kortz keypad detection
@@ -490,9 +514,10 @@ This project builds upon existing ideas and implementations in the community:
 - **OpenCV:** Inspired by VKit (https://github.com/ItsCEED/vkit-toolbox)
 
 This project extends those implementations with:
-- Automatic solving algorithms  
-- Multi-heist support  
-- Custom GUI and usability improvements  
+- Automatic solving algorithms
+- Multi-heist support
+- Discord Rich Presence integration
+- Custom GUI and usability improvements
 
 Shared for educational and personal use.
 
@@ -530,5 +555,8 @@ here's a car for reading this far **C:**
 
 ## TODO
 - [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)
-- [x] Stop writing NoSave and script states to disk, since they are disabled when the app closes and can be stored in memory instead - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5.0)
 - [x] Add automatic updates for minor patches - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5.0)
+- [x] Add support for ultrawide (21:9) resolutions - [v4](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.0.0)
+- [x] Add full compatibility with GTA Legacy - [v4.20.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69)
+- [x] Add support for Kortz Center puzzles - [v4.69.67](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.67)
+- [x] Add Discord Rich Presence support - [v4.69.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.69)

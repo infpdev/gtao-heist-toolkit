@@ -251,7 +251,7 @@ class FingerprintSolver {
             return false
 
         try {
-            this.foundAnchor := Integer(GetResFromOpenCV(OpenCVCmd.DETECT_ANCHOR))
+            this.foundAnchor := GetResFromOpenCV(OpenCVCmd.DETECT_ANCHOR)
             ; ShowCenteredToolTip this.foundAnchor
             if (!this.foundAnchor || this.foundAnchor == OpenCVCmd.ERRMSG) {
                 this.foundAnchor := false
@@ -297,7 +297,8 @@ class FingerprintSolver {
 
             this.needStatusUpdate := true
             return false
-        } catch {
+        } catch as err {
+            ; MsgBox err.Message
             return false
         }
     }
@@ -330,7 +331,7 @@ class FingerprintSolver {
             return
         }
 
-        if (this.highRes) {
+        if (this.highRes || isStandaloneScript) {
             ; OpenCV failed, but fallback is not allowed
             this.isBusy := false
             return

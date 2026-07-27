@@ -4,36 +4,39 @@ import sys
 import traceback
 import faulthandler
 import threading
-import time
+from time import time, sleep, monotonic
 from random import choice
 from enum import Enum, auto
 from pypresence import Presence
-
+from pypresence.exceptions import DiscordNotFound, PipeClosed
 
 crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
 
-last_heartbeat = time.monotonic()
+DISCORD_NOT_RUNNING = "DiscordNotRunning"
+
+last_heartbeat = monotonic()
 busy = False
 CLIENT_ID = "1530071672957440051"
 presence = None
 
+def log_exception(exc_type, exc_value, exc_tb):
+    write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
+
 def touch_heartbeat():
     global last_heartbeat
-    last_heartbeat = time.monotonic()
+    last_heartbeat = monotonic()
 
 # Watchdog thread to monitor the heartbeat and exit if no heartbeat is received for 5 seconds
 def watchdog_loop():
     while True:
-        time.sleep(1)
+        sleep(1)
 
         if busy:
             continue
 
-        if time.monotonic() - last_heartbeat > 5:
+        if monotonic() - last_heartbeat > 5:
+            destroy_presence()
             os._exit(0)
-
-
-threading.Thread(target=watchdog_loop, daemon=True).start()
 
 def write_crash_log(message):
     try:
@@ -44,9 +47,6 @@ def write_crash_log(message):
     except Exception:
         pass
 
-
-def log_exception(exc_type, exc_value, exc_tb):
-    write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
 
 
 try:
@@ -79,6 +79,9 @@ def handle_request(request_type_str):
         handle_presence_request(request_type)
 
         return "OK"
+    
+    except DiscordNotFound:
+        return DISCORD_NOT_RUNNING
 
     except Exception:
         write_crash_log("REQUEST: " + json.dumps(request_type_str, default=str, ensure_ascii=True))
@@ -89,7 +92,7 @@ def run():
     """Main loop to read requests from stdin and handle them.
     Exits the loop if a request of type 'STOP' is received.
     """
-    global busy
+    global busy, presence
     while True:
         try:
             line = sys.stdin.readline()
@@ -115,7 +118,9 @@ def run():
             request_type_str = data.get("request_type")
             
             if(request_type_str == "STOP"):
-                presence.destroy() if presence else None
+                if presence:
+                    presence.destroy()
+                    presence = None
                 break
 
             response = handle_request(request_type_str)
@@ -124,7 +129,7 @@ def run():
             sys.stdout.flush()
 
         except Exception:
-            write_crash_log("RUN_LOOP:\n" + traceback.format_exc())
+            write_crash_log(f"Exception during request: {request_type_str}\n" + traceback.format_exc())
         finally:
             busy = False
 
@@ -150,13 +155,14 @@ def handle_presence_request(request_type: RequestType):
     """
     global presence
     
-    if request_type == RequestType.DISABLE:
-        destroy_presence()
-        return
-
     if presence is None:
         presence = VaultOpsPresence()
 
+    if request_type == RequestType.DISABLE:
+        if presence:
+            presence.clear()
+        return
+        
     presence.handle_presence_request(request_type)
 
 def destroy_presence():
@@ -164,7 +170,9 @@ def destroy_presence():
     global presence
     if presence is not None:
         presence.destroy()
+        del presence
         presence = None
+    return True
     
 class VaultOpsPresence:
     global CLIENT_ID
@@ -172,23 +180,53 @@ class VaultOpsPresence:
     def __init__(self):
         self.rpc = Presence(CLIENT_ID)
         self.rpc.connect()
+        # self.rpc.clear()
+        self.rpc.update()
+        self.start_time = None
+        
+    def init(self):
+        self.clear()
 
     def destroy(self):
         try:
-            self.rpc.clear()
+            self.clear()
         finally:
             self.rpc.close()
+            self.rpc = None
 
     def clear(self):
-        self.rpc.clear()
+        self.start_time = None
+        try:
+            self.rpc.clear()
+        except PipeClosed:
+            pass  # If the pipe is closed, we can't clear, but we can ignore it.
+        except Exception as e:
+            write_crash_log(f"Failed to clear presence: {e}\n" + traceback.format_exc())
         
-    
+    def ensure_start_time(self):
+        if self.start_time is None:
+            self.start_time = int(time())
+        
     def _update(self, large_image=None, large_text=None, **kwargs):
-        self.rpc.update(
-            large_image=large_image if large_image else "vaultops",
-            large_text=large_text if large_text else "VaultOps",
-            **kwargs,
-        )
+        self.ensure_start_time()
+        try:
+            self.rpc.update(
+                large_image=large_image if large_image else "vaultops",
+                large_text=large_text if large_text else "VaultOps",
+                start=self.start_time,
+                **kwargs,
+            )
+        except PipeClosed:
+            self.rpc.connect()
+            try:
+                self.rpc.update(
+                    large_image=large_image if large_image else "vaultops",
+                    large_text=large_text if large_text else "VaultOps",
+                    start=self.start_time,
+                    **kwargs,
+                )
+            except Exception as e:
+                write_crash_log(f"Failed to update presence after reconnect: {e}\n" + traceback.format_exc())
 
     def handle_presence_request(self, request_type: RequestType):
         """Handles the presence request based on the request type.
@@ -256,9 +294,7 @@ class VaultOpsPresence:
             details="Following the money",
             state=choice(IDLE_STATES),
             large_image="gta_online",
-            large_text="GTA V",
-            small_image="vaultops",
-            small_text="Idle",
+            large_text="GTA Online",
         )
             
     def show_no_save_presence(self):
@@ -360,7 +396,7 @@ class VaultOpsPresence:
         )
 
         self._update(
-            details="Aligning Rubio's Fingerprints",
+            details="Robbing El Rubio",
             state=choice(CAYO_FINGERPRINT_STATES),
 
             small_image="solver",
@@ -396,4 +432,5 @@ class VaultOpsPresence:
 
 
 if __name__ == "__main__":
+    threading.Thread(target=watchdog_loop, daemon=True).start()
     run()

@@ -61,13 +61,15 @@ HeartbeatDiscordRPC(*) {
 StartDiscordRPC() {
     global rpcProc, isShuttingDown
 
-    if (rpcProc || isShuttingDown || !richPresenceEnabled)
+    if (rpcProc || isShuttingDown)
         return
 
     DetectCompiledRPCExe()
 
     if (!FileExist(rpcScriptPath)) {
         MsgBox "DiscordRPC not found:`n`n" rpcScriptPath, "Error", 16
+        if (richPresenceEnabled)
+            ToggleRichPresence()
         return
     }
 
@@ -80,16 +82,18 @@ StartDiscordRPC() {
         cmd := Format('"{1}" -u "{2}"', pythonExe, rpcScriptPath)
 
     rpcProc := shell.Exec(cmd)
-    SetTimer(() => HeartbeatDiscordRPC(), 1234)
-
+    SetTimer HeartbeatDiscordRPC, 1234
 }
 
 StopDiscordRPC(*) {
-    global richPresenceEnabled
-    if (!richPresenceEnabled)
-        return
+    global rpcProc
+
     SetTimer HeartbeatDiscordRPC, 0
-    CallDiscordRPC(Map("request_type", "STOP"), false, true)
+
+    if (IsObject(rpcProc))
+        CallDiscordRPC(Map("request_type", "STOP"), false, true)
+
+    rpcProc := 0
 }
 
 KillDiscordRPC() {
@@ -118,14 +122,15 @@ RestartDiscordRPC() {
 ; CORE CALL
 ; =========================
 
-LastDiscordCallFinished(timeout := 5000) {
+LastDiscordCallFinished(timeout := 1000) {
     global rpcCallInProgress
 
-    ToolTip , , , 15
+    ToolTip("", , , 10)
     start := A_TickCount
     while (rpcCallInProgress) {
         if (A_TickCount - start > timeout) {
-            MsgBox "Timeout waiting for last Discord RPC call to finish.", "Error", 16
+            ShowCenteredToolTip "Timeout waiting for last Discord RPC call to finish"
+            SetTimer(() => ToolTip("", , , 10), -2000)
             return false
         }
         Sleep 100
@@ -190,15 +195,18 @@ CallDiscordRPC(params, waitForResponse := true, killCall := false) {
         ; optional acknowledgement
         start := A_TickCount
 
-        while (A_TickCount - start < 200) {
+        while (A_TickCount - start < 1000) {
             if (!rpcProc.StdOut.AtEndOfStream)
                 return rpcProc.StdOut.ReadLine()
 
             Sleep 10
         }
+        rpcCallInProgress := false
+        return "RPC_TIMEOUT"
     } catch as err {
-        ShowCenteredToolTip "Error in CallDiscordRPC: " err.Message, 17
+        ShowCenteredToolTip "Error in CallDiscordRPC: " err.Message
         Sleep 500
+        ToolTip("", , , 10)
     }
     finally {
         rpcCallInProgress := false
@@ -212,8 +220,8 @@ CallDiscordRPC(params, waitForResponse := true, killCall := false) {
 ; PUBLIC
 ; =========================
 
-SetDiscordActivity(type, killCall := false) {
+SetDiscordActivity(type, shouldWait := true) {
     return CallDiscordRPC(Map(
         "request_type", type
-    ))
+    ), shouldWait)
 }
