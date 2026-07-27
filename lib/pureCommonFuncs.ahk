@@ -148,9 +148,8 @@ isGtaRunning() {
  * @param checkOnly - If true, only checks if GTA is focused without toggling scripts or showing warnings
  * @returns {boolean} - Returns true if GTA is not focused, false otherwise
  */
-cannotUseScriptsWhenGtaNotFocused(checkOnly := false) {
+cannotUseScriptsWhenGtaNotFocused(checkOnly := false, scriptsEnabled := true) {
     static showedWarning := false
-    global scriptsEnabled
 
     if (!isGtaFocused()) {
 

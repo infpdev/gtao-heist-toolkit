@@ -137,8 +137,7 @@ StartPython() {
 RestartPython(err := "") {
     static errCount := 0
     errCount++
-    MsgBox "An error occured. Restarting OpenCV helper.`n`n" . err
-    MsgBox isShuttingDown
+    ShowCenteredToolTip "An error occured. Restarting OpenCV helper: " . err
 
     if (errCount > 3) {
         MsgBox "OpenCV helper has failed to restart multiple times. Exiting script."

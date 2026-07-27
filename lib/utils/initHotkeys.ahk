@@ -146,11 +146,16 @@ ReloadScript(*) {
 }
 
 GtaNotRunning() {
+    static showedWarning := false
     if !getGtaHwnd() {
-        ShowCenteredToolTip "GTA not detected. Script can only be used when GTA is running", 1
-        SetTimer UpdateTooltip, -5000
+        if !showedWarning {
+            ShowCenteredToolTip "Hotkey inactive [GTA not running]", 1
+            SetTimer UpdateTooltip, -5000
+            showedWarning := true
+        }
         return true
     }
+    showedWarning := false
     return false
 }
 
@@ -160,7 +165,7 @@ isGtaFocusedForUtilities(showWarning := true) {
     }
     gtaActive := (WinActive(GTA_LEGACY_EXE) || WinActive(GTA_ENHANCED_EXE))
     if (!gtaActive && showWarning) {
-        ShowCenteredToolTip "GTA is not the active window. Please focus GTA to use this utility", 1
+        ShowCenteredToolTip "Hotkey inactive [GTA not focused]", 1
         SetTimer UpdateTooltip, -5000
     }
     return gtaActive

@@ -20,6 +20,19 @@ Done!
 > [!NOTE]
 > Your settings and hotkeys now automatically persist across updates and reinstalls.
 
+## Changelog
+<details>
+<summary><b>vaultOps v4.69.69 changes</b></summary>
+
+Please read the [v4.69.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.69) for detailed information about:
+
+* New **Discord Rich Presence** support with dynamic activity updates
+* Removed **Buffered Ledge Grab** from the standalone scripts
+* Removed **PgUp forwarding** from both **vaultOps** and the standalone **El Rubio** script, as Rockstar fixed the issue
+* Improved startup and shutdown performance
+
+</details>
+
 <details>
 <summary><b>vaultOps v4.69.67 changes</b></summary>
 

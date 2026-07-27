@@ -268,8 +268,8 @@ ExitScript(*) {
         fwPolicy := GetFirewallPolicy()
         if IsFirewallOnActiveProfile() {
             if (!isJustAToggle) {
-                ShowCenteredToolTip("Firewall check passed :]", 17)
-                SetTimer () => CustomTooltip("", , , 17), -2000
+                ShowCenteredToolTip("Firewall check passed :]")
+                SetTimer () => CustomTooltip("", , , 10), -2000
                 CleanupLegacyDuplicateRules()
             }
             return true ; Already on, do nothing

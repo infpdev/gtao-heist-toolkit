@@ -37,6 +37,7 @@ if !IsObject(buildOpts)
 
 buildVaultOpsExe := buildOpts.buildVaultOps
 shouldBuildOpenCVEngine := buildOpts.buildOpenCVEngine
+shouldBuildDiscordRPC := buildOpts.buildDiscordRPC
 compileStandalone := buildOpts.compileStandalone
 packageStandalone := buildOpts.packageBuilds
 useOriginalClasses := buildOpts.useOriginalClasses
@@ -58,8 +59,8 @@ if (compileStandalone && packageStandalone && !FileExist(rarExe)) {
 buildVaultOps()
 
 buildVaultOps() {
-    global parentDir, buildVaultOpsExe, shouldBuildOpenCVEngine, packageStandalone, useOriginalClasses, scanVirusTotal,
-        baseExe, AHK2EXEPath, iconPath, isccExe, issScript
+    global parentDir, buildVaultOpsExe, shouldBuildOpenCVEngine, shouldBuildDiscordRPC, packageStandalone,
+        useOriginalClasses, scanVirusTotal, baseExe, AHK2EXEPath, iconPath, isccExe, issScript
     quotedBase := '"' baseExe '"'
     inFile := parentDir "\vaultOps.ahk"
     outFile := parentDir "\vaultOps.exe"
@@ -81,10 +82,17 @@ buildVaultOps() {
 
         if (shouldBuildOpenCVEngine) {
             BuildOpenCVEngine(parentDir)
-            BuildDiscordRPC(parentDir)
         } else {
             RequireExistingFile(parentDir "\lib\py_helpers\OpenCV_Engine.exe", "Existing OpenCV helper")
             ShowCenteredToolTip "Using existing OpenCV_Engine.exe"
+            sleep 700
+        }
+
+        if (shouldBuildDiscordRPC) {
+            BuildDiscordRPC(parentDir)
+        } else {
+            RequireExistingFile(parentDir "\lib\py_helpers\DiscordRPC.exe", "Existing DiscordRPC helper")
+            ShowCenteredToolTip "Using existing DiscordRPC.exe"
             sleep 700
         }
 
@@ -686,16 +694,23 @@ buildGUI(isDev := false) {
     dlg.AddText("xm+9 ym", "Choose build options:")
     existingOpenCVHelper := parentDir "\lib\py_helpers\OpenCV_Engine.exe"
     hasExistingOpenCV := FileExist(existingOpenCVHelper) != ""
+    existingDiscordRPCHelper := parentDir "\lib\py_helpers\DiscordRPC.exe"
+    hasExistingDiscordRPC := FileExist(existingDiscordRPCHelper) != ""
 
     ; ==== VaultOps build options ====
     dlg.AddGroupBox("xm yp+25 w360 h50", "Build vaultOps.exe")
     rBuildYes := dlg.AddRadio("xp+14 yp+23 Group ", "Yes")
-    rBuildNo := dlg.AddRadio("x+60 yp Checked", "No (reuse existing OpenCV helper)")
+    rBuildNo := dlg.AddRadio("x+60 yp Checked", "No")
 
     ; ==== OpenCV helper build options ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Build OpenCV_Engine.exe")
     rOpenCVYes := dlg.AddRadio("xp+14 yp+23 Group" (hasExistingOpenCV ? "" : " Checked"), "Yes")
     rOpenCVNo := dlg.AddRadio("x+80 yp" (hasExistingOpenCV ? " Checked" : ""), "No (use existing exe)")
+
+    ; ==== DiscordRPC build options ====
+    dlg.AddGroupBox("xm y+12 w360 h50", "Build DiscordRPC.exe")
+    rDiscordYes := dlg.AddRadio("xp+14 yp+23 Group" (hasExistingDiscordRPC ? "" : " Checked"), "Yes")
+    rDiscordNo := dlg.AddRadio("x+80 yp" (hasExistingDiscordRPC ? " Checked" : ""), "No (use existing exe)")
 
     ; ==== VirusTotal scan option ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Scan with VirusTotal")
@@ -716,7 +731,7 @@ buildGUI(isDev := false) {
         dlg.Show()
     }
 
-    rScanYes.OnEvent("Click", validateApiKey)
+    ; rScanYes.OnEvent("Click", validateApiKey)
 
     ValidateOpenCVReuse(showWarning := false) {
         hasExistingOpenCV := FileExist(existingOpenCVHelper)
@@ -741,6 +756,29 @@ buildGUI(isDev := false) {
         }
     }
 
+    ValidateDiscordRPCReuse(showWarning := false) {
+        hasExistingDiscordRPC := FileExist(existingDiscordRPCHelper)
+
+        if (rDiscordNo.Value == 1 && !hasExistingDiscordRPC) {
+            if (showWarning) {
+                MsgBox "DiscordRPC.exe was not found at:`n" existingDiscordRPCHelper
+                    . "`n`nThe existing-exe option is disabled. Build DiscordRPC.exe has been forced to Yes.",
+                    "Warning", 48
+            }
+
+            rDiscordNo.Enabled := false
+            rDiscordYes.Value := 1
+            rDiscordNo.Value := 0
+            return
+        }
+
+        rDiscordNo.Enabled := hasExistingDiscordRPC
+        if !hasExistingDiscordRPC {
+            rDiscordYes.Value := 1
+            rDiscordNo.Value := 0
+        }
+    }
+
     UpdateOpenCVBuildOptions(showWarning := false) {
         enabled := (rBuildYes.Value == 1)
 
@@ -754,7 +792,21 @@ buildGUI(isDev := false) {
         ValidateOpenCVReuse(showWarning)
     }
 
+    UpdateDiscordRPCBuildOptions(showWarning := false) {
+        enabled := (rBuildYes.Value == 1)
+
+        rDiscordYes.Enabled := enabled
+        rDiscordNo.Enabled := enabled
+
+        if !enabled {
+            return
+        }
+
+        ValidateDiscordRPCReuse(showWarning)
+    }
+
     rOpenCVNo.OnEvent("Click", (*) => ValidateOpenCVReuse(true))
+    rDiscordNo.OnEvent("Click", (*) => ValidateDiscordRPCReuse(true))
 
     ; ==== Standalone build and packaging options ====
     dlg.AddGroupBox("xm y+12 w360 h50", "Compile standalone scripts")
@@ -817,6 +869,7 @@ buildGUI(isDev := false) {
             rScanNo.Value := 0
         }
         UpdateOpenCVBuildOptions()
+        UpdateDiscordRPCBuildOptions()
         UpdatePackageOptions()
     }
 
@@ -837,6 +890,7 @@ buildGUI(isDev := false) {
         selected := {
             buildVaultOps: rBuildYes.Value == 1,
             buildOpenCVEngine: rOpenCVYes.Value == 1,
+            buildDiscordRPC: rDiscordYes.Value == 1,
             compileStandalone: rStandaloneYes.Value == 1,
             packageBuilds: isDev && rPackageYes != "" ? (rPackageYes.Value == 1 && rStandaloneYes.Value == 1) : false,
             useOriginalClasses: rClassYes.Value == 1,

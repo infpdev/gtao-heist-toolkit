@@ -2,6 +2,9 @@
 
 ## Option 1: Automatic Updater (Recommended)
 
+> [!NOTE]
+>  This method is only available for the standalone pack. Please use the manual update method for NoSave standalone.
+
 1. Open the `VaultOps-Standalone-Pack` folder
 2. Open the `lib` folder
 3. Run `standaloneUpdater.exe`
@@ -26,6 +29,19 @@ Done!
 > Standalone scripts now automatically preserve your settings and hotkeys through a cached settings file at `%appdata%\vaultOps`
 >
 > This means you no longer need to extract updates into the same folder to keep your configuration.
+
+## Changelog
+<details>
+<summary><b>vaultOps v4.69.69 changes</b></summary>
+
+Please read the [v4.69.69 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.69) for detailed information about:
+
+* New **Discord Rich Presence** support with dynamic activity updates
+* Removed **Buffered Ledge Grab** from the standalone scripts
+* Removed **PgUp forwarding** from both **vaultOps** and the standalone **El Rubio** script, as Rockstar fixed the issue
+* Improved startup and shutdown performance
+
+</details>
 
 <details>
 <summary><b>vaultOps v4.69.67 changes</b></summary>

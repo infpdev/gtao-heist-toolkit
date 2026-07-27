@@ -336,6 +336,7 @@ class KeypadSolver {
      * Should be called by a timer, does NOT handle timer setup or mode switching.
      */
     MainLoop() {
+        global isStandaloneScript
 
         if (this.mode == "idle" || this.isShuttingDown)
             return
@@ -357,14 +358,12 @@ class KeypadSolver {
                 return
             }
 
-            if (this.highRes) {
+            if (this.highRes || isStandaloneScript) {
                 ; OpenCV failed, but fallback is not allowed
                 this.isBusy := false
                 return
-            }
-
-            if (debug)
-                ShowCenteredToolTip "Using AHK detection", 15
+            } else if (debug)
+                ShowCenteredToolTip "Using AHK detection", 17
 
             this.validateAnchor()
 
@@ -1084,8 +1083,8 @@ class KeypadSolver {
 
             Tooltip(
                 "⛛",
-                x - (10 * ((1920 / this.scrW) ** 0.5)),
-                y - (18 * ((1080 / this.scrH) ** 0.8)),
+                x - (12 * ((1920 / this.scrW) ** 0.5)),
+                y - (19 * ((1080 / this.scrH) ** 0.8)),
                 col
             )
         }

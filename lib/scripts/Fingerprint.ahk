@@ -331,7 +331,7 @@ class FingerprintSolver {
             return
         }
 
-        if (this.highRes) {
+        if (this.highRes || isStandaloneScript) {
             ; OpenCV failed, but fallback is not allowed
             this.isBusy := false
             return
