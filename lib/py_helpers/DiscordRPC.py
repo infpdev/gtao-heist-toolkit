@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import sys
@@ -13,11 +14,11 @@ from pypresence.exceptions import DiscordNotFound, PipeClosed
 crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
 
 DISCORD_NOT_RUNNING = "DiscordNotRunning"
+ERR_TRY_AGAIN_LATER = "ErrTryAgainLater"
 
 last_heartbeat = monotonic()
 busy = False
 CLIENT_ID = "1530071672957440051"
-presence = None
 
 def log_exception(exc_type, exc_value, exc_tb):
     write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
@@ -26,16 +27,16 @@ def touch_heartbeat():
     global last_heartbeat
     last_heartbeat = monotonic()
 
-# Watchdog thread to monitor the heartbeat and exit if no heartbeat is received for 5 seconds
 def watchdog_loop():
+    """Watchdog thread to monitor the heartbeat and exit if no heartbeat is received for 5 seconds."""
     while True:
         sleep(1)
 
-        if busy:
-            continue
-
         if monotonic() - last_heartbeat > 5:
-            destroy_presence()
+            try:
+                destroy_presence()
+            except Exception:
+                pass
             os._exit(0)
 
 def write_crash_log(message):
@@ -63,7 +64,14 @@ sys.excepthook = log_exception
 
 def handle_request(request_type_str):
     """Handles incoming IPC requests from the AHK script."""
+    global presence
     try:
+        
+        if not presence.connect_success:
+            try:
+                presence.connect_if_not_connected()
+            except Exception:
+                return ERR_TRY_AGAIN_LATER 
 
         if request_type_str == "HEARTBEAT":
             touch_heartbeat()
@@ -88,11 +96,16 @@ def handle_request(request_type_str):
         write_crash_log(traceback.format_exc())
         return "ERR(Exception)"
 
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+
 def run():
     """Main loop to read requests from stdin and handle them.
     Exits the loop if a request of type 'STOP' is received.
     """
     global busy, presence
+    executor = ThreadPoolExecutor(max_workers=1)
+    presence = VaultOpsPresence() 
+    
     while True:
         try:
             line = sys.stdin.readline()
@@ -113,25 +126,41 @@ def run():
                 write_crash_log("BAD_JSON: " + line)
                 sys.stdout.write("ERR(BadJson)\n")
                 sys.stdout.flush()
+                busy = False
                 continue
             
             request_type_str = data.get("request_type")
             
             if(request_type_str == "STOP"):
-                if presence:
-                    presence.destroy()
-                    presence = None
+                try:
+                    destroy_presence()
+                except Exception:
+                    pass
                 break
 
-            response = handle_request(request_type_str)
+            future = executor.submit(handle_request, request_type_str)
+            
+            try:
+                response = future.result(timeout=1.0)
+            except TimeoutError:
+                response = ERR_TRY_AGAIN_LATER
 
-            sys.stdout.write(response + "\n")
-            sys.stdout.flush()
+                busy = False
+                write_crash_log(f"Timeout after 0.1s for request: {request_type_str}\n")
+            except Exception as e:
+                raise e
 
-        except Exception:
-            write_crash_log(f"Exception during request: {request_type_str}\n" + traceback.format_exc())
+            if response is not None:
+                sys.stdout.write(response + "\n")
+                sys.stdout.flush()
+
+        except Exception as e:
+            busy = False
+            write_crash_log(f"Exception [{e}] during request: {request_type_str}\n" + traceback.format_exc())
         finally:
             busy = False
+    
+    executor.shutdown(wait=False)
 
 ##############################################
 # Presence Handling
@@ -179,27 +208,41 @@ class VaultOpsPresence:
 
     def __init__(self):
         self.rpc = Presence(CLIENT_ID)
-        self.rpc.connect()
-        # self.rpc.clear()
-        self.rpc.update()
+        self.connect_success = False
+        try:
+            self.connect_if_not_connected()
+        except DiscordNotFound:
+            pass
         self.start_time = None
         
-    def init(self):
-        self.clear()
+    def connect_if_not_connected(self):
+        try:
+            if not self.connect_success:
+                self.rpc.connect()
+                # self.rpc.update()
+                self.rpc.clear()
+                self.connect_success = True
+        except Exception:
+            raise DiscordNotFound
 
     def destroy(self):
+        if not self.connect_success:
+            raise DiscordNotFound
         try:
             self.clear()
         finally:
-            self.rpc.close()
+            self._force_close_ipc()
             self.rpc = None
 
     def clear(self):
         self.start_time = None
+        if not self.connect_success:
+            raise DiscordNotFound
         try:
             self.rpc.clear()
         except PipeClosed:
-            pass  # If the pipe is closed, we can't clear, but we can ignore it.
+            self.connect_success = False
+            pass
         except Exception as e:
             write_crash_log(f"Failed to clear presence: {e}\n" + traceback.format_exc())
         
@@ -208,6 +251,8 @@ class VaultOpsPresence:
             self.start_time = int(time())
         
     def _update(self, large_image=None, large_text=None, **kwargs):
+        if not self.connect_success:
+            self.connect_if_not_connected()
         self.ensure_start_time()
         try:
             self.rpc.update(
@@ -217,7 +262,8 @@ class VaultOpsPresence:
                 **kwargs,
             )
         except PipeClosed:
-            self.rpc.connect()
+            self.connect_success = False
+            self.connect_if_not_connected()
             try:
                 self.rpc.update(
                     large_image=large_image if large_image else "vaultops",
@@ -226,6 +272,7 @@ class VaultOpsPresence:
                     **kwargs,
                 )
             except Exception as e:
+                self.connect_success = False
                 write_crash_log(f"Failed to update presence after reconnect: {e}\n" + traceback.format_exc())
 
     def handle_presence_request(self, request_type: RequestType):
@@ -245,6 +292,27 @@ class VaultOpsPresence:
         }
 
         handlers[request_type]()
+        
+    def _force_close_ipc(self):
+        """Explicitly closes the Discord IPC pipe and pumps the loop once
+        so the close is actually sent, instead of relying on process exit
+        to reclaim the handle."""
+        if self.rpc is None:
+            return
+        try:
+            self.rpc.close()
+            
+            if hasattr(self.rpc, 'sock_writer') and self.rpc.sock_writer is not None:
+                if not self.rpc.sock_writer.is_closing():
+                    self.rpc.sock_writer.close()
+                
+                if self.rpc.loop and self.rpc.loop.is_running():
+                    asyncio.run_coroutine_threadsafe(self.rpc.sock_writer.wait_closed(), self.rpc.loop)
+                elif self.rpc.loop and not self.rpc.loop.is_closed():
+                    self.rpc.loop.run_until_complete(self.rpc.sock_writer.wait_closed())
+                    
+        except Exception as e:
+            write_crash_log(f"Failed to force-close IPC: {e}\n" + traceback.format_exc())
         
     def show_idle_presence(self):
         IDLE_STATES = (

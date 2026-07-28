@@ -187,13 +187,13 @@ Init() {
     numSettings := 9 ; Includes Engine and mode rows
     labelW := 140 / scale
     fieldW := 90 / scale
-    instrW := groupW - labelW - fieldW - 120 / scale
     rowH := (groupH - 65 / scale) / numSettings
 
     xLabel := 40 / scale
     xField := xLabel + labelW + 55 / scale
     xField2 := xField - 40 / scale
     xInstr := xField + fieldW + 75 / scale
+    instrW := groupW - xInstr + leftPadding * 0.2
     toggleX := xField - 87 / scale
     y := groupY + 30 / scale
     toggleStartY := y + rowH * 3
@@ -220,7 +220,7 @@ Init() {
         inputNoSave := guiApp.AddEdit("x" xField " y" (y - adjustmentYOffset) " w" fieldW
         " Center Background222222 cWhite", CanonicalToDisplay(noSaveKey))
         ; Nosave instruction text
-        txtNoSaveInstr := guiApp.AddLink("x" xInstr " y" y " w" instrW - 100 " cA9A9A9", "")
+        txtNoSaveInstr := guiApp.AddLink("x" xInstr " y" y " w" instrW " cA9A9A9", "")
         ; Nosave event listeners
         picNoSave.OnEvent("Click", ToggleNoSaveStatus)
         inputNoSave.OnEvent("Focus", (*) => BeginCustomHotkeyEdit(inputNoSave, "NoSave", noSaveKey))
@@ -971,12 +971,21 @@ Init() {
 {
 
     ToggleRichPresence(*) {
-        global richPresenceEnabled, iniFile, picRichPresenceEnabled
+        global richPresenceEnabled, iniFile, picRichPresenceEnabled, lastRPCError
 
         if (richPresenceEnabled)
             DisableRichPresence()
-        else
-            EnableRichPresence()
+        else {
+            if (!lastRPCError || (lastRPCError && A_TickCount - lastRPCError > 30000)) {
+                lastRPCError := 0
+                EnableRichPresence()
+            } else {
+                MsgBox "Cannot enable Discord Rich Presence due to a recent error. Please try again in "
+                    . Round((30000 - (A_TickCount - lastRPCError)) / 1000)
+                    . " seconds.", "Discord RPC Error", 48
+                return
+            }
+        }
 
         picRichPresenceEnabled.Value := richPresenceEnabled ? staticFolder "\discord.png" : staticFolder "\discordMuted.png"
     }
@@ -1023,7 +1032,8 @@ Init() {
 
     ; Toggles the ledge-grab feature on/off, updates the UI elements, and registers/unregisters the associated hotkey.
     ToggleLedgeGrabEnabled(*) {
-        global ledgeGrabEnabled, iniFile, picLedgeGrabEnabled, txtLedgeGrabInstr, inputLedgeGrabText, hackInProgress,
+        global ledgeGrabEnabled, iniFile, picLedgeGrabEnabled, txtLedgeGrabInstr, inputLedgeGrabText,
+            hackInProgress,
             ledgeGrabInProgress
         ledgeGrabEnabled := !ledgeGrabEnabled
         ledgeGrabInProgress := false

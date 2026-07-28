@@ -7,8 +7,8 @@ global pythonExe := "pyw.exe"
 global useCompiledExe := false
 global isShuttingDown := false
 global rpcCallInProgress := false
-
 global REQ_HEARTBEAT_RPC := "HEARTBEAT"
+global rpcProcId := 0
 
 isVaultOpsAhk := A_ScriptName = "vaultOps.ahk"
 
@@ -39,7 +39,7 @@ DetectCompiledRPCExe() {
 
 HeartbeatDiscordRPC(*) {
     static failCount := 0
-    global rpcProc
+    global rpcProc, lastRPCError
 
     if (!IsObject(rpcProc) || rpcCallInProgress)
         return
@@ -48,20 +48,21 @@ HeartbeatDiscordRPC(*) {
         "request_type", REQ_HEARTBEAT_RPC
     ), true)
 
-    if (res != "OK") {
-        failCount++
-        if (failCount > 3) {
-            MsgBox "Discord RPC heartbeat failed 3 times. Restarting Discord RPC.", "Error", 16
-            RestartDiscordRPC()
-            failCount := 0
+    if (res = RichPresenceCmd.ERR_TRY_AGAIN_LATER || res = "RPC_TIMEOUT") {
+        lastRPCError := A_TickCount
+        KillDiscordRPC()
+        if (richPresenceEnabled) {
+            ToggleRichPresence()
+            MsgBox "An error occurred in Discord RPC`nDisabling rich presence.", "Error", 16
         }
     }
+
 }
 
 StartDiscordRPC() {
-    global rpcProc, isShuttingDown
+    global rpcProc, rpcProcId, isShuttingDown
 
-    if (rpcProc || isShuttingDown)
+    if (ProcessExist(rpcProcId) || isShuttingDown)
         return
 
     DetectCompiledRPCExe()
@@ -82,11 +83,12 @@ StartDiscordRPC() {
         cmd := Format('"{1}" -u "{2}"', pythonExe, rpcScriptPath)
 
     rpcProc := shell.Exec(cmd)
+    try rpcProcId := rpcProc.ProcessID
     SetTimer HeartbeatDiscordRPC, 1234
 }
 
 StopDiscordRPC(*) {
-    global rpcProc
+    global rpcProc, rpcProcId
 
     SetTimer HeartbeatDiscordRPC, 0
 
@@ -94,6 +96,7 @@ StopDiscordRPC(*) {
         CallDiscordRPC(Map("request_type", "STOP"), false, true)
 
     rpcProc := 0
+    rpcProcId := 0
 }
 
 KillDiscordRPC() {
@@ -112,11 +115,12 @@ KillDiscordRPC() {
 
 }
 
-RestartDiscordRPC() {
-    StopDiscordRPC()
-    Sleep 50
-    StartDiscordRPC()
-}
+; RestartDiscordRPC() {
+;     StopDiscordRPC()
+;     MsgBox "An error occurred with the Discord RPC process. Restarting it now.", "Error", 16
+;     Sleep 50
+;     StartDiscordRPC()
+; }
 
 ; =========================
 ; CORE CALL
@@ -140,12 +144,12 @@ LastDiscordCallFinished(timeout := 1000) {
 }
 
 CallDiscordRPC(params, waitForResponse := true, killCall := false) {
-    global rpcProc, rpcCallInProgress
+    global rpcProc, rpcProcId, rpcCallInProgress
 
-    if (!IsObject(rpcProc))
-        StartDiscordRPC()
+    if (!IsObject(rpcProc) || !ProcessExist(rpcProcId))
+        return ""
 
-    if (!killCall && (rpcCallInProgress || isShuttingDown))
+    if (!killCall && (rpcCallInProgress || isShuttingDown) || lastRPCError != 0)
         return ""
 
     rpcCallInProgress := true
@@ -176,13 +180,14 @@ CallDiscordRPC(params, waitForResponse := true, killCall := false) {
             if (isShuttingDown)
                 return "RPC_SHUTDOWN"
 
-            RestartDiscordRPC()
+            ; RestartDiscordRPC()
             rpcCallInProgress := false
 
             try rpcProc.StdIn.WriteLine(req)
             catch as err {
                 ShowCenteredToolTip "Failed to write to Discord RPC process: " err.Message, 17
                 Sleep 500
+                ToolTip("", , , 17)
                 return "RPC_ERROR: " err.Message
             }
         }

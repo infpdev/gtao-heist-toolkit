@@ -1,6 +1,10 @@
 global currentActivity := ""
 
+global lastRPCError := 0
+
 class RichPresenceCmd {
+    static DISCORD_NOT_RUNNING := "DiscordNotRunning"
+    static ERR_TRY_AGAIN_LATER := "ErrTryAgainLater"
     static DISABLE := "DISABLE"
     static CLEAR := "CLEAR"
     static IDLE := "IDLE"
@@ -12,7 +16,6 @@ class RichPresenceCmd {
 }
 
 ; DISCORD_EXE := "ahk_exe Discord.exe"
-DISCORD_NOT_RUNNING := "DiscordNotRunning"
 
 IsDiscordRunning() {
     return ProcessExist("Discord.exe")
@@ -38,6 +41,8 @@ EnableRichPresence() {
         MsgBox "Discord is not running. Please start Discord to enable rich presence.", "Error", 16
         return
     }
+
+    StartDiscordRPC()
 
     try IniWrite(1, iniFile, "Options", "richPresence")
     richPresenceEnabled := true
@@ -102,7 +107,7 @@ UpdateCurrentActivity() {
 ; Sets the current rich presence activity to the specified type.
 SetActivity(type) {
     static shownWarning := false
-    global richPresenceEnabled, currentActivity
+    global richPresenceEnabled, currentActivity, lastRPCError
 
     if (richPresenceEnabled && !isShuttingDown) {
 
@@ -115,20 +120,27 @@ SetActivity(type) {
         if (previousActivity != currentActivity) {
             res := SetDiscordActivity(type)
             if (res != "OK" && debug) {
-                if (res = DISCORD_NOT_RUNNING && !shownWarning) {
-                    ShowCenteredToolTip "Discord is not running. Please start Discord to show rich presence activity",
-                        17
-                    shownWarning := true
-                    SetTimer(() => ToolTip("", 0, 0, 17), -2000)
+                if (res = RichPresenceCmd.DISCORD_NOT_RUNNING && !IsDiscordRunning()) {
+                    if (!shownWarning) {
+                        MsgBox "Discord is not running. Please start Discord to show rich presence activity", "Error",
+                            16
+                        shownWarning := true
+                    }
                     return
                 }
-                else if (res != DISCORD_NOT_RUNNING) {
+                else if (res != "OK") {
+                    if (res = RichPresenceCmd.ERR_TRY_AGAIN_LATER) {
+                        MsgBox "An error occurred in Discord RPC`nDisabling rich presence.", "Error", 16
+                        lastRPCError := A_TickCount
+                        if (richPresenceEnabled)
+                            ToggleRichPresence()
+                        return
+                    }
                     ShowCenteredToolTip "Failed to set Discord rich presence activity: " res, 17
                 }
                 SetTimer(() => ToolTip("", 0, 0, 17), -2000)
-            }
-
-            shownWarning := false
+            } else
+                shownWarning := false
             return res
         }
     }

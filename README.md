@@ -92,7 +92,7 @@ This repository includes:
 - Supports all common **16:9** and **21:9 ultrawide** resolutions
 - Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit
 - Manual and auto solving modes
-- Discord Rich Presence support — shows your current activity with randomly selected heist-themed status messages
+- **Discord Rich Presence** support — shows your current activity with randomly selected heist-themed status messages
 - GUI app with labels/tooltips and customizable hotkeys — designed for non-technical users
 
 ## What This Script Is (and Isn't)
@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/1e8f505245a5b93583864bcb56656b3ac8355d9bc23b4b7048450a1a9237138a
+> https://www.virustotal.com/gui/file/cdac79e09d816f9f2bc9cd6aaf9a11b3cfb05e559bee50a883e1e6423c3debe7
 
 
 <p align="center">
@@ -211,6 +211,29 @@ Provided as-is, with no guarantees.
 6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt.
 7. Switch to **Story Mode**, then return to **GTA Online** (without NoSave enabled). The heist can now be replayed without setups.
 
+**FAQ**
+
+<details>
+<summary>Can I do it with others/friends?</summary>
+
+Yes. Other players can join the heist normally, but only the host should enable **NoSave**. If other players use **NoSave**, it won't affect the replay, but the money they receive will be counted as illegitimate in their player stats.
+
+</details>
+
+<details>
+<summary>When exactly should I enable NoSave?</summary>
+
+Most players enable NoSave a few seconds before reaching the buyer/destination, but you can also enable it at any point during the heist.
+
+</details>
+
+<details>
+<summary>Do I have to do the one-time setup after every replay?</summary>
+
+No. The one-time setup is only needed to make sure your setups are saved before using NoSave. After that, you can replay the heist as many times as you want without repeating it.
+
+</details><br>
+
 **Post-Patch Tutorial:** https://youtu.be/6ZYJPmXAMu4
 
 > [!WARNING]
@@ -224,7 +247,7 @@ Provided as-is, with no guarantees.
 > - The app will attempt to enable the firewall automatically if it's not enabled.
 > - VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
 > - The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
-> - To verify it’s active, press `Alt + F4`. If you see a **"save failed"** message, it’s working.
+> - `Alt + F4` is disabled while NoSave is active, as Rockstar's latest patch made it possible to lose your heist by pressing it accidentally.
 
 > [!TIP]
 > Full replay tutorials:
@@ -237,7 +260,6 @@ Provided as-is, with no guarantees.
 * Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist, eliminating the need to time the inputs manually.
 
 **How to use:**
-
 1. Enable **Ledge Grab** in the GUI app. (There is no hotkey to toggle this option.)
 2. Position your character near the ledge so that it is facing the ledge and ready to take cover.
 3. Press the **Take Cover** key (`Q` by default) to start the automation.
@@ -245,13 +267,15 @@ Provided as-is, with no guarantees.
 5. Once you see the **"Input re-enabled"** tooltip, move to the desired position.
 6. Press the **Take Cover** key again to stop the automation.
 
+**Full tutorial**: https://youtu.be/hupQ7fMXHTE
+
 > [!NOTE]
->
+> * You need to have **Snapmatic Quick Launch** enabled in the phone settings.
 > * If your in-game **Take Cover** keybind is not `Q`, change it in the GUI app, or the in-game controls, before using the feature.
+> * If the automation works but the teleport fails, reposition yourself so that your character doesn't start running immediately after taking cover. Watch this tutorial for an explanation: https://youtu.be/vSxFCNy3g4s
 > * Do not close the phone until you are teleported to the ledge, otherwise the glitch will simply fail.
 > * This feature is primarily intended for the Diamond Casino heist, since the glitch is not useful for looting in the Cayo Perico heist.
 > * You will **not** be able to use the **ledge grab** feature while vaultOps is in **Manual** or **Auto** mode, and the **puzzle solvers** will be **unavailable** while the **ledge grab automation** is active.
-> * Full tutorial: https://youtu.be/hupQ7fMXHTE
 
 
 ### Fingerprint / Keypad solvers
