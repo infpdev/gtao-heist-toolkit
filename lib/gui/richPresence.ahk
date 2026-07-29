@@ -181,7 +181,7 @@ ShowLedgeGrabActivity() {
 ; Shows the RPC tutorial prompt and returns true if the user wants to watch it, false otherwise.
 ShowRPCTutorialPrompt() {
     g := Gui("+AlwaysOnTop -Caption", "Discord Tutorial")
-    g.SetFont("s10", "Segoe UI")
+    g.SetFont("s" GetScaledFontSize(10), "Segoe UI")
     if (IsSet(guiApp)) {
         guiApp.Minimize()
     }

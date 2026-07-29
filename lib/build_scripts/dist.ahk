@@ -689,7 +689,7 @@ BloatExe(exePath, targetKB) {
 buildGUI(isDev := false) {
     global parentDir
     dlg := Gui("-DPIScale", "Build options")
-    dlg.SetFont("s10")
+    dlg.SetFont("s" GetScaledFontSize(10))
 
     dlg.AddText("xm+9 ym", "Choose build options:")
     existingOpenCVHelper := parentDir "\lib\py_helpers\OpenCV_Engine.exe"

@@ -1,3 +1,4 @@
+import ctypes
 import sys
 import json
 import traceback
@@ -6,21 +7,7 @@ import faulthandler
 import threading
 import time
 
-from helpers import is_black_area_present_ledge_grab
-crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
-
-def write_crash_log(message):
-    try:
-        with open(crash_log_path, "a", encoding="utf-8") as log_file:
-            log_file.write(message)
-            if not message.endswith("\n"):
-                log_file.write("\n")
-    except Exception:
-        pass
-
-
-def log_exception(exc_type, exc_value, exc_tb):
-    write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
+from helpers import is_black_area_present_ledge_grab, write_crash_log, log_exception
 
 try:
     faulthandler.enable(all_threads=True)

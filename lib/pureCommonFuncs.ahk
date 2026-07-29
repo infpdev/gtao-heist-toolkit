@@ -401,3 +401,31 @@ FocusOrOpenFolder(folderPath) {
     Run('explorer.exe "' folderPath '"')
     return false
 }
+
+; ======= Get DPI scaling factor =======
+GetDpiScale() {
+    static dpiScale := 1.0
+
+    ; Try to get the DPI for the primary monitor
+    try {
+        ; Get DPI for primary monitor
+        hdc := DllCall("GetDC", "Ptr", 0, "Ptr")
+        dpiX := DllCall("GetDeviceCaps", "Ptr", hdc, "Int", 88, "Int")  ; LOGPIXELSX
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc)
+        dpiScale := dpiX / 96
+    } catch {
+        ; Fallback to A_ScreenDPI if available
+        if (A_ScreenDPI != "") {
+            dpiScale := A_ScreenDPI / 96
+        }
+    }
+
+    return dpiScale
+}
+
+; ====== Get scaled font size based on DPI ======
+GetScaledFontSize(baseSize := 11) {
+    dpiScale := GetDpiScale()
+    scaledSize := Round(baseSize / dpiScale)
+    return scaledSize
+}

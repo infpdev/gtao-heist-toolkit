@@ -328,7 +328,7 @@ if !A_IsAdmin {
     ; Shows the NoSave tutorial prompt and returns true if the user wants to watch it, false otherwise.
     ShowNoSaveTutorialPrompt() {
         g := Gui("+AlwaysOnTop -Caption", "NoSave Update")
-        g.SetFont("s10", "Segoe UI")
+        g.SetFont("s" GetScaledFontSize(10), "Segoe UI")
         if (IsSet(guiApp)) {
             guiApp.Minimize()
         }

@@ -131,10 +131,11 @@ Init() {
     ; higherRes := true
     ; debug := true
 
+    overallFontSize := GetScaledFontSize(11)  ; Compensate for Windows scaling
+
     ; ======= Parent GUI creation =======
     guiApp := Gui("-Caption -DPIScale", Title)
     guiApp.BackColor := "222222"
-    overallFontSize := 11
     guiApp.SetFont("s" overallFontSize " cWhite")
 
     ; ======= Top bar =======
@@ -348,9 +349,9 @@ Init() {
         y += rowH
 
         ; --- Info Text: Enable scripts to toggle heist and mode ---
-        txtEnableScriptsInfo := guiApp.AddText("x" xLabel + 25 " yp h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        txtEnableScriptsInfo := guiApp.AddText("x" xLabel + 25 " yp h25 w" ((instrW) + 15) " BackgroundTrans Center cA9A9A9",
         "Enable scripts to toggle heist, engine, and mode")
-        txtEnableScriptsInfo.SetFont("s12")
+        txtEnableScriptsInfo.SetFont("s" GetScaledFontSize(12))
         txtEnableScriptsInfo.Opt("BackgroundTrans")
         txtEnableScriptsInfo.Visible := false
     }

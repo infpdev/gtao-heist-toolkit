@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/cdac79e09d816f9f2bc9cd6aaf9a11b3cfb05e559bee50a883e1e6423c3debe7
+> https://www.virustotal.com/gui/file/b3230b3d0e76d47d704578f08d9ce4bae56b736859f3b86fb76462731344c0de
 
 
 <p align="center">

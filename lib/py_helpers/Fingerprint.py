@@ -163,17 +163,20 @@ def get_fingerprints(img=None, threshold=0.65, debug=False, should_capture_windo
 
 def main(debug=False):
     """Run fingerprint scan against live capture and return solver payload."""
-    result = get_fingerprints(None, debug=debug)
+    result = get_fingerprints(None, debug=debug, should_capture_window=True)
     return result
 
 if __name__ == "__main__":
-    base_dir = os.path.dirname(__file__)
-    img_path = os.path.join(base_dir, "zcasinowide.png")
+    # base_dir = os.path.dirname(__file__)
+    # img_path = os.path.join(base_dir, "zcasinowide.png")
 
-    img = cv2.imread(img_path)
+    # img = cv2.imread(img_path)
     # BGR -> RGB
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    processed = prepare_image(scale=0.5, image=img)
+    # processed = prepare_image(scale=0.5, image=None, should_capture_window=True)
+    # if processed is None:
+    #     print("Failed to capture window for fingerprint scan.")
 
-    get_fingerprints(processed, debug=True)
+    res = get_fingerprints(None, debug=True, should_capture_window=True)
+    print(f"Fingerprint scan result: {res}")
