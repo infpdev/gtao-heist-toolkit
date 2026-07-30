@@ -21,6 +21,17 @@ Done!
 > Your settings and hotkeys now automatically persist across updates and reinstalls.
 
 ## Changelog
+
+<details>
+<summary><b>vaultOps v4.69.96 changes</b></summary>
+
+Please read the [v4.69.96 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.96) for detailed information about:
+
+* Removed **Alt + F4** interception while **NoSave** is active
+* Fixed an issue where the **El Rubio** solver failed to time out after completing a hack
+
+</details>
+
 <details>
 <summary><b>vaultOps v4.69.69 changes</b></summary>
 

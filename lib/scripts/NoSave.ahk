@@ -66,7 +66,7 @@ if !A_IsAdmin {
 
         enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
-            RegisterAltF4Handler()
+            ; RegisterAltF4Handler()
             ShowCenteredToolTip("NoSave enabled [Works]", 17)
 
             try isRockstarServerBlocked()
@@ -75,7 +75,7 @@ if !A_IsAdmin {
             forMode := "enabled"
             return true
         } else {
-            UnregisterAltF4Handler()
+            ; UnregisterAltF4Handler()
             errMsg()
             return false
         }
@@ -101,7 +101,7 @@ if !A_IsAdmin {
 
         disabled := !IsNoSaveRuleActive(fwPolicy)
         if (disabled) {
-            UnregisterAltF4Handler()
+            ; UnregisterAltF4Handler()
             ShowCenteredToolTip("NoSave disabled", 17)
             SetTimer () => clearNoSaveToolTip("disabled"), -2000
             forMode := "disabled"
@@ -404,13 +404,13 @@ if !A_IsAdmin {
         }
     }
 
-    RegisterAltF4Handler() {
-        Hotkey("!F4", HandleAltF4, "On")
-    }
+    ; RegisterAltF4Handler() {
+    ;     Hotkey("!F4", HandleAltF4, "On")
+    ; }
 
-    UnregisterAltF4Handler() {
-        Hotkey("!F4", HandleAltF4, "Off")
-    }
+    ; UnregisterAltF4Handler() {
+    ;     Hotkey("!F4", HandleAltF4, "Off")
+    ; }
 
     clearNoSaveToolTip(localMode) {
         if (forMode == localMode)

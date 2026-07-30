@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/b3230b3d0e76d47d704578f08d9ce4bae56b736859f3b86fb76462731344c0de
+> https://www.virustotal.com/gui/file/1425ba2c6a372d7062e68fe396022c1330a52d9fe71e501bb41a2c9c53d78d8b
 
 
 <p align="center">
@@ -232,7 +232,14 @@ Most players enable NoSave a few seconds before reaching the buyer/destination, 
 
 No. The one-time setup is only needed to make sure your setups are saved before using NoSave. After that, you can replay the heist as many times as you want without repeating it.
 
-</details><br>
+</details>
+
+<details>
+<summary>Q: I lost my heist. What did I do wrong?</summary>
+
+If you've already done a heist using the old replay method, complete any other heist as the host using the new replay method before replaying this one. Otherwise, you'll lose the heist.
+
+</details><br><br>
 
 **Post-Patch Tutorial:** https://youtu.be/6ZYJPmXAMu4
 
@@ -247,7 +254,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
 > - The app will attempt to enable the firewall automatically if it's not enabled.
 > - VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
 > - The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
-> - `Alt + F4` is disabled while NoSave is active, as Rockstar's latest patch made it possible to lose your heist by pressing it accidentally.
+> - You can safely press `Alt + F4` while NoSave is active to check if it's working. If the game shows "Save Failed", NoSave is working.
 
 > [!TIP]
 > Full replay tutorials:
