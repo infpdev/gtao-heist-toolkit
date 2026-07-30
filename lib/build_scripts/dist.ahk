@@ -114,7 +114,6 @@ buildVaultOps() {
             if (scanVirusTotal) {
                 sleep 1000
                 ShowCenteredToolTip "Scanning vaultOps.exe with VirusTotal..."
-                RunScan(vaultOpsInstaller)
             }
         } else {
             ShowCenteredToolTip "Build complete but installer not found!"
@@ -130,6 +129,9 @@ buildVaultOps() {
         createStandalonePackages(quotedBase, parentDir, packageStandalone, useOriginalClasses, buildVaultOpsExe)
 
     UpdateSizesOfEachScript()
+    if (scanVirusTotal)
+        RunScan(vaultOpsInstaller)
+
     FocusOrOpenFolder(parentDir "\dist")
 
     ; Compile this script to .exe if not already compiled

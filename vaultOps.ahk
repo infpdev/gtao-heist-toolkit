@@ -378,7 +378,7 @@ Init() {
         txtModeInstr := guiApp.AddText("x" xInstr " y" y " w" instrW " cA9A9A9 BackgroundTrans", "")
 
         ; --- Cayo Perico options ---
-        txtCayoOptionLabel := guiApp.AddText("x" xLabel - 30 " yp-5 h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
+        txtCayoOptionLabel := guiApp.AddText("x" xLabel - 15 " yp-5 h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
         "Switch to Casino / Kortz to toggle mode")
         txtCayoOptionLabel.SetFont("s12")
 

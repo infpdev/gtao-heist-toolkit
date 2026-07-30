@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/b3230b3d0e76d47d704578f08d9ce4bae56b736859f3b86fb76462731344c0de
+> https://www.virustotal.com/gui/file/43dc79f8c2574f0a5966f1df93436a2623c2da1c7d82754203172e34d528db2d
 
 
 <p align="center">
@@ -203,6 +203,8 @@ Provided as-is, with no guarantees.
 >
 > After completing your heist setups, force a save → switch to Story Mode → return to GTA Online.
 
+<br>
+
 1. Enable **NoSave** either from the app, or using the hotkey, which is `]` by default, during the heist  
 2. Make sure it is active **before the payment cutscene**  
 3. After returning to freeroam, switch to **Story Mode** while keeping NoSave enabled  
@@ -210,6 +212,8 @@ Provided as-is, with no guarantees.
 5. Return to **GTA Online**.
 6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt.
 7. Switch to **Story Mode**, then return to **GTA Online** (without NoSave enabled). The heist can now be replayed without setups.
+
+<br>
 
 **FAQ**
 
@@ -232,12 +236,16 @@ Most players enable NoSave a few seconds before reaching the buyer/destination, 
 
 No. The one-time setup is only needed to make sure your setups are saved before using NoSave. After that, you can replay the heist as many times as you want without repeating it.
 
+</details>
+
+<details>
+<summary>Q: I lost my heist. What did I do wrong?</summary>
+
+If you've already done a heist using the old replay method, complete any other heist as the host using the new replay method before replaying this one. Otherwise, you'll lose the heist.
+
 </details><br>
 
 **Post-Patch Tutorial:** https://youtu.be/6ZYJPmXAMu4
-
-> [!WARNING]
-> Failing to switch to **Story Mode** the second time may cause you to lose your saved heist. Make sure to follow the steps carefully.
 
 **Behavior:**
 - Works by temporarily blocking network communication  
@@ -247,7 +255,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
 > - The app will attempt to enable the firewall automatically if it's not enabled.
 > - VaultOps may warn you if third-party antivirus/firewall software appears to be interfering with NoSave.
 > - The app will automatically disable NoSave on exit to prevent leaving the firewall in a blocked state.
-> - `Alt + F4` is disabled while NoSave is active, as Rockstar's latest patch made it possible to lose your heist by pressing it accidentally.
+> - You can safely press `Alt + F4` while NoSave is active to check if it's working. If the game shows "Save Failed", NoSave is working.
 
 > [!TIP]
 > Full replay tutorials:
@@ -291,7 +299,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
    **Recommendation:**
    - Enable only when solving puzzles  
    - Or use **Manual mode** to prevent automatic switching  
-   - Assign a hotkey for quick toggling  <br><br>
+   - Assign a hotkey for quick toggling  <br>
 
 2. **Detection Engine**
    - **AHK**
@@ -303,7 +311,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
      - More flexible image-based detection  
      - Recommended for higher resolutions and ultrawide displays
      - Automatically selected on unsupported resolutions/aspect ratios
-     - Higher resolutions and 21:9 setups will use OpenCV automatically  <br><br>
+     - Higher resolutions and 21:9 setups will use OpenCV automatically<br>
 
 3. **Select Heist**
    - **Diamond Casino / Kortz Center**
@@ -315,7 +323,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
    - **Cayo Perico**
      - Solves the fingerprint cloner puzzle
      - Switches to Auto mode by default when the puzzle is detected
-     - Pressing `M` switches to Manual mode and shows the number of left / right clicks needed to solve the puzzle, allowing you to select the prints yourself
+     - Pressing `M` switches to Manual mode and shows the number of left / right clicks needed to solve the puzzle, allowing you to select the prints yourself<br>
 
 4. **Choose Mode (Diamond Casino / Kortz Center only)**
    - **Fingerprint** — Detects and solves the fingerprint puzzle  

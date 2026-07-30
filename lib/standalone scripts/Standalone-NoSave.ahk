@@ -133,7 +133,7 @@ ExitScript(*) {
 
         enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
-            RegisterAltF4Handler()
+            ; RegisterAltF4Handler()
             ShowCenteredToolTip("NoSave enabled [Works]", 17)
 
             try isRockstarServerBlocked()
@@ -142,7 +142,7 @@ ExitScript(*) {
             forMode := "enabled"
             return true
         } else {
-            UnregisterAltF4Handler()
+            ; UnregisterAltF4Handler()
             errMsg()
             return false
         }
@@ -168,7 +168,7 @@ ExitScript(*) {
 
         disabled := !IsNoSaveRuleActive(fwPolicy)
         if (disabled) {
-            UnregisterAltF4Handler()
+            ; UnregisterAltF4Handler()
             ShowCenteredToolTip("NoSave disabled", 17)
             SetTimer () => clearNoSaveToolTip("disabled"), -2000
             forMode := "disabled"
@@ -395,7 +395,7 @@ ExitScript(*) {
     ; Shows the NoSave tutorial prompt and returns true if the user wants to watch it, false otherwise.
     ShowNoSaveTutorialPrompt() {
         g := Gui("+AlwaysOnTop -Caption", "NoSave Update")
-        g.SetFont("s10", "Segoe UI")
+        g.SetFont("s" GetScaledFontSize(10), "Segoe UI")
         if (IsSet(guiApp)) {
             guiApp.Minimize()
         }
@@ -471,13 +471,13 @@ ExitScript(*) {
         }
     }
 
-    RegisterAltF4Handler() {
-        Hotkey("!F4", HandleAltF4, "On")
-    }
+    ; RegisterAltF4Handler() {
+    ;     Hotkey("!F4", HandleAltF4, "On")
+    ; }
 
-    UnregisterAltF4Handler() {
-        Hotkey("!F4", HandleAltF4, "Off")
-    }
+    ; UnregisterAltF4Handler() {
+    ;     Hotkey("!F4", HandleAltF4, "Off")
+    ; }
 
     clearNoSaveToolTip(localMode) {
         if (forMode == localMode)

@@ -162,7 +162,7 @@ class ElRubioSolver {
             return false
 
         try {
-            anchorRes := GetResFromOpenCV(OpenCVCmd.CAYO)
+            anchorRes := GetResFromOpenCV(OpenCVCmd.CAYO_ANCHOR)
 
             this.foundAnchor := (
                 anchorRes != OpenCVCmd.ERRMSG
