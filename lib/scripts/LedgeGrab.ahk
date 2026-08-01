@@ -11,7 +11,7 @@ ToggleLedgeGrabInProgress(*) {
         return
     }
 
-    BlockInput 0
+    BlockKeyboardExcept(0)
 
     if (!LedgeGrabRunningSignal && !ledgeGrabInProgress) {
 
@@ -42,7 +42,7 @@ enableLedgeGrabInProgress() {
 
 disableLedgeGrabInProgress() {
     global ledgeGrabInProgress
-    BlockInput 0
+    BlockKeyboardExcept(0)
     ledgeGrabInProgress := false
     UpdateGlobalStatus(hackInProgress)
 }
@@ -54,6 +54,8 @@ LedgeGrab() {
 
     if (!ledgeGrabEnabled)
         return
+
+    gtaHwnd := GetGtaHwnd()
 
     SendMode "Event"
     SetKeyDelay 100, 50
@@ -71,11 +73,12 @@ LedgeGrab() {
         return
 
     Sleep 500
-    SendInput '{W down}'
+    SendKeyNative("W", true, gtaHwnd)
     Sleep 500
-    Send '{Space}'
-    SendInput '{W up}'
-    Sleep 200
+    SendKeyNative("Space", true, gtaHwnd)
+    Sleep 100
+    SendKeyNative("W", false, gtaHwnd)
+    SendKeyNative("Space", false, gtaHwnd)
 
     InitLedgeGrab()
 }
@@ -147,7 +150,7 @@ SleepIfBlack() {
             ; MsgBox "Failed here"
             ledgeGrabInProgress := false
             LedgeGrabRunningSignal := false
-            BlockInput 0
+            BlockKeyboardExcept(0)
             ToolTip("", , , 17)
             UpdateGlobalStatus(hackInProgress)
             break
@@ -194,25 +197,26 @@ RegisterLedgeGrabHotkey(shouldRegister := true, unregisterKey := "") {
                     48
             }
             return true
-        } else {
-            if (unregisterKey == "")
-                unregisterKey := ledgeGrabKey
-            try Hotkey(CanonicalToRegistration(unregisterKey), "Off")
-            return true
         }
+    } else {
+        if (unregisterKey == "")
+            unregisterKey := ledgeGrabKey
+        try Hotkey(CanonicalToRegistration(unregisterKey), "Off")
+        return true
     }
 
 }
 
 ; Disables user input and shows a tooltip indicating that inputs are disabled for ledge-grab initiation.
 DisableInput() {
-    BlockInput 1
+    global ledgeGrabEnabled
+    BlockKeyboardExcept(1, ledgeGrabKey)
     ShowCenteredToolTip "Inputs disabled. Please wait till the script initiates ledge grab", 17
 }
 
 ; Re-enables user input and shows a tooltip indicating that inputs are re-enabled after ledge-grab initiation.
 EnableInput() {
-    BlockInput 0
+    BlockKeyboardExcept(0)
 
     if (LedgeGrabRunningSignal) {
         ShowCenteredToolTip "Inputs re-enabled. You can now move to the desired position", 17
@@ -224,10 +228,12 @@ EnableInput() {
 ; Sends the key in order to not consume the ledge-grab key press when GTA is not focused.
 DisableLedgeGrabIfGtaNotFocused() {
     static shownWarning := false
-    global ledgeGrabInProgress, ledgeGrabEnabled
+    global ledgeGrabInProgress, ledgeGrabEnabled, LedgeGrabRunningSignal
+    if (!ledgeGrabEnabled)
+        return true
     if (!isGtaFocused(true, true)) {
         Send("{" ledgeGrabKey "}")
-        BlockInput 0
+        BlockKeyboardExcept(0)
 
         ledgeGrabInProgress := false
         LedgeGrabRunningSignal := false

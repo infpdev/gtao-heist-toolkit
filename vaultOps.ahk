@@ -39,6 +39,7 @@ global vaultOps := true
 
 ; GUI imports
 #Include <gui\richPresence>
+#Include <gui\keyHelpers>
 #Include <gui\hotkeyHelpers>
 #Include <gui\windowHelpers>
 #Include <gui\tooltipsHelpers>
@@ -1034,14 +1035,10 @@ Init() {
     ; Toggles the ledge-grab feature on/off, updates the UI elements, and registers/unregisters the associated hotkey.
     ToggleLedgeGrabEnabled(*) {
         global ledgeGrabEnabled, iniFile, picLedgeGrabEnabled, txtLedgeGrabInstr, inputLedgeGrabText,
-            hackInProgress,
-            ledgeGrabInProgress
+            hackInProgress, ledgeGrabInProgress
         ledgeGrabEnabled := !ledgeGrabEnabled
         ledgeGrabInProgress := false
         BlockInput 0
-
-        if (ledgeGrabEnabled)
-            FocusGtaIfRunning()
 
         RegisterLedgeGrabHotkey(ledgeGrabEnabled)
 
@@ -1050,6 +1047,9 @@ Init() {
         UpdateLedgeGrabInstrText()
         IniWrite(ledgeGrabEnabled, iniFile, "Options", "ledgeGrab")
         UpdateGlobalStatus(hackInProgress)
+
+        if (ledgeGrabEnabled)
+            FocusGtaIfRunning()
     }
 
     ToggleNoSaveStatus(*) {
@@ -1193,6 +1193,7 @@ CleanUpVaultOps(*) {
     }
     try SaveCache()
     try PersistSettingsToAppData()
+    try BlockKeyboardExcept(0)
     ClearRichPresence()
     try StopDiscordRPC()
     try StopPython()
@@ -1201,5 +1202,4 @@ CleanUpVaultOps(*) {
 initPython()
 StartDiscordRPC()
 Init()
-
 OnExit(CleanUpVaultOps)

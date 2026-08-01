@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/43dc79f8c2574f0a5966f1df93436a2623c2da1c7d82754203172e34d528db2d
+> https://www.virustotal.com/gui/file/657a16ae83016454b9ef8479c657c8970f71ae4ac578de618105e7e4c37fbda7
 
 
 <p align="center">
@@ -444,6 +444,7 @@ _src/
 │  │  ├─ anchorDetection.ahk          # Anchor detection logic for AHK mode
 │  │  ├─ hotkeyHelpers.ahk            # Hotkey event callbacks
 │  │  ├─ instructionFieldHelpers.ahk  # GUI field text management
+│  │  ├─ keyHelpers.ahk               # Custom keyboard input handling (Native key sending)
 │  │  ├─ richPresenceHelpers.ahk      # Rich Presence management
 │  │  ├─ tooltipsHelpers.ahk          # Status tooltip updates
 │  │  └─ windowHelpers.ahk            # Window focus + activation handling
