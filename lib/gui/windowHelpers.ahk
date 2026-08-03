@@ -12,6 +12,14 @@ GetScreenScaling() {
     return percent / 100
 }
 
+; Returns the Hwnd of a control, or 0 if it's missing / not a control.
+; Some GUI controls are optional per mode (e.g. the engine toggle is skipped
+; when running in higherRes / OpenCV-only mode), so hover logic must never
+; assume they exist.
+SafeCtrlHwnd(ctrl) {
+    return IsObject(ctrl) && ctrl.HasProp("Hwnd") ? ctrl.Hwnd : 0
+}
+
 ; Forces a window to the foreground,
 ; even if the script is running as admin
 ForceForeground(guiApp) {
@@ -89,47 +97,47 @@ OnSetCursor(wParam, lParam, msg, hwnd) {
 
     try {
         switch mouseOverHwnd {
-            case killBtn.Hwnd:
+            case SafeCtrlHwnd(killBtn):
                 ToolTip("Kill GTA V", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
 
-            case xBtn.Hwnd:
+            case SafeCtrlHwnd(xBtn):
                 ToolTip("Terminate", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
 
-            case dragBtn.Hwnd:
+            case SafeCtrlHwnd(dragBtn):
                 ToolTip("Click to Center App`nHold to Drag App", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorDrag)
                 return True
 
-            case mnmzBtn.Hwnd:
+            case SafeCtrlHwnd(mnmzBtn):
                 ToolTip("Minimize", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
 
-            case picRichPresenceEnabled.Hwnd:
+            case SafeCtrlHwnd(picRichPresenceEnabled):
                 ToolTip((richPresenceEnabled ? "Disable" : "Enable") " Discord Rich Presence", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
 
-            case picFingerprintToggle.Hwnd,
-                picScriptsEnabled.Hwnd,
-                picNoSave.Hwnd,
-                picLedgeGrabEnabled.Hwnd,
-                picHeistToggle.Hwnd,
-                picEngineToggle.Hwnd:
+            case SafeCtrlHwnd(picFingerprintToggle),
+            SafeCtrlHwnd(picScriptsEnabled),
+            SafeCtrlHwnd(picNoSave),
+            SafeCtrlHwnd(picLedgeGrabEnabled),
+            SafeCtrlHwnd(picHeistToggle),
+            SafeCtrlHwnd(picEngineToggle):
                 ToolTip("", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
                 return True
-            case inputManual.Hwnd,
-                inputAuto.Hwnd,
-                inputReset.Hwnd,
-                inputDelay.Hwnd,
-                inputNoSave.Hwnd,
-                inputToggleScripts.Hwnd,
-                inputLedgeGrabAutomation.Hwnd:
+            case SafeCtrlHwnd(inputManual),
+            SafeCtrlHwnd(inputAuto),
+            SafeCtrlHwnd(inputReset),
+            SafeCtrlHwnd(inputDelay),
+            SafeCtrlHwnd(inputNoSave),
+            SafeCtrlHwnd(inputToggleScripts),
+            SafeCtrlHwnd(inputLedgeGrabAutomation):
                 ToolTip("", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorIBeam)
                 return True

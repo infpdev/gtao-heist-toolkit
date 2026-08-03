@@ -23,12 +23,15 @@ Done!
 ## Changelog
 
 <details>
-<summary><b>vaultOps v4.69.96 changes</b></summary>
+<summary><b>vaultOps v4.69.99 changes</b></summary>
 
-Please read the [v4.69.96 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.96) for detailed information about:
+Please read the [v4.69.99 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.99) for detailed information about:
 
 * Removed **Alt + F4** interception while **NoSave** is active
 * Fixed an issue where the **El Rubio** solver failed to time out after completing a hack
+* Ledge-grab sprint fix
+* Fixed a GUI issue that could occur on high or unsupported resolutions
+* Discord Rich Presence now uses the official GTA activity instead of VaultOps
 
 </details>
 

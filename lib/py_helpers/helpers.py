@@ -1,26 +1,16 @@
+import ctypes
 import os
 import sys
 import traceback
-import numpy as np
-from PIL import ImageGrab, Image, ImageDraw
+
 import cv2
+import numpy as np
 import win32gui
 import win32ui
-import ctypes
-import win32api
-import win32con
-import win32process
+from gta_helpers import get_gta, write_crash_log
+from PIL import Image, ImageDraw, ImageGrab
 
-crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
 dpi_awareness_set = False
-def write_crash_log(message):
-    try:
-        with open(crash_log_path, "a", encoding="utf-8") as log_file:
-            log_file.write(message)
-            if not message.endswith("\n"):
-                log_file.write("\n")
-    except Exception:
-        pass
 
 
 def log_exception(exc_type, exc_value, exc_tb):
@@ -30,10 +20,9 @@ def log_exception(exc_type, exc_value, exc_tb):
 try:
     ctypes.windll.user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
     dpi_awareness_set = True
-except Exception:
+except Exception:  # noqa: BLE001
     write_crash_log(
-        "Failed to enable Per-Monitor DPI Awareness v2.\n"
-        + traceback.format_exc()
+        "Failed to enable Per-Monitor DPI Awareness v2.\n" + traceback.format_exc()
     )
 
 
@@ -45,6 +34,7 @@ def runtime_dir():
 
 def resolve_dump_dir():
     return os.path.abspath(os.path.join(runtime_dir(), "..", "dump"))
+
 
 def prepare_detection_image(scale=1.0, img=None):
 
@@ -64,26 +54,21 @@ def prepare_detection_image(scale=1.0, img=None):
         img = img[:, x1:x2]
 
     # normalize to virtual 1920x1080
-    img = cv2.resize(
-        img,
-        (
-            int(1920 * scale),
-            int(1080 * scale)
-        )
-    )
+    img = cv2.resize(img, (int(1920 * scale), int(1080 * scale)))
 
     return img
+
 
 def dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
     if search_img is None:
         return
-    
+
     output_path = os.path.join(resolve_dump_dir(), "anchorDebug.png")
 
     if len(search_img.shape) == 2:
-        canvas = Image.fromarray(search_img.astype(np.uint8), mode='L').convert('RGB')
+        canvas = Image.fromarray(search_img.astype(np.uint8), mode="L").convert("RGB")
     else:
-        canvas = Image.fromarray(search_img.astype(np.uint8), mode='RGB')
+        canvas = Image.fromarray(search_img.astype(np.uint8), mode="RGB")
 
     draw = ImageDraw.Draw(canvas)
     for label, region, color in debug_regions:
@@ -92,8 +77,11 @@ def dump_debug_image(search_img: np.ndarray, debug_regions) -> None:
         draw.text((x1 + 4, max(0, y1 - 12)), label, fill=color)
 
     canvas.save(output_path)
-    
-def is_black_area_present_ledge_grab(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
+
+
+def is_black_area_present_ledge_grab(
+    search_img: np.ndarray = None, scale: float = 0.5
+) -> bool:
 
     if search_img is None:
         search_img = prepare_detection_image(scale)
@@ -114,50 +102,17 @@ def is_black_area_present_ledge_grab(search_img: np.ndarray = None, scale: float
     # Must be essentially a single color
     return np.max(roi) - np.min(roi) < 3
 
-TARGET_EXES = {
-    "GTA5.exe",            # Legacy
-    "GTA5_Enhanced.exe",   # Enhanced
-}
 
 def capture_window():
     """Capture the GTA V client area by matching the process executable
     instead of the window title. Returns an RGB numpy array or None."""
-    global dpi_awareness_set, TARGET_EXES
-
-    hwnd = None
     if not dpi_awareness_set:
         return None
 
-    def enum_handler(h, _):
-        nonlocal hwnd
-
-        if hwnd or not win32gui.IsWindowVisible(h):
-            return
-
-        try:
-            _, pid = win32process.GetWindowThreadProcessId(h)
-            hproc = win32api.OpenProcess(
-                win32con.PROCESS_QUERY_LIMITED_INFORMATION,
-                False,
-                pid,
-            )
-
-            try:
-                exe = os.path.basename(
-                    win32process.GetModuleFileNameEx(hproc, 0)
-                )
-            finally:
-                win32api.CloseHandle(hproc)
-
-            if exe in TARGET_EXES:
-                hwnd = h
-
-        except Exception:
-            pass
-
-    win32gui.EnumWindows(enum_handler, None)
+    hwnd, _ = get_gta()
 
     if hwnd is None:
+        # write_debug_log("GTA window not found for capture.")
         return None
 
     left, top, right, bottom = win32gui.GetClientRect(hwnd)
@@ -184,7 +139,7 @@ def capture_window():
         bmp_info = save_bitmap.GetInfo()
         bmp = np.frombuffer(save_bitmap.GetBitmapBits(True), dtype=np.uint8)
         bmp.shape = (bmp_info["bmHeight"], bmp_info["bmWidth"], 4)
-
+        # write_debug_log("Captured GTA window")
         return cv2.cvtColor(bmp, cv2.COLOR_BGRA2RGB)
 
     finally:
@@ -193,13 +148,17 @@ def capture_window():
         mfc_dc.DeleteDC()
         win32gui.ReleaseDC(hwnd, hwnd_dc)
 
-def prepare_image(image=None, scale: float = 0.5, should_capture_window: bool = False) -> np.ndarray:
+
+def prepare_image(
+    image=None, scale: float = 0.5, should_capture_window: bool = False
+) -> np.ndarray:
     """Normalize input frame into RGB numpy array at requested scale.
     Captures the GTA window if GTA is focused, otherwise uses the full screen."""
     if image is None:
         # Capture only the target app window (tooltip-free) instead of the
         # full screen. Falls back to the old full-screen pipeline if the
         # window capture fails for any reason (window closed/minimized/etc).
+        # write_debug_log(f"Should capture window: {should_capture_window}")
         if should_capture_window:
             image = capture_window()
         if image is None:
