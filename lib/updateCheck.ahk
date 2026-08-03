@@ -14,7 +14,7 @@ if !A_IsAdmin {
     ExitApp
 }
 
-global ver := "4.69.96"
+global ver := "4.69.99"
 global isBeta := false
 
 MAJOR_UPDATE_REQUIRED := 3
@@ -35,7 +35,7 @@ checkResolution()
 
 CheckForUpdate() {
     global ver, iniFile
-    static updateHttpTimeoutMs := 5000
+    static updateHttpTimeoutMs := 1000
 
     disableUpdates := false
     if (IsSet(iniFile) && iniFile) {

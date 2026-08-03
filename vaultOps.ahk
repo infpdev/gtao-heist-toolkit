@@ -83,7 +83,7 @@ Init() {
     global Title := "vaultOps"
     global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
-        picRichPresenceEnabled
+        picRichPresenceEnabled, picEngineToggle := ""
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation
 
@@ -108,7 +108,7 @@ Init() {
     global txtNoSaveInstr := "", txtScriptsInstr := "", txtLedgeGrabInstr := "", txtModeInstr := "",
         txtManualInstr := "", txtAutoInstr := "", txtResetInstr := "",
         txtHeistInstr := "", txtAutoInstr := "", txtDelayInstr := "",
-        txtEngineInstr := "", picEngineToggle := "", txtAHKInstr := "", txtOpenCVInstr := ""
+        txtEngineInstr := "", txtAHKInstr := "", txtOpenCVInstr := ""
 
     ; ======== Boolean flags and state variables ========
     global noSave, scriptsEnabled, ledgeGrabEnabled, fingerprintMode, engine, hackMode, heist,

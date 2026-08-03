@@ -161,10 +161,10 @@ UpdateSizesOfEachScript() {
     targetSizes := Map()
 
     if (buildVaultOpsExe)
-        targetSizes.Set(distDir "\vaultOps-Setup.exe", 55000)
+        targetSizes.Set(distDir "\vaultOps-Setup.exe", 56320)
 
     if (packageStandalone)
-        targetSizes.Set(distDir "\vaultOps-Standalone-Pack.exe", 48000)
+        targetSizes.Set(distDir "\vaultOps-Standalone-Pack.exe", 48128)
 
     if (compileStandalone) {
         targetSizes.Set(distDir "\NoSave-Standalone.exe", 1500)

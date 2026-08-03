@@ -1,31 +1,64 @@
 import asyncio
+import faulthandler
 import json
 import os
 import sys
-import traceback
-import faulthandler
 import threading
-from time import time, sleep, monotonic
-from random import choice
+import traceback
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from enum import Enum, auto
+from random import choice
+from time import monotonic, sleep, time
+
+from gta_helpers import get_gta
 from pypresence import Presence
 from pypresence.exceptions import DiscordNotFound, PipeClosed
-
-crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
 
 DISCORD_NOT_RUNNING = "DiscordNotRunning"
 ERR_TRY_AGAIN_LATER = "ErrTryAgainLater"
 
 last_heartbeat = monotonic()
 busy = False
-CLIENT_ID = "1530071672957440051"
+presence = None
+
+CLIENT_ID_VAULTOPS = "1530071672957440051"
+CLIENT_ID_ENHANCED = "1329870933695135785"  # GTA 5 Enhanced Client ID
+CLIENT_ID_LEGACY = "356876176465199104"  # GTA 5 Legacy Client ID
+LAST_FOUND_GAME_TYPE = None
+
+
+def set_client_id():
+    """Sets the CLIENT_ID based on the current GTA version (enhanced or legacy).
+    If neither version is found, it defaults to the VaultOps Client ID.
+    """
+    global CLIENT_ID, LAST_FOUND_GAME_TYPE
+    _, game_type = get_gta()
+
+    if game_type == "enhanced":
+        CLIENT_ID = CLIENT_ID_ENHANCED
+    elif game_type == "legacy":
+        CLIENT_ID = CLIENT_ID_LEGACY
+    else:
+        CLIENT_ID = CLIENT_ID_VAULTOPS
+
+    if game_type != LAST_FOUND_GAME_TYPE:
+        LAST_FOUND_GAME_TYPE = game_type
+        if LAST_FOUND_GAME_TYPE is not None:
+            reinitialize_presence()  # Reinitialize presence when the game type changes
+
+
+crash_log_path = os.path.join(os.getcwd(), "zCrash.log")
+
 
 def log_exception(exc_type, exc_value, exc_tb):
     write_crash_log("".join(traceback.format_exception(exc_type, exc_value, exc_tb)))
 
+
 def touch_heartbeat():
     global last_heartbeat
+    set_client_id()
     last_heartbeat = monotonic()
+
 
 def watchdog_loop():
     """Watchdog thread to monitor the heartbeat and exit if no heartbeat is received for 5 seconds."""
@@ -35,9 +68,10 @@ def watchdog_loop():
         if monotonic() - last_heartbeat > 5:
             try:
                 destroy_presence()
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
             os._exit(0)
+
 
 def write_crash_log(message):
     try:
@@ -45,14 +79,13 @@ def write_crash_log(message):
             log_file.write(message)
             if not message.endswith("\n"):
                 log_file.write("\n")
-    except Exception:
+    except Exception:  # noqa: BLE001, S110
         pass
-
 
 
 try:
     faulthandler.enable(all_threads=True)
-except Exception:
+except Exception:  # noqa: BLE001, S110
     pass
 
 sys.excepthook = log_exception
@@ -62,16 +95,27 @@ sys.excepthook = log_exception
 ##############################################
 
 
+def reinitialize_presence():
+    """Reinitializes the presence instance, destroying the old one if it exists."""
+    global presence
+    if presence is not None:
+        try:
+            presence.destroy()
+        except Exception:  # noqa: BLE001, S110
+            pass
+        del presence
+        presence = None
+    presence = VaultOpsPresence()
+
+
 def handle_request(request_type_str):
     """Handles incoming IPC requests from the AHK script."""
-    global presence
     try:
-        
         if not presence.connect_success:
             try:
                 presence.connect_if_not_connected()
-            except Exception:
-                return ERR_TRY_AGAIN_LATER 
+            except Exception:  # noqa: BLE001
+                return ERR_TRY_AGAIN_LATER
 
         if request_type_str == "HEARTBEAT":
             touch_heartbeat()
@@ -87,16 +131,17 @@ def handle_request(request_type_str):
         handle_presence_request(request_type)
 
         return "OK"
-    
+
     except DiscordNotFound:
         return DISCORD_NOT_RUNNING
 
-    except Exception:
-        write_crash_log("REQUEST: " + json.dumps(request_type_str, default=str, ensure_ascii=True))
+    except Exception:  # noqa: BLE001
+        write_crash_log(
+            "REQUEST: " + json.dumps(request_type_str, default=str, ensure_ascii=True)
+        )
         write_crash_log(traceback.format_exc())
         return "ERR(Exception)"
 
-from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 def run():
     """Main loop to read requests from stdin and handle them.
@@ -104,8 +149,9 @@ def run():
     """
     global busy, presence
     executor = ThreadPoolExecutor(max_workers=1)
-    presence = VaultOpsPresence() 
-    
+    set_client_id()  # Initialize CLIENT_ID based on the current GTA version
+    presence = VaultOpsPresence()
+
     while True:
         try:
             line = sys.stdin.readline()
@@ -119,27 +165,27 @@ def run():
                 continue
 
             busy = True
-            
+
             try:
                 data = json.loads(line)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 write_crash_log("BAD_JSON: " + line)
                 sys.stdout.write("ERR(BadJson)\n")
                 sys.stdout.flush()
                 busy = False
                 continue
-            
+
             request_type_str = data.get("request_type")
-            
-            if(request_type_str == "STOP"):
+
+            if request_type_str == "STOP":
                 try:
                     destroy_presence()
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     pass
                 break
 
             future = executor.submit(handle_request, request_type_str)
-            
+
             try:
                 response = future.result(timeout=1.0)
             except TimeoutError:
@@ -147,24 +193,29 @@ def run():
 
                 busy = False
                 write_crash_log(f"Timeout after 0.1s for request: {request_type_str}\n")
-            except Exception as e:
-                raise e
+            except Exception:
+                raise
 
             if response is not None:
                 sys.stdout.write(response + "\n")
                 sys.stdout.flush()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             busy = False
-            write_crash_log(f"Exception [{e}] during request: {request_type_str}\n" + traceback.format_exc())
+            write_crash_log(
+                f"Exception [{e}] during request: {request_type_str}\n"
+                + traceback.format_exc()
+            )
         finally:
             busy = False
-    
+
     executor.shutdown(wait=False)
+
 
 ##############################################
 # Presence Handling
 ##############################################
+
 
 class RequestType(Enum):
     DISABLE = auto()
@@ -176,6 +227,7 @@ class RequestType(Enum):
     CAYO_FINGERPRINT = auto()
     LEDGE_GRAB = auto()
 
+
 def handle_presence_request(request_type: RequestType):
     """Handles presence requests based on the request type.
     Calls the appropriate method in the VaultOpsPresence class to update the Discord rich presence.
@@ -183,7 +235,7 @@ def handle_presence_request(request_type: RequestType):
         request_type (RequestType): The type of presence request to handle.
     """
     global presence
-    
+
     if presence is None:
         presence = VaultOpsPresence()
 
@@ -191,8 +243,9 @@ def handle_presence_request(request_type: RequestType):
         if presence:
             presence.clear()
         return
-        
+
     presence.handle_presence_request(request_type)
+
 
 def destroy_presence():
     """Destroys the current presence instance, if it exists."""
@@ -202,10 +255,9 @@ def destroy_presence():
         del presence
         presence = None
     return True
-    
-class VaultOpsPresence:
-    global CLIENT_ID
 
+
+class VaultOpsPresence:
     def __init__(self):
         self.rpc = Presence(CLIENT_ID)
         self.connect_success = False
@@ -214,7 +266,7 @@ class VaultOpsPresence:
         except DiscordNotFound:
             pass
         self.start_time = None
-        
+
     def connect_if_not_connected(self):
         try:
             if not self.connect_success:
@@ -222,7 +274,7 @@ class VaultOpsPresence:
                 # self.rpc.update()
                 self.rpc.clear()
                 self.connect_success = True
-        except Exception:
+        except Exception:  # noqa: BLE001
             raise DiscordNotFound
 
     def destroy(self):
@@ -242,14 +294,13 @@ class VaultOpsPresence:
             self.rpc.clear()
         except PipeClosed:
             self.connect_success = False
-            pass
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             write_crash_log(f"Failed to clear presence: {e}\n" + traceback.format_exc())
-        
+
     def ensure_start_time(self):
         if self.start_time is None:
             self.start_time = int(time())
-        
+
     def _update(self, large_image=None, large_text=None, **kwargs):
         if not self.connect_success:
             self.connect_if_not_connected()
@@ -271,16 +322,19 @@ class VaultOpsPresence:
                     start=self.start_time,
                     **kwargs,
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.connect_success = False
-                write_crash_log(f"Failed to update presence after reconnect: {e}\n" + traceback.format_exc())
+                write_crash_log(
+                    f"Failed to update presence after reconnect: {e}\n"
+                    + traceback.format_exc()
+                )
 
     def handle_presence_request(self, request_type: RequestType):
         """Handles the presence request based on the request type.
         Args:
             request_type (RequestType): The type of presence request to handle.
         """
-            
+
         handlers = {
             RequestType.CLEAR: self.clear,
             RequestType.NO_SAVE: self.show_no_save_presence,
@@ -292,7 +346,7 @@ class VaultOpsPresence:
         }
 
         handlers[request_type]()
-        
+
     def _force_close_ipc(self):
         """Explicitly closes the Discord IPC pipe and pumps the loop once
         so the close is actually sent, instead of relying on process exit
@@ -301,19 +355,23 @@ class VaultOpsPresence:
             return
         try:
             self.rpc.close()
-            
-            if hasattr(self.rpc, 'sock_writer') and self.rpc.sock_writer is not None:
+
+            if hasattr(self.rpc, "sock_writer") and self.rpc.sock_writer is not None:
                 if not self.rpc.sock_writer.is_closing():
                     self.rpc.sock_writer.close()
-                
+
                 if self.rpc.loop and self.rpc.loop.is_running():
-                    asyncio.run_coroutine_threadsafe(self.rpc.sock_writer.wait_closed(), self.rpc.loop)
+                    asyncio.run_coroutine_threadsafe(
+                        self.rpc.sock_writer.wait_closed(), self.rpc.loop
+                    )
                 elif self.rpc.loop and not self.rpc.loop.is_closed():
                     self.rpc.loop.run_until_complete(self.rpc.sock_writer.wait_closed())
-                    
-        except Exception as e:
-            write_crash_log(f"Failed to force-close IPC: {e}\n" + traceback.format_exc())
-        
+
+        except Exception as e:  # noqa: BLE001
+            write_crash_log(
+                f"Failed to force-close IPC: {e}\n" + traceback.format_exc()
+            )
+
     def show_idle_presence(self):
         IDLE_STATES = (
             "Waiting for security to slip up",
@@ -359,12 +417,12 @@ class VaultOpsPresence:
         )
 
         self._update(
-            details="Following the money",
+            details="sudo ./lester.sh --silent",
             state=choice(IDLE_STATES),
             large_image="gta_online",
             large_text="GTA Online",
         )
-            
+
     def show_no_save_presence(self):
         NO_SAVE_STATES = (
             "One more run won't hurt",
@@ -389,7 +447,7 @@ class VaultOpsPresence:
             state=choice(NO_SAVE_STATES),
             small_image="nosave",
             small_text="NoSave",
-        )     
+        )
 
     def show_keypad_presence(self):
         KEYPAD_STATES = (
@@ -413,11 +471,10 @@ class VaultOpsPresence:
         self._update(
             details="Solving a Keypad",
             state=choice(KEYPAD_STATES),
-
             small_image="solver",
             small_text="Keypad Solver",
         )
-        
+
     def show_fingerprint_presence(self):
         FINGERPRINT_STATES = (
             "The vault won't open itself",
@@ -440,11 +497,10 @@ class VaultOpsPresence:
         self._update(
             details="Solving Fingerprints",
             state=choice(FINGERPRINT_STATES),
-
             small_image="solver",
             small_text="Fingerprint Solver",
         )
-        
+
     def show_cayo_fingerprint_presence(self):
         CAYO_FINGERPRINT_STATES = (
             "Rubio's security is trying its best",
@@ -466,7 +522,6 @@ class VaultOpsPresence:
         self._update(
             details="Robbing El Rubio",
             state=choice(CAYO_FINGERPRINT_STATES),
-
             small_image="solver",
             small_text="El Rubio Fingerprint Solver",
         )
@@ -482,11 +537,11 @@ class VaultOpsPresence:
         self._update(
             details="Buffered Ledge Grab",
             state=choice(LEDGE_GRAB_STATES),
-
             small_image="ledge_grab",
             small_text="Buffered Ledge Grab",
         )
-        
+
+
 # if __name__ == "__main__":
 #     # Debugging purposes only. Uncomment to test the presence functionality.
 
@@ -500,5 +555,9 @@ class VaultOpsPresence:
 
 
 if __name__ == "__main__":
-    threading.Thread(target=watchdog_loop, daemon=True).start()
-    run()
+    try:
+        threading.Thread(target=watchdog_loop, daemon=True).start()
+        run()
+    except Exception as e:  # noqa: BLE001
+        write_crash_log(f"Fatal error in main loop: {e}\n" + traceback.format_exc())
+        os._exit(1)

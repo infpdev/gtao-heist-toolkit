@@ -166,7 +166,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/657a16ae83016454b9ef8479c657c8970f71ae4ac578de618105e7e4c37fbda7
+> https://www.virustotal.com/gui/file/7d68309943b735e0ff383ddc6c191a399ba7f07aae93d4fbb76d842701f5edd1
 
 
 <p align="center">
@@ -456,6 +456,7 @@ _src/
 │  │  ├─ Keypad.py                    # Diamond Casino / Kortz keypad detection logic for OpenCV detection engine
 │  │  ├─ Rubio.py                     # Cayo Perico fingerprint detection logic for OpenCV detection engine
 │  │  ├─ OpenCV_Engine.py             # OpenCV detection engine + IPC listener
+│  │  ├─ helpers.py, gta_helpers.py   # Helper functions for OpenCV and Discord Rich Presence
 │  │  └─ requirements.txt             # Python deps for OpenCV detection engine
 │  │
 │  ├─ scripts/

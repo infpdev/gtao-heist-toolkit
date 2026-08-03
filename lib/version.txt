@@ -1,3 +1,3 @@
-4.69.96
-Removed Alt + F4 interception for NoSave
-Fixed El Rubio solver timeout
+4.69.99
+Fixed a GUI issue that could occur on high or unsupported resolutions
+Discord Rich Presence now uses the official GTA activity instead of VaultOps

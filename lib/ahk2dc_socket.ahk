@@ -147,10 +147,10 @@ CallDiscordRPC(params, waitForResponse := true, killCall := false) {
     global rpcProc, rpcProcId, rpcCallInProgress
 
     if (!IsObject(rpcProc) || !ProcessExist(rpcProcId))
-        return ""
+        return "RPC_NOT_RUNNING"
 
     if (!killCall && (rpcCallInProgress || isShuttingDown) || lastRPCError != 0)
-        return ""
+        return "RPC_BUSY"
 
     rpcCallInProgress := true
     try {
@@ -194,7 +194,7 @@ CallDiscordRPC(params, waitForResponse := true, killCall := false) {
 
         if (!waitForResponse) {
             rpcCallInProgress := false
-            return ""
+            return
         }
 
         ; optional acknowledgement

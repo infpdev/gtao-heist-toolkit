@@ -25,12 +25,6 @@ ToggleLedgeGrabInProgress(*) {
     } else {
         LedgeGrabRunningSignal := false
     }
-
-    ; ledgeGrabInProgress := !ledgeGrabInProgress
-    ; ToolTip("", , , 17)
-    ; UpdateGlobalStatus(hackInProgress)
-    ; if (ledgeGrabInProgress)
-    ;     SetTimer LedgeGrab, -1
 }
 
 enableLedgeGrabInProgress() {
@@ -237,7 +231,7 @@ DisableLedgeGrabIfGtaNotFocused() {
 
         ledgeGrabInProgress := false
         LedgeGrabRunningSignal := false
-        if (ledgeGrabEnabled && IsSet(ToggleLedgeGrabEnabled)) {
+        if (IsSet(ToggleLedgeGrabEnabled)) {
             ToggleLedgeGrabEnabled()
             if (!shownWarning)
                 ShowCenteredToolTip "Ledge grab disabled [GTA not focused]", 17
