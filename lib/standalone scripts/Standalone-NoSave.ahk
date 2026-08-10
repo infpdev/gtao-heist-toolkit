@@ -1,14 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-#Include ../updateCheck.ahk
-#Include ../initHotkeys.ahk
-
-global noSaveActive := false
-
-global NOSAVE_RULE_NAME := "123456"
-global NOSAVE_REMOTE_IP := "192.81.241.171"
-
 if !A_IsAdmin {
     Run('*RunAs "' A_ScriptFullPath '"')
     if (A_LastError != 0) {
@@ -17,6 +9,14 @@ if !A_IsAdmin {
     }
     ExitApp
 }
+
+#Include ../updateCheck.ahk
+#Include ../initHotkeys.ahk
+
+global noSaveActive := false
+
+global NOSAVE_RULE_NAME := "123456"
+global NOSAVE_REMOTE_IP := "192.81.241.171"
 
 UpdateTooltip() {
     global noSaveActive
@@ -125,32 +125,40 @@ ExitScript(*) {
             rule.Protocol := 256
             rule.RemoteAddresses := NOSAVE_REMOTE_IP
             fwPolicy.Rules.Add(rule)
-        } catch {
-            ; IniWrite(false, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
-            errMsg()
+        } catch as err {
+            if (InStr(err.Message, "0x80070002")) {
+                errMsg(
+                    "Failed to enable NoSave.`n`n"
+                    . "This may be caused by an Epic Games game running Easy Anti-Cheat. "
+                    . "Please close the game and try again."
+                )
+            }
+            else
+                errMsg(err)
             return false
         }
 
         enabled := IsNoSaveRuleActive(fwPolicy)
         if (enabled) {
             ; RegisterAltF4Handler()
-            ShowCenteredToolTip("NoSave enabled [Works]", 17)
+            ShowNoSaveTooltip(true)
 
             try isRockstarServerBlocked()
-
-            SetTimer () => clearNoSaveToolTip("enabled"), -2000
-            forMode := "enabled"
             return true
         } else {
             ; UnregisterAltF4Handler()
-            errMsg()
+            errMsg("NoSave rule was not active after adding it. Please check your firewall settings.")
             return false
         }
-        ; IniWrite(enabled, iniFile, "Options", "NoSave") ; Not needed, main app stores it in memory.
 
-        errMsg() {
-            MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
-                "FIREWALL WARNING", 48
+        errMsg(err := "") {
+            if (err && Type(err) = "Error")
+                MsgBox "Failed to enable NoSave mode: " err.Message, "FIREWALL WARNING", 48
+            else if (Type(err) = "String" && err != "")
+                MsgBox err, "NoSave Error", 48
+            else
+                MsgBox "Failed to enable NoSave mode. Please ensure you have the necessary permissions and that your firewall supports the required rules.",
+                    "FIREWALL WARNING", 48
         }
 
     }
@@ -169,17 +177,16 @@ ExitScript(*) {
         disabled := !IsNoSaveRuleActive(fwPolicy)
         if (disabled) {
             ; UnregisterAltF4Handler()
-            ShowCenteredToolTip("NoSave disabled", 17)
-            SetTimer () => clearNoSaveToolTip("disabled"), -2000
-            forMode := "disabled"
+            ShowNoSaveTooltip(false)
             return true
         } else {
             errMsg()
             return false
         }
-
         errMsg() {
-            MsgBox "Failed to disable NoSave mode. Please check your firewall settings and try again.",
+            MsgBox "Failed to disable NoSave mode.`n`n"
+                .
+                "Please make sure no anti-cheat or antivirus software is interfering with Windows Firewall, then try again.",
                 "FIREWALL WARNING", 48
         }
 
@@ -355,6 +362,72 @@ ExitScript(*) {
         }
     }
 
+    ShowNoSaveTooltip(show := true, skipDisabled := false) {
+        global isShuttingDown, noSaveTooltip, forMode
+        static noSaveTooltipGui := ""
+        static disabledAt := 0
+
+        if (isShuttingDown || (!show && skipDisabled))
+            return
+
+        if (!noSaveTooltip) {
+            if (noSaveTooltipGui) {
+                noSaveTooltipGui.Destroy()
+                noSaveTooltipGui := ""
+            }
+
+            if (show) {
+                forMode := "enabled"
+                ShowCenteredToolTip("NoSave enabled [Works]", 17)
+                SetTimer () => clearNoSaveToolTip("enabled"), -2000
+            } else {
+                if (!noSave)
+                    return
+
+                forMode := "disabled"
+                ShowCenteredToolTip("NoSave disabled", 17)
+                SetTimer () => clearNoSaveToolTip("disabled"), -2000
+            }
+            return
+        }
+
+        DestroyNosaveTooltip() {
+            if (noSaveTooltipGui && disabledAt && (A_TickCount - disabledAt >= 2000)) {
+                noSaveTooltipGui.Destroy()
+                noSaveTooltipGui := ""
+            }
+            disabledAt := 0
+        }
+
+        if (noSaveTooltipGui) {
+            if !show {
+                disabledAt := A_TickCount
+                SetTimer(() => DestroyNosaveTooltip(), -2000)
+            } else {
+                disabledAt := 0
+            }
+
+            noSaveTooltipGui.Destroy()
+            noSaveTooltipGui := ""
+        }
+
+        NoSaveText := show ? "NoSave enabled" : "NoSave disabled"
+
+        noSaveTooltipGui := Gui("+AlwaysOnTop -Caption +E0x08000000 +ToolWindow")
+        fontSize := GetFontSizeBasedOnScreenHeight()
+        noSaveTooltipGui.SetFont("s" fontSize, "Yu Gothic UI Bold")
+        noSaveTooltipGui.AddText("-Wrap", NoSaveText)
+        noSaveTooltipGui.BackColor := show ? "c6d9c6d" : "ccf2e2e"
+
+        noSaveTooltipGui.Show("NA NoActivate AutoSize y0")
+
+        noSaveTooltipGui.GetPos(, , &width)
+        noSaveTooltipGui.Move((A_ScreenWidth - width) // 2)
+
+        MakeGuiClickThroughAndTransparentAndRounded(noSaveTooltipGui.Hwnd, 220, true)
+
+    }
+
     ; Handles the Alt+F4 hotkey to warn the user about NoSave mode and prevent accidental saves.
     HandleAltF4(*) {
         static lastAltF4Caught := 0
@@ -486,6 +559,7 @@ ExitScript(*) {
 
     ; Cleans up the NoSave rule on exit.
     AppExit(*) {
+        global isShuttingDown := true
         if FileExist(iniFile) {
             DisableNoSaveMode()
         }

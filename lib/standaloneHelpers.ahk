@@ -292,7 +292,7 @@ clearAllToolTips() {
         CustomTooltip "", , , A_Index
 }
 
-; Toggle debug mode with Alt+F12.
+; Toggle debug mode with Alt+F10.
 ToggleDebugChord(*) {
     global debug
     if (!IsSet(debug))

@@ -40,6 +40,7 @@ global vaultOps := true
 ; GUI imports
 #Include <gui\richPresence>
 #Include <gui\keyHelpers>
+#Include <gui\miscSettings>
 #Include <gui\hotkeyHelpers>
 #Include <gui\windowHelpers>
 #Include <gui\tooltipsHelpers>
@@ -82,8 +83,20 @@ Init() {
     ; ========= GUI objects =========
     global Title := "vaultOps"
     global guiApp, mnmzBtn, xBtn, killBtn, dragBtn, settingsGroup
+
+    ; Mouse cursor objects
+    global hCursorHand := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32649, "Ptr")
+    global hCursorDrag := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32646, "Ptr")
+    global hCursorArrow := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32512, "Ptr")
+    global hCursorIBeam := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32513, "Ptr")
+
+    ; Toggle buttons
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
         picRichPresenceEnabled, picEngineToggle := ""
+
+    global picMiscSettings, miscSettingsOpened := false, xBtnMisc := ""
+
+    ; Input fields
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation
 
@@ -154,6 +167,11 @@ Init() {
     1.1 " h" btnW * 1.1 " +0x4",
     staticFolder (richPresenceEnabled ? "\discord.png" : "\discordMuted.png"))
     picRichPresenceEnabled.OnEvent("Click", ToggleRichPresence)
+
+    picMiscSettings := guiApp.AddPicture("x" ((width - btnW - 180 / scale) / scale) " y" 7 / scale " w" btnW * 1.1 " h" btnW *
+    1.1 " +0x4",
+    staticFolder "\misc.png")
+    picMiscSettings.OnEvent("Click", ShowMiscSettings)
 
     ; Kill GTA button
     killBtn := guiApp.AddPicture("x" ((width - btnW - 120 / scale) / scale) " y" 7 / scale " w" btnW " h" btnW " +0x4",
@@ -471,10 +489,10 @@ Init() {
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
-        linkText := guiApp.Add("Link", "xp-55 y" (height / scale - (height / scale - (groupY + groupH)) /
-        (1.5 / scale) " w" groupW " c8484db center"),
+        linkText := guiApp.Add("Link", "xp-55 y" (height - 5 - (height - (groupY + groupH)) /
+        (1.5) " h30 w" groupW " c8484db center"),
         'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
-        linkText.SetFont("s" 10 / scale " bold")
+        linkText.SetFont("s" 12 / scale, "Yu Gothic UI Bold")
 
         ; Tray menu setup
         A_TrayMenu.Delete()
@@ -513,11 +531,13 @@ Init() {
     if (richPresenceEnabled && IsDiscordRunning())
         EnableRichPresence()
 
-    ForceForeground(guiApp)
-
     guiApp.Opt("-Caption")
     CenterGui(guiApp, width, height, scale)
 
+    if (richPresenceEnabled && IsDiscordRunning())
+        StartDiscordRPC()
+
+    ForceForeground(guiApp)
     FocusGtaIfRunning()
 
     UpdateGlobalStatus(false)
@@ -882,7 +902,7 @@ Init() {
         noSaveText := "Press " readableNoSaveKey " to " (noSave ? "disable" : "enable") " NoSave"
 
         ledgeGrabText := ledgeGrabEnabled ? "Press " readableLedgeGrabKey " to " (ledgeGrabInProgress ? "stop" :
-            "initiate") " Ledge Grab" : "Ledge Grab disabled"
+            "initiate") " Ledge Grab" : ""
 
         earlyReturn := false
 
@@ -1184,7 +1204,8 @@ Init() {
 ; ⏐==========================================================================================================⏐
 
 CleanUpVaultOps(*) {
-    global isShuttingDown := true, reloading
+    global isShuttingDown, reloading
+    isShuttingDown := true
     clearAllToolTips(1)
     if (reloading) {
         ShowCenteredToolTip "Reloading vaultOps"
@@ -1200,6 +1221,5 @@ CleanUpVaultOps(*) {
 }
 
 initPython()
-StartDiscordRPC()
 Init()
 OnExit(CleanUpVaultOps)

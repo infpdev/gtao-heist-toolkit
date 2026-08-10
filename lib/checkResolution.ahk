@@ -37,9 +37,10 @@ if (dir = "")
 global folder := dir "\" targetW "x" targetH "\"
 
 iniFile := dir "\zSettings.ini"
-if (FileExist(iniFile)) {
-    global disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", "0")
-}
+if (FileExist(iniFile))
+    global disableWarningFlag := IniRead(iniFile, "Options", "DisableResolutionWarning", 0)
+else
+    global disableWarningFlag := 0
 
 checkResolution() {
     global unsupportedResolution, higherRes, wideScreen, targetW, targetH, iniFile, engine

@@ -7,6 +7,7 @@ global pythonExe := "pyw.exe"
 global useCompiledExe := false
 global isShuttingDown := false
 global rpcCallInProgress := false
+global rpcInitialized := false
 global REQ_HEARTBEAT_RPC := "HEARTBEAT"
 global rpcProcId := 0
 
@@ -60,7 +61,7 @@ HeartbeatDiscordRPC(*) {
 }
 
 StartDiscordRPC() {
-    global rpcProc, rpcProcId, isShuttingDown
+    global rpcProc, rpcProcId, isShuttingDown, rpcInitialized
 
     if (ProcessExist(rpcProcId) || isShuttingDown)
         return
@@ -83,12 +84,13 @@ StartDiscordRPC() {
         cmd := Format('"{1}" -u "{2}"', pythonExe, rpcScriptPath)
 
     rpcProc := shell.Exec(cmd)
+    rpcInitialized := true
     try rpcProcId := rpcProc.ProcessID
     SetTimer HeartbeatDiscordRPC, 1234
 }
 
 StopDiscordRPC(*) {
-    global rpcProc, rpcProcId
+    global rpcProc, rpcProcId, rpcInitialized := false
 
     SetTimer HeartbeatDiscordRPC, 0
 
@@ -100,7 +102,8 @@ StopDiscordRPC(*) {
 }
 
 KillDiscordRPC() {
-    global rpcProc
+    global rpcProc, rpcInitialized := false
+
     SetTimer HeartbeatDiscordRPC, 0
     pid := 0
     try pid := rpcProc.ProcessID
@@ -144,10 +147,18 @@ LastDiscordCallFinished(timeout := 1000) {
 }
 
 CallDiscordRPC(params, waitForResponse := true, killCall := false) {
-    global rpcProc, rpcProcId, rpcCallInProgress
+    global rpcProc, rpcProcId, rpcCallInProgress, rpcInitialized
 
-    if (!IsObject(rpcProc) || !ProcessExist(rpcProcId))
+    if (!rpcInitialized)
+        if (IsDiscordRunning())
+            StartDiscordRPC()
+        else
+            return "DiscordNotRunning"
+
+    if (!IsObject(rpcProc) || !ProcessExist(rpcProcId)) {
+        rpcInitialized := false
         return "RPC_NOT_RUNNING"
+    }
 
     if (!killCall && (rpcCallInProgress || isShuttingDown) || lastRPCError != 0)
         return "RPC_BUSY"

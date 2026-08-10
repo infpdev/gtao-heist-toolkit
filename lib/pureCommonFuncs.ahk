@@ -8,32 +8,37 @@
  * ShowCenteredToolTip("Build complete!", 1, 20)
  */
 ShowCenteredToolTip(text, id := 10, y := 0) {
-    ; Measure text width to center tooltip
-    hdc := DllCall("GetDC", "ptr", 0)
+    centerX := GetCenterXForText(text)
+    centerY := y > 0 ? y : 0
 
-    ; Create font (adjust if needed)
-    hfont := DllCall("GetStockObject", "int", 0)  ; DEFAULT_GUI_FONT
+    CustomTooltip(text, centerX, centerY, id)
+}
+
+GetCenterXForText(text) {
+    hdc := DllCall("GetDC", "ptr", 0)
+    hfont := DllCall("GetStockObject", "int", 0) ; DEFAULT_GUI_FONT
     DllCall("SelectObject", "ptr", hdc, "ptr", hfont)
 
     size := Buffer(8)
     maxWidth := 0
 
     for line in StrSplit(text, "`n") {
-        DllCall("GetTextExtentPoint32", "ptr", hdc, "str", line, "int", StrLen(line), "ptr", size)
+        DllCall(
+            "GetTextExtentPoint32",
+            "ptr", hdc,
+            "str", line,
+            "int", StrLen(line),
+            "ptr", size
+        )
+
         width := NumGet(size, 0, "int")
         if (width > maxWidth)
             maxWidth := width
     }
 
-    width := maxWidth
-
     DllCall("ReleaseDC", "ptr", 0, "ptr", hdc)
 
-    ; Center horizontally, position Y at parameter or top
-    centerX := (A_ScreenWidth // 2) - 0.9 * (width // 2)  ; Adjust for slight visual centering
-    centerY := y > 0 ? y : 0
-
-    CustomTooltip(text, centerX, centerY, id)
+    return (A_ScreenWidth // 2) - 0.9 * (maxWidth // 2)
 }
 
 ShowVerticallyCenteredToolTip(text, id := 10, x := "") {
@@ -82,6 +87,28 @@ MakeAllToolTipsClickThrough(isIdle, opacity := 230) {
         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -20, "ptr", exStyle)
         DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
     }
+}
+
+MakeGuiClickThroughAndTransparentAndRounded(guiHwnd, opacity := 200, shouldRound := false) {
+    alpha := Integer(opacity) ? opacity : 255
+    alpha := Max(0, Min(255, alpha))
+
+    exStyle := DllCall("GetWindowLongPtr", "ptr", guiHwnd, "int", -20, "ptr")
+    exStyle |= 0x20 | 0x80000
+    DllCall("SetWindowLongPtr", "ptr", guiHwnd, "int", -20, "ptr", exStyle)
+    DllCall("SetLayeredWindowAttributes", "ptr", guiHwnd, "uint", 0, "uchar", alpha, "uint", 0x2)
+
+    if (shouldRound) {
+        cornerPreference := 2
+        DllCall(
+            "dwmapi\DwmSetWindowAttribute",
+            "Ptr", guiHwnd,
+            "Int", 33,
+            "Int*", cornerPreference,
+            "Int", 4
+        )
+    }
+
 }
 
 global GTA_ENHANCED_EXE := "ahk_exe GTA5_Enhanced.exe"
@@ -332,6 +359,7 @@ HasVaultOpsMarkers(basePath) {
 }
 
 CustomTooltip(text := '', x := 0, y := 0, id := 1) {
+    static tooltipHeight := 0
     global toolTipPos, tooltipYOffset, toolTipPos
     if (text = '') {
         if (id != 1)
@@ -341,16 +369,18 @@ CustomTooltip(text := '', x := 0, y := 0, id := 1) {
         return
     }
 
-    if (IsSet(tooltipYOffset)) {
+    if (IsSet(tooltipYOffset) && IsSet(toolTipPos)) {
         y += tooltipYOffset
+        if (toolTipPos == 2 || toolTipPos == 5) {
+            y -= (tooltipHeight > 0 ? tooltipHeight : 100) // 2
+        }
+
+        y := Max(0, Min(A_ScreenHeight, y))
     }
 
-    if (IsSet(toolTipPos)) {
-        if (toolTipPos == 2 || toolTipPos == 5)
-            y -= 50
-    }
-
-    ToolTip(text, x, y, id)
+    hwnd := ToolTip(text, x, y, id)
+    WinGetPos(, , , &height, "ahk_id " hwnd)
+    tooltipHeight := height
 }
 
 getToolTipPos(pos) {
@@ -428,4 +458,12 @@ GetScaledFontSize(baseSize := 11) {
     dpiScale := GetDpiScale()
     scaledSize := Round(baseSize / dpiScale)
     return scaledSize
+}
+
+GetFontSizeBasedOnScreenHeight() {
+    screenHeight := A_ScreenHeight
+    size := A_ScreenHeight / 100
+    size := Floor(size)
+    size := Max(10, Min(size, 20))
+    return size
 }

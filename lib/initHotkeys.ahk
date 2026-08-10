@@ -58,7 +58,7 @@ global isShuttingDown := false
  * 4 = Top Right, 5 = Middle Right, 6 = Bottom Right
  * 4 is the default position (Top Right)
  */
-global toolTipPos := IniRead(iniFile, "Options", "ToolTipPos", "4")
+global toolTipPos := Integer(IniRead(iniFile, "Options", "ToolTipPos", "4"))
 
 /**
  * Vertical offset (in pixels) applied to the tooltip from the selected anchor position<br>
@@ -66,11 +66,14 @@ global toolTipPos := IniRead(iniFile, "Options", "ToolTipPos", "4")
  * Positive values move the tooltip downward<br>
  * Zero is the default position, which is the exact anchor position
  */
-global tooltipYOffset := IniRead(iniFile, "Options", "ToolTipYOffset", "0")
+global tooltipYOffset := Integer(IniRead(iniFile, "Options", "ToolTipYOffset", "0"))
+
+; Boolean state for whether the NoSave tooltip is enabled, can be toggled in the GUI
+global noSaveTooltip := Integer(IniRead(iniFile, "Options", "NoSaveTooltip", 1))
 
 /** Boolean state for whether ledge grab automation is enabled, can be toggled in the GUI
  */
-global ledgeGrabEnabled := IniRead(iniFile, "Options", "ledgeGrab", 0)
+global ledgeGrabEnabled := Integer(IniRead(iniFile, "Options", "ledgeGrab", 0))
 
 /** Hotkey to toggle the ledge grab automation.
  * (vk51sc010 - physical key is Q)
@@ -155,13 +158,15 @@ CreateDefaultSettings() {
         . "heist=1`n"
         . "ledgeGrab=0`n"
         . "FingerprintMode=1`n"
-        . "Engine=0`n"
+        . "Engine=1`n"
         . "richPresence=0`n"
         . "Delay=40`n`n"
         . "; ToolTip position: 1=Top Left, 2=Middle Left, 3=Bottom Left, 4=Top Right, 5=Middle Right, 6=Bottom Right`n"
         . "ToolTipPos=4`n"
         . "; Vertical offset (in pixels) applied to the tooltip from the selected anchor position`n"
-        . "ToolTipYOffset=0`n`n"
+        . "ToolTipYOffset=0`n"
+        . "; Shows a green NoSave tooltip while NoSave is enabled.`n"
+        . "NoSaveTooltip=1`n`n"
         . "; ---------------------------`n"
         . "; The hotkeys are in canonical format: vkHHscSSS (e.g., vkDDsc01B for Right Bracket key)`n"
         . "; Please use the vaultOps GUI to change these hotkeys,`n"

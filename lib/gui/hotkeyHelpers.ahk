@@ -185,8 +185,12 @@ global txtCayoOptionLabel := ""
     }
 
     SaveKeybind(field, keyName, btn) {
-        global unfocusField, unfocusPrevValue, unfocusSaveBtn, iniFile, settingsGroup, hotkeyCaptureField,
-            hotkeyCaptureKeyName
+        global unfocusField, unfocusPrevValue, unfocusSaveBtn, iniFile,
+            settingsGroup, hotkeyCaptureField, hotkeyCaptureKeyName
+
+        global readableNoSaveKey, readableScriptsKey, readableLedgeGrabKey,
+            readableManualKey, readableAutoHackKey, readableResetKey
+
         global manualKey, autoHackKey, resetKey
         global prevManualKey, prevAutoHackKey, prevResetKey
         prevKey := ""
@@ -224,23 +228,29 @@ global txtCayoOptionLabel := ""
             case "Manual":
                 prevManualKey := manualKey
                 manualKey := val
+                readableManualKey := CanonicalToDisplay(manualKey)
                 UpdateManualInstrText()
             case "AutoHack":
                 prevAutoHackKey := autoHackKey
                 autoHackKey := val
+                readableAutoHackKey := CanonicalToDisplay(autoHackKey)
                 UpdateAutoInstrText()
             case "Reset":
                 prevResetKey := resetKey
                 resetKey := val
+                readableResetKey := CanonicalToDisplay(resetKey)
                 UpdateResetInstrText()
             case "NoSave":
                 noSaveKey := val
+                readableNoSaveKey := CanonicalToDisplay(noSaveKey)
                 UpdateNoSaveInstrText()
             case "ToggleScripts":
                 toggleScriptsKey := val
+                readableToggleScriptsKey := CanonicalToDisplay(toggleScriptsKey)
                 UpdateScriptsInstrText()
             case "LedgeGrab":
                 ledgeGrabKey := val
+                readableLedgeGrabKey := CanonicalToDisplay(ledgeGrabKey)
                 UpdateLedgeGrabInstrText()
         }
 
@@ -365,7 +375,7 @@ global txtCayoOptionLabel := ""
 
 }
 
-; Toggle debug mode with Alt+F12.
+; Toggle debug mode with Alt+F10.
 ToggleDebugChord(*) {
     global debug
     if (!IsSet(debug))

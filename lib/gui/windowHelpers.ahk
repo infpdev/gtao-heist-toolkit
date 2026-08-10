@@ -17,7 +17,14 @@ GetScreenScaling() {
 ; when running in higherRes / OpenCV-only mode), so hover logic must never
 ; assume they exist.
 SafeCtrlHwnd(ctrl) {
-    return IsObject(ctrl) && ctrl.HasProp("Hwnd") ? ctrl.Hwnd : 0
+    if !IsObject(ctrl) || !ctrl.HasProp("Hwnd")
+        return 0
+
+    ; Check if the window handle is still valid
+    if !WinExist("ahk_id " ctrl.Hwnd)
+        return 0
+
+    return ctrl.Hwnd
 }
 
 ; Forces a window to the foreground,
@@ -42,7 +49,7 @@ CenterGui(guiApp, width, height, scale := 1, yOffset := 0) {
     x := Round((A_ScreenWidth - width) / 2)
     y := Round((A_ScreenHeight - height) / 2 + yOffset)
 
-    guiApp.Move(x, y, width, height)
+    guiApp.Show("x" x " y" y " w" width " h" height)
 }
 
 GuiApp_OnActivate(wParam, *) {
@@ -83,20 +90,28 @@ SetRoundedCorners(hwnd, w, h, r) {
 
 OnSetCursor(wParam, lParam, msg, hwnd) {
     static errorShown := false
-    static hCursorHand := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32649, "Ptr")
-    static hCursorDrag := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32646, "Ptr")
-    static hCursorArrow := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32512, "Ptr")
-    static hCursorIBeam := DllCall("LoadCursor", "Ptr", 0, "Ptr", 32513, "Ptr")
 
     global picFingerprintToggle, picScriptsEnabled, picNoSave, picLedgeGrabEnabled, picHeistToggle, picEngineToggle,
-        picRichPresenceEnabled
+        picRichPresenceEnabled, picMiscSettings
     global inputManual, inputAuto, inputReset, inputDelay, inputNoSave,
         inputToggleScripts, inputLedgeGrabAutomation
+    global miscSettingsOpened
 
     mouseOverHwnd := wParam
 
+    if (miscSettingsOpened) {
+        OnSetCursorMiscSettings(mouseOverHwnd)
+        return True
+    }
+
     try {
         switch mouseOverHwnd {
+
+            case SafeCtrlHwnd(picMiscSettings):
+                ToolTip("Show Misc Settings", , , 19)
+                DllCall("SetCursor", "Ptr", hCursorHand)
+                return True
+
             case SafeCtrlHwnd(killBtn):
                 ToolTip("Kill GTA V", , , 19)
                 DllCall("SetCursor", "Ptr", hCursorHand)
