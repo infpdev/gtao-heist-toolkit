@@ -1,3 +1,6 @@
-4.69.99
-Fixed a GUI issue that could occur on high or unsupported resolutions.
-Discord Rich Presence now uses the official GTA activity instead of VaultOps.
+4.169.0
+Fixed a NoSave error on unsupported resolutions.
+Added a warning when anti-cheat or antivirus software interferes with NoSave.
+Added a Misc Settings tab with new customization options.
+Added an optional always-on-top NoSave tooltip.
+Improved startup speed when Discord RPC is disabled.

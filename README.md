@@ -28,7 +28,7 @@
     Dr. Dre Contract Replay Guide
   </a>
   <br><br>
-  <a href="https://youtu.be/Cd5V64UiiGY">
+  <a href="https://youtu.be/44h3NMQYPzA">
     Cayo Perico Replay Guide
   </a>
   <br>
@@ -74,6 +74,7 @@ This repository includes:
     - [Fingerprint / Keypad solvers](#fingerprint--keypad-solvers)
     - [Hotkeys \& Controls](#hotkeys--controls)
     - [Options](#options)
+    - [Miscellaneous Settings](#miscellaneous-settings)
     - [Title Bar Controls](#title-bar-controls)
   - [Standalone Scripts](#standalone-scripts)
   - [Run Locally](#run-locally)
@@ -166,7 +167,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/cc754f925bc194dd7cd3198bfe0bbb8e045e8874139a9861429f2eac076693da
+> https://www.virustotal.com/gui/file/5c38b816b0472d7c2e313d0baef17e52c22cd01afb3997d22157995e403d2c08
 
 
 <p align="center">
@@ -205,17 +206,27 @@ Provided as-is, with no guarantees.
 
 <br>
 
-1. Enable **NoSave** either from the app, or using the hotkey, which is `]` by default, during the heist  
+1. Enable **NoSave** either from the app, or using the hotkey, which is `]` by default, during the heist
 2. Make sure it is active **before the payment cutscene**  
-3. After returning to freeroam, switch to **Story Mode** while keeping NoSave enabled  
-4. Once Story Mode loads, disable **NoSave**  
-5. Return to **GTA Online**.
-6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt.
-7. Switch to **Story Mode**, then return to **GTA Online** (without NoSave enabled). The heist can now be replayed without setups.
+3. After returning to freeroam, switch to **Story Mode** while keeping NoSave enabled
+4. Once Story Mode loads, disable **NoSave**
+5. Return to **GTA Online**
+6. Force a save by pressing **Alt + F4**, then press **ESC** to cancel the quit prompt
+7. Switch to **Story Mode** (without enabling NoSave this time), then return to **GTA Online**. The heist can now be replayed without setups
 
 <br>
 
 **FAQ**
+
+</details>
+
+<details>
+<summary>I've already done my heist using the old method, can I still use this new method?</summary>
+
+The old method is where you switch to **Story Mode once** and replay the heist immediately.. The new method requires a **force-save** and an **extra switch to Story Mode**.
+So NO. Don't use the new method right away. Finish / replay some other heist, AS A HOST, using the new method before you replay the heist again. Otherwise, you'll 100% lose the heist and end up wondering what went wrong.
+
+</details>
 
 <details>
 <summary>Can I do it with others/friends?</summary>
@@ -239,7 +250,7 @@ No. The one-time setup is only needed to make sure your setups are saved before 
 </details>
 
 <details>
-<summary>Q: I lost my heist. What did I do wrong?</summary>
+<summary>I lost my heist. What did I do wrong?</summary>
 
 If you've already done a heist using the old replay method, complete any other heist as the host using the new replay method before replaying this one. Otherwise, you'll lose the heist.
 
@@ -271,7 +282,7 @@ If you've already done a heist using the old replay method, complete any other h
 1. Enable **Ledge Grab** in the GUI app. (There is no hotkey to toggle this option.)
 2. Position your character near the ledge so that it is facing the ledge and ready to take cover.
 3. Press the **Take Cover** key (`Q` by default) to start the automation.
-4. Wait for the script to perform the ledge grab sequence. Keyboard and mouse input will be temporarily blocked during this time.
+4. Wait for the script to perform the ledge grab sequence. Keyboard input will be temporarily blocked during this time.
 5. Once you see the **"Input re-enabled"** tooltip, move to the desired position.
 6. Press the **Take Cover** key again to stop the automation.
 
@@ -349,12 +360,23 @@ All hotkeys are customizable.
 | Option | Description | Notes |
 |---|---|---|
 | Delay (30 – 200 ms) | Controls auto-mode solving speed | Lower = faster but unstable<br>Higher = slower but stable<br>Recommended / Default: `40 ms` |
-| Tooltip Position | Chooses where status tooltips appear on the screen | Supports six screen positions. Default: `Top-Right` (`ToolTipPos=4`). Can currently be changed only in `zSettings.ini`. |
-| Tooltip Y Offset | Adjusts the vertical position of status tooltips | Useful for avoiding overlap with in-game HUD elements or display burn-in. Can currently be changed only in `zSettings.ini`. |
+
+### Miscellaneous Settings
+
+* Used to edit optional customization settings that would otherwise require editing the `zSettings.ini` file manually.
+* Can be opened by clicking the **Misc Settings** button in the title bar: <img src="lib/static/misc.png" width="3%" alt="Misc Settings Button">
+
+| Option | Description | Notes |
+|---|---|---|
+| Tooltip Position | Choose where the main VaultOps tooltip appears on the screen | Supports six screen positions: Top-Left, Top-Right, Bottom-Left, Bottom-Right, Center-Left, Center-Right |
+| Tooltip Y Offset | Adjust the vertical position of status tooltips | Useful for avoiding overlap with in-game HUD elements or display burn-in. |
+| NoSave Tooltip | Enables an always-on-top tooltip for NoSave status | Displays a green tooltip at the top center when NoSave is active. |
+| Debug Mode | Enables debug mode for troubleshooting | Shows extra debug tooltips for troubleshooting / bug reporting |
 
 ### Title Bar Controls
 
 <p align="center">
+  <img src="lib/static/misc.png" width="5%" alt="Misc Settings Button">
   <img src="lib/static/discord.png" width="5%" alt="Discord RPC">
   <img src="lib/static/kill_gta.png" width="5%" alt="Kill GTA Button">
   <img src="lib/static/exit.png" width="5%" alt="Exit Button">
@@ -376,6 +398,7 @@ All hotkeys are customizable.
     - Activity priority: **NoSave** → **Solvers** → **Ledge Grab** → **Idle**.
     - **Idle** status is only shown when **Scripts** are enabled.
   - Click <img src="lib/static/discord.png" width="15" alt="Discord RPC"> again to disable **Discord Rich Presence**.
+- Clicking <img src="lib/static/misc.png" width="15" alt="Misc Settings Button"> opens the **Miscellaneous Settings** window, which allows you to edit optional customization settings that would otherwise require editing the `zSettings.ini` file manually.
 
 ## Standalone Scripts
 
@@ -445,6 +468,7 @@ _src/
 │  │  ├─ hotkeyHelpers.ahk            # Hotkey event callbacks
 │  │  ├─ instructionFieldHelpers.ahk  # GUI field text management
 │  │  ├─ keyHelpers.ahk               # Custom keyboard input handling (Native key sending)
+│  │  ├─ miscSettings.ahk             # zSettings.ini Editor GUI
 │  │  ├─ richPresenceHelpers.ahk      # Rich Presence management
 │  │  ├─ tooltipsHelpers.ahk          # Status tooltip updates
 │  │  └─ windowHelpers.ahk            # Window focus + activation handling
@@ -528,7 +552,7 @@ _src/
 - `requirements.txt` — Python dependencies for development mode
 
 **Build System**
-- `dist.ahk` — Build/package automation
+- `dist.ahk` — Build / package automation
 - `virusTotalScan.ahk` — Optional VirusTotal scan helper
 - `inno_setup.iss` — Inno Setup installer config
 
@@ -588,9 +612,9 @@ here's a car for reading this far **C:**
 ```
 
 ## TODO
-- [x] Add file-based caching for the solvers to improve performance and reduce redundant processing - [v3.2](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.2)
 - [x] Add automatic updates for minor patches - [v3.5](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v3.5.0)
 - [x] Add support for ultrawide (21:9) resolutions - [v4](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.0.0)
 - [x] Add full compatibility with GTA Legacy - [v4.20.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69)
 - [x] Add support for Kortz Center puzzles - [v4.69.67](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.67)
 - [x] Add Discord Rich Presence support - [v4.69.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.69)
+- [x] Add GUI to edit zSettings.ini without manually editing the file - [v4.169.0](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.0)
