@@ -33,6 +33,19 @@ Done!
 ## Changelog
 
 <details>
+<summary><b>vaultOps v4.169.0 changes</b></summary>
+
+Please read the [v4.169.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.0) for detailed information about:
+
+* Fixed a NoSave error on unsupported resolutions
+* Added a warning when anti-cheat or antivirus software interferes with NoSave
+* Added a new **Misc Settings** tab for additional customization options
+* Added an optional always-on-top **NoSave tooltip**
+* Improved startup speed when **Discord RPC** is disabled
+
+</details>
+
+<details>
 <summary><b>vaultOps v4.69.99 changes</b></summary>
 
 Please read the [v4.69.99 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.99) for detailed information about:
