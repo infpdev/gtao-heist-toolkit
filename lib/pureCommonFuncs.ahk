@@ -209,7 +209,7 @@ cannotToggleNoSaveWhenGtaNotFocused(noSave := false) {
         if (!isGtaRunning())
             return false
         if (!showedWarning) {
-            ShowCenteredToolTip "NoSave Hotkey Inactive [GTA Not Focused]", 1
+            ShowCenteredToolTip "NoSave Hotkey Inactive [GTA Not Focused]", 1, noSave ? 40 : 0
             showedWarning := true
             SetTimer(() => ToolTip(), -5000)
         }

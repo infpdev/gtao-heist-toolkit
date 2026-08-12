@@ -167,7 +167,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/5c38b816b0472d7c2e313d0baef17e52c22cd01afb3997d22157995e403d2c08
+> https://www.virustotal.com/gui/file/6d973dfffd6bce36c53d52d27895166c31e670fe7b3bd5e5744dd2d048023ca7
 
 
 <p align="center">
@@ -617,4 +617,4 @@ here's a car for reading this far **C:**
 - [x] Add full compatibility with GTA Legacy - [v4.20.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.20.69)
 - [x] Add support for Kortz Center puzzles - [v4.69.67](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.67)
 - [x] Add Discord Rich Presence support - [v4.69.69](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.69.69)
-- [x] Add GUI to edit zSettings.ini without manually editing the file - [v4.169.0](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.0)
+- [x] Add GUI to edit zSettings.ini without manually editing the file - [v4.169.0](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.1)

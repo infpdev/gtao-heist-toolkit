@@ -1,8 +1,9 @@
+import os
+
 import cv2
 import numpy as np
+from helpers import prepare_image, resolve_dump_dir
 from PIL import Image
-from helpers import resolve_dump_dir, prepare_image
-import os
 
 TARGETS = [
     (907, 331, 1562, 431),
@@ -30,13 +31,16 @@ SCAN = [
 def _find_match_index(scan_part: np.ndarray, target_parts: list) -> int:
     """Return the index of the best matching target part, or -1 if none."""
     
-    threshold = 0.88
+    threshold = 0.80
 
     for i, target_part in enumerate(target_parts):
         res = cv2.matchTemplate(target_part, scan_part, cv2.TM_CCOEFF_NORMED)
-
+        
         if cv2.minMaxLoc(res)[1] >= threshold:
+            # print(cv2.minMaxLoc(res)[1])  # Debug: print the max correlation value
+            
             return i
+    # print(cv2.minMaxLoc(res)[1])  # Debug: print the max correlation value
 
     return -1
 
@@ -77,7 +81,7 @@ def get_cayo_prints(image=None, debug=False, should_capture_window=False):
     target_parts = []
     for x1, y1, x2, y2 in TARGETS:
         part = image[y1:y2, x1:x2]
-        resized = cv2.resize(part, (int((x2 - x1) * 0.91), int((y2 - y1) * 0.91)))
+        resized = cv2.resize(part, (int((x2 - x1) * 0.91), int((y2 - y1) * 0.94)))
         gray = cv2.cvtColor(resized, cv2.COLOR_RGB2GRAY)
         target_parts.append(gray)
 
@@ -100,7 +104,7 @@ def get_cayo_prints(image=None, debug=False, should_capture_window=False):
             fg_mask = max_ch > 35
             if np.any(fg_mask):
                 hsv = cv2.cvtColor(scan_part, cv2.COLOR_RGB2HSV)
-                h, s, v = cv2.split(hsv)
+                _h, s, v = cv2.split(hsv)
                 white_mask = (s < 70) & (v > 150) & fg_mask
                 white_count = int(np.count_nonzero(white_mask))
 
@@ -123,7 +127,7 @@ def get_cayo_prints(image=None, debug=False, should_capture_window=False):
                 label = f"Row {row_idx + 1}: Match {matched_idx + 1} S={brightest_value:.1f}" if brightest_row == row_idx + 1 else f"Row {row_idx + 1}: Match {matched_idx + 1}"
             else:
                 label = f"Row {row_idx + 1}: No Match"
-            cv2.putText(debug_overlay, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1)
+            cv2.putText(debug_overlay, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         if matched_idx == -1:
             signed_clicks.append(0)
@@ -173,7 +177,7 @@ def main(image=None):
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
-    img_path = os.path.join(base_dir, "zcayowide.png")
+    img_path = os.path.join(base_dir, "zCayoTest.png")
 
     img = cv2.imread(img_path)
 

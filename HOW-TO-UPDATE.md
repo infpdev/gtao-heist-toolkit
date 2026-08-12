@@ -23,9 +23,9 @@ Done!
 ## Changelog
 
 <details>
-<summary><b>vaultOps v4.169.0 changes</b></summary>
+<summary><b>vaultOps v4.169.1 changes</b></summary>
 
-Please read the [v4.169.0 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.0) for detailed information about:
+Please read the [v4.169.1 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.1) for detailed information about:
 
 * Fixed a NoSave error on unsupported resolutions
 * Added a warning when anti-cheat or antivirus software interferes with NoSave
