@@ -79,7 +79,7 @@ class FingerprintSolver {
     lowRes := A_ScreenWidth < 1920
 
     __New(delay, updateGlobalStatus, prevFoundPixel := 0, folderPath := "", highRes := false, engine :=
-        AHK_ENGINE) {
+        OPENCV_ENGINE) {
         global folder
 
         this.delay := delay

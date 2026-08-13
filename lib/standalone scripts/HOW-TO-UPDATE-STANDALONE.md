@@ -33,6 +33,17 @@ Done!
 ## Changelog
 
 <details>
+<summary><b>vaultOps v4.169.67 changes</b></summary>
+
+Please read the [v4.169.67 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.67) for detailed information about:
+
+* Added support for **16:10** screens
+* Fixed **DPI scaling** issues
+* Fixed a bug in the **El Rubio** solver
+
+</details>
+
+<details>
 <summary><b>vaultOps v4.169.1 changes</b></summary>
 
 Please read the [v4.169.1 release notes](https://github.com/infpdev/gtao-heist-toolkit/releases/tag/v4.169.1) for detailed information about:

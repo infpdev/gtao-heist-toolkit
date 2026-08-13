@@ -51,12 +51,9 @@ def _dump_debug_image(image, debug_overlay, filename):
     os.makedirs(dump_dir, exist_ok=True)
     filepath = os.path.join(dump_dir, filename)
     
-    # Convert BGR to RGB for PIL
-    if debug_overlay.ndim == 3 and debug_overlay.shape[2] == 3:
-        debug_overlay = cv2.cvtColor(debug_overlay, cv2.COLOR_BGR2RGB)
+    # debug_overlay is already RGB, so save it directly
     pil_img = Image.fromarray(debug_overlay)
     pil_img.save(filepath)
-
 
 
 def get_cayo_prints(image=None, debug=False, should_capture_window=False):
@@ -177,7 +174,7 @@ def main(image=None):
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(__file__)
-    img_path = os.path.join(base_dir, "zCayoTest.png")
+    img_path = os.path.join(base_dir, "zcayotest2.png")
 
     img = cv2.imread(img_path)
 

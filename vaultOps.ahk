@@ -138,7 +138,7 @@ Init() {
     global topbarW, topbarH, btnW, titleW, bar, scale := 1.0
 
     ; ======= Resource folder path (for images, etc.) ========
-    global folder, unsupportedResolution, higherRes
+    global folder, unsupportedResolution, higherRes, canUseAHKEngine
     global staticFolder := A_ScriptDir "\lib\static\"
 
     ; ==== TEMP DEBUG BUILD ====
@@ -314,7 +314,7 @@ Init() {
         y := toggleStartY
         txtEngineLabel := guiApp.AddText("x" xLabel " y" y " w" labelW, "Engine:")
 
-        if (higherRes) {
+        if (!canUseAHKEngine) {
             engine := OpenCV_ENGINE
             txtOpenCVLabel := guiApp.AddText(
                 "x" (engineX + 70 / scale) " y" y " c648f64",
@@ -399,7 +399,7 @@ Init() {
         ; --- Cayo Perico options ---
         txtCayoOptionLabel := guiApp.AddText("x" xLabel - 15 " yp-5 h20 w" ((instrW * 3 / 4) + 15) " BackgroundTrans Center cA9A9A9",
         "Switch to Casino / Kortz to toggle mode")
-        txtCayoOptionLabel.SetFont("s12")
+        txtCayoOptionLabel.SetFont("s" GetScaledFontSize(12))
 
         ; Casino / Cayo options event listeners
         picFingerprintToggle.OnEvent("Click", ToggleFingerprintMode)
@@ -489,10 +489,11 @@ Init() {
     ; ⏐==========================================================================⏐
     {
         ; Link to GitHub repo for issues and suggestions
+        linkScaledFont := GetScaledFontSize(12)
         linkText := guiApp.Add("Link", "xp-55 y" (height - 5 - (height - (groupY + groupH)) /
         (1.5) " h30 w" groupW " c8484db center"),
         'For bugs / suggestions: <a href="https://infpdev.netlify.app?vaultOps=1">github.com/infpdev</a>')
-        linkText.SetFont("s" 12 / scale, "Yu Gothic UI Bold")
+        linkText.SetFont("s" linkScaledFont, "Yu Gothic UI Bold")
 
         ; Tray menu setup
         A_TrayMenu.Delete()
@@ -577,16 +578,17 @@ Init() {
         }
 
         if (heist == CAYO_PERICO) {
-            heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", higherRes,
-                engine)
+            heistInstance := ElRubioSolver(delay, UpdateGlobalStatus, cachedRubioAnchor, "", (higherRes ||
+                unsupportedResolution),
+            engine)
 
         } else if (heist == DCH_OR_KORTZ) {
             if (fingerprintMode) {
                 heistInstance := FingerprintSolver(delay, UpdateGlobalStatus,
-                    cachedFingerprintAnchor, "", higherRes, engine)
+                    cachedFingerprintAnchor, "", (higherRes || unsupportedResolution), engine)
             } else {
                 heistInstance := KeypadSolver(delay, UpdateGlobalStatus, cachedKeypadAnchor, "",
-                    higherRes, engine)
+                    (higherRes || unsupportedResolution), engine)
             }
 
         }
