@@ -6,7 +6,7 @@
 
 > An automation tool for GTA Online heist puzzles, built with AutoHotkey v2<br>
 > An upgraded version of the standalone script **"GTA Casino Solver v2"**<br>
-> Now supports all 16:9 and ultrawide (21:9) monitors through the OpenCV detection engine
+> Now supports all 16:9, 16:10, and 21:9 (ultrawide) monitors through the OpenCV detection engine
 
 
 <br>
@@ -90,7 +90,7 @@ This repository includes:
 - Auto-solves the **Cayo Perico Fingerprint Cloner** puzzle
 - Automates the **Buffered Ledge Grab** glitch, primarily used in the Diamond Casino heist
 - Supports both **AHK-based** and **OpenCV-based** detection methods
-- Supports all common **16:9** and **21:9 ultrawide** resolutions
+- Supports all common **16:9**, **16:10** and **21:9 (ultrawide)** resolutions
 - Enhanced **NoSave** — Automatically enables the firewall when needed and disables NoSave on exit
 - Manual and auto solving modes
 - **Discord Rich Presence** support — shows your current activity with randomly selected heist-themed status messages
@@ -144,7 +144,7 @@ Everything runs externally, similar to a macro tool, with a GUI designed for eas
 - **60 FPS** or more *(required only for Buffered Ledge Grab Automation)*
 - The game should be running in **Borderless Fullscreen** or **Borderless Windowed** mode  
 - **Supported resolutions**
-  - Supports all common **16:9** and **21:9 ultrawide** resolutions
+  - Supports all common **16:9**, **16:10**, and **21:9 ultrawide** resolutions
 - **Internet connection** *(optional)*  
   - Used only for update checks  
   - No data is collected or sent externally  
@@ -167,7 +167,7 @@ Provided as-is, with no guarantees.
 ## Quick Start
 
 > 🔍 VirusTotal scan (for transparency only. AutoHotkey automation tools are commonly flagged by heuristic engines):
-> https://www.virustotal.com/gui/file/6d973dfffd6bce36c53d52d27895166c31e670fe7b3bd5e5744dd2d048023ca7
+> https://www.virustotal.com/gui/file/92b9e15476b4a55114ebb839e75f18d6923b03ea2973f56933cd74222b678158
 
 
 <p align="center">

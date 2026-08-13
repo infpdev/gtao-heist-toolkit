@@ -355,7 +355,6 @@ if !A_IsAdmin {
         noSaveTooltipGui.Show("NA NoActivate AutoSize y0")
 
         noSaveTooltipGui.GetPos(, , &width)
-        noSaveTooltipGui.Move((A_ScreenWidth - width) // 2)
 
         MakeGuiClickThroughAndTransparentAndRounded(noSaveTooltipGui.Hwnd, 220, true)
 

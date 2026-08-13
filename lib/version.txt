@@ -1,7 +1,4 @@
-4.169.0
-Fixed a NoSave error on unsupported resolutions.
-Added a warning when anti-cheat or antivirus software interferes with NoSave.
-Added a Misc Settings tab with new customization options.
-Added an optional always-on-top NoSave tooltip.
-Improved startup speed when Discord RPC is disabled.
-Fixed a bug in El Rubio solver.
+4.169.67
+Added support for 16:10 screens.
+Fixed DPI scaling issues.
+Fixed a bug in the El Rubio solver.

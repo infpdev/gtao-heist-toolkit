@@ -1,10 +1,6 @@
-import os
-
-import numpy as np
 import cv2
-
-from helpers import prepare_detection_image, dump_debug_image
-
+import numpy as np
+from helpers import dump_debug_image, prepare_detection_image
 
 # HSV color ranges
 _RED_LOWER_1 = np.array([0, 80, 80], dtype=np.uint8)
@@ -41,7 +37,9 @@ def _clamp_region(img: np.ndarray, region: tuple) -> tuple:
     return x1, y1, x2, y2
 
 
-def _color_ratio_in_region(img: np.ndarray, region: tuple, lower: np.ndarray, upper: np.ndarray) -> float:
+def _color_ratio_in_region(
+    img: np.ndarray, region: tuple, lower: np.ndarray, upper: np.ndarray
+) -> float:
     """Return ratio of pixels in region within a single HSV range."""
     if img is None:
         return 0.0
@@ -61,7 +59,9 @@ def _color_ratio_in_region(img: np.ndarray, region: tuple, lower: np.ndarray, up
     return float(np.count_nonzero(mask)) / float(total)
 
 
-def _multi_color_ratio_in_region(img: np.ndarray, region: tuple, ranges: tuple) -> float:
+def _multi_color_ratio_in_region(
+    img: np.ndarray, region: tuple, ranges: tuple
+) -> float:
     """Return ratio of pixels in region matching any of multiple HSV ranges."""
     if img is None:
         return 0.0
@@ -126,10 +126,12 @@ def _edge_density_in_region(img: np.ndarray, region: tuple) -> float:
     return float(np.count_nonzero(edges)) / float(total)
 
 
-
-
-
-def fingerprintAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_score: bool = False, scale: float = 0.5):
+def fingerprintAnchor(
+    search_img: np.ndarray = None,
+    threshold: float = 0.1,
+    return_score: bool = False,
+    scale: float = 0.5,
+):
     """Detect fingerprint mode by red ratio in fingerprint region."""
     if search_img is None:
         search_img = prepare_detection_image(scale)
@@ -150,24 +152,37 @@ def fingerprintAnchor(search_img: np.ndarray = None, threshold: float = 0.1, ret
         and edge_density >= _FINGERPRINT_EDGE_MIN
         and score_final >= _FINGERPRINT_FINAL_MIN
     )
-    
-    matched = is_black_area_present_fingerprint(search_img=search_img, scale=scale) if matched else False
-    
+
+    matched = (
+        is_black_area_present_fingerprint(search_img=search_img, scale=scale)
+        if matched
+        else False
+    )
+
     score = {
-        'matched': matched,
-        'score_raw': ratio,
-        'score_edge': edge_density,
-        'score_final': score_final,
-        'ratio': ratio,
-        'threshold': threshold,
+        "matched": matched,
+        "score_raw": ratio,
+        "score_edge": edge_density,
+        "score_final": score_final,
+        "ratio": ratio,
+        "threshold": threshold,
     }
 
     if return_score:
-        return {'mode': 'fingerprint' if matched else None, 'scores': score, 'region': region}
-    return 'fingerprint' if matched else None
+        return {
+            "mode": "fingerprint" if matched else None,
+            "scores": score,
+            "region": region,
+        }
+    return "fingerprint" if matched else None
 
 
-def keypadAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_score: bool = False, scale: float = 0.5):
+def keypadAnchor(
+    search_img: np.ndarray = None,
+    threshold: float = 0.1,
+    return_score: bool = False,
+    scale: float = 0.5,
+):
     """Detect keypad mode by warm-color ratio in keypad region."""
     if search_img is None:
         search_img = prepare_detection_image(scale)
@@ -188,23 +203,36 @@ def keypadAnchor(search_img: np.ndarray = None, threshold: float = 0.1, return_s
         and edge_density >= _KEYPAD_EDGE_MIN
         and score_final >= _KEYPAD_FINAL_MIN
     )
-    
-    matched = is_black_area_present_keypad(search_img=search_img, scale=scale) if matched else False
+
+    matched = (
+        is_black_area_present_keypad(search_img=search_img, scale=scale)
+        if matched
+        else False
+    )
     score = {
-        'matched': matched,
-        'score_raw': ratio,
-        'score_edge': edge_density,
-        'score_final': score_final,
-        'ratio': ratio,
-        'threshold': threshold,
+        "matched": matched,
+        "score_raw": ratio,
+        "score_edge": edge_density,
+        "score_final": score_final,
+        "ratio": ratio,
+        "threshold": threshold,
     }
 
     if return_score:
-        return {'mode': 'keypad' if matched else None, 'scores': score, 'region': region}
-    return 'keypad' if matched else None
+        return {
+            "mode": "keypad" if matched else None,
+            "scores": score,
+            "region": region,
+        }
+    return "keypad" if matched else None
 
 
-def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_score: bool = False, scale: float = 0.5):
+def cayoAnchor(
+    search_img: np.ndarray = None,
+    threshold: float = 0.4,
+    return_score: bool = False,
+    scale: float = 0.5,
+):
     """Detect cayo mode by green ratio in cayo region."""
     if search_img is None:
         search_img = prepare_detection_image(scale)
@@ -220,21 +248,25 @@ def cayoAnchor(search_img: np.ndarray = None, threshold: float = 0.4, return_sco
     ratio = _green_ratio_in_region(search_img, region)
     matched = ratio >= threshold
     # print("matched? " + ("true" if matched else "false"), flush=True)
-    
-    matched = is_black_area_present_cayo(search_img=search_img, scale=scale) if matched else False
-    
+
+    matched = (
+        is_black_area_present_cayo(search_img=search_img, scale=scale)
+        if matched
+        else False
+    )
+
     score = {
-        'matched': matched,
-        'score_raw': ratio,
-        'score_edge': 0.0,
-        'score_final': ratio,
-        'ratio': ratio,
-        'threshold': threshold,
+        "matched": matched,
+        "score_raw": ratio,
+        "score_edge": 0.0,
+        "score_final": ratio,
+        "ratio": ratio,
+        "threshold": threshold,
     }
 
     if return_score:
-        return {'mode': 'cayo' if matched else None, 'scores': score, 'region': region}
-    return 'cayo' if matched else None
+        return {"mode": "cayo" if matched else None, "scores": score, "region": region}
+    return "cayo" if matched else None
 
 
 def is_dark_uniform_region(img: np.ndarray, region: tuple) -> float:
@@ -262,7 +294,9 @@ def is_dark_uniform_region(img: np.ndarray, region: tuple) -> float:
     return float(np.count_nonzero(dark_pixels) / gray.size)
 
 
-def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
+def is_black_area_present_fingerprint(
+    search_img: np.ndarray = None, scale: float = 0.5
+) -> bool:
     """Return True if the fingerprint anchor black-area is PRESENT.
 
     Region: 1606, 441, 1882, 531 (normalized: 0.837, 0.218, 0.786, 0.267)
@@ -271,14 +305,16 @@ def is_black_area_present_fingerprint(search_img: np.ndarray = None, scale: floa
     if search_img is None:
         search_img = prepare_detection_image(scale)
 
-    regions = get_black_area_regions('fingerprint', scale)
+    regions = get_black_area_regions("fingerprint", scale)
 
     scores = [is_dark_uniform_region(search_img, r) for r in regions]
 
     return all(s > 0.3 for s in scores)
 
 
-def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1.0) -> bool:
+def is_black_area_present_keypad(
+    search_img: np.ndarray = None, scale: float = 1.0
+) -> bool:
     """Return True if the keypad anchor black-area is PRESENT.
 
     Region: 1606, 441, 1882, 531 (normalized: 0.837, 0.218, 0.786, 0.267)
@@ -287,13 +323,15 @@ def is_black_area_present_keypad(search_img: np.ndarray = None, scale: float = 1
     if search_img is None:
         search_img = prepare_detection_image(scale)
 
-    regions = get_black_area_regions('keypad', scale)
+    regions = get_black_area_regions("keypad", scale)
 
     scores = [is_dark_uniform_region(search_img, r) for r in regions]
     return all(s > 0.3 for s in scores)
 
 
-def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5) -> bool:
+def is_black_area_present_cayo(
+    search_img: np.ndarray = None, scale: float = 0.5
+) -> bool:
     """Return True if the cayo anchor black-area is PRESENT.
 
     Region: 1605, 329, 1898, 783 (normalized: 0.836, 0.305, 0.989, 0.725)
@@ -301,7 +339,7 @@ def is_black_area_present_cayo(search_img: np.ndarray = None, scale: float = 0.5
     if search_img is None:
         search_img = prepare_detection_image(scale)
 
-    regions = get_black_area_regions('cayo', scale)
+    regions = get_black_area_regions("cayo", scale)
 
     scores = [is_dark_uniform_region(search_img, r) for r in regions]
     return all(s > 0.7 for s in scores)
@@ -312,7 +350,7 @@ def get_black_area_regions(mode: str, scale: float = 0.5):
 
     mode: 'fingerprint', 'keypad', or 'cayo'
     """
-    if mode == 'fingerprint':
+    if mode == "fingerprint":
         return [
             (
                 int(1606 * scale),
@@ -327,7 +365,7 @@ def get_black_area_regions(mode: str, scale: float = 0.5):
                 int(744 * scale),
             ),
         ]
-    if mode == 'keypad':
+    if mode == "keypad":
         return [
             (
                 int(1606 * scale),
@@ -342,7 +380,7 @@ def get_black_area_regions(mode: str, scale: float = 0.5):
                 int(744 * scale),
             ),
         ]
-    if mode == 'cayo':
+    if mode == "cayo":
         return [
             (
                 int(1649 * scale),
@@ -401,72 +439,110 @@ def run_anchor_detectors(
     # ------------------------
     if forCasinoFP:
         if debug:
-            fp = fingerprintAnchor(img, threshold=thresholds.get('fp', 0.1), return_score=True, scale=processing_scale)
+            fp = fingerprintAnchor(
+                img,
+                threshold=thresholds.get("fp", 0.1),
+                return_score=True,
+                scale=processing_scale,
+            )
 
             if fp:
-                details['fingerprint'] = fp['scores']
+                details["fingerprint"] = fp["scores"]
                 debug_regions.append(
-                    (f"fp {fp['scores']['score_final']:.4f}", fp['region'], (0, 255, 0))
+                    (f"fp {fp['scores']['score_final']:.4f}", fp["region"], (0, 255, 0))
                 )
 
-                if fp['mode']:
-                    candidates.append(('fingerprint', fp['scores']['score_final']))
+                if fp["mode"]:
+                    candidates.append(("fingerprint", fp["scores"]["score_final"]))
             else:
-                details['fingerprint'] = None
+                details["fingerprint"] = None
 
         else:
-            fp = fingerprintAnchor(img, threshold=thresholds.get('fp', 0.1), return_score=False, scale=processing_scale)
+            fp = fingerprintAnchor(
+                img,
+                threshold=thresholds.get("fp", 0.1),
+                return_score=False,
+                scale=processing_scale,
+            )
 
             if fp:
-                candidates.append(('fingerprint', 1.0))
-                
+                candidates.append(("fingerprint", 1.0))
+
     # ------------------------
     # KEYPAD
     # ------------------------
     if forCasinoKP:
         if debug:
-            kp = keypadAnchor(img, threshold=thresholds.get('kp', 0.1), return_score=True, scale=processing_scale)
+            kp = keypadAnchor(
+                img,
+                threshold=thresholds.get("kp", 0.1),
+                return_score=True,
+                scale=processing_scale,
+            )
 
             if kp:
-                details['keypad'] = kp['scores']
+                details["keypad"] = kp["scores"]
                 debug_regions.append(
-                    (f"kp {kp['scores']['score_final']:.4f}", kp['region'], (255, 255, 0))
+                    (
+                        f"kp {kp['scores']['score_final']:.4f}",
+                        kp["region"],
+                        (255, 255, 0),
+                    )
                 )
-                if kp['mode']:
-                    candidates.append(('keypad', kp['scores']['score_final']))
-                
+                if kp["mode"]:
+                    candidates.append(("keypad", kp["scores"]["score_final"]))
+
             else:
-                details['keypad'] = None
+                details["keypad"] = None
 
         else:
-            kp = keypadAnchor(img, threshold=thresholds.get('kp', 0.1), return_score=False, scale=processing_scale)
+            kp = keypadAnchor(
+                img,
+                threshold=thresholds.get("kp", 0.1),
+                return_score=False,
+                scale=processing_scale,
+            )
 
             if kp:
-                candidates.append(('keypad', 1.0))
+                candidates.append(("keypad", 1.0))
 
     # ------------------------
     # CAYO
     # ------------------------
     if forRubio:
         if debug:
-            rb = cayoAnchor(img, threshold=thresholds.get('rubio', 0.4), return_score=True, scale=processing_scale)
+            rb = cayoAnchor(
+                img,
+                threshold=thresholds.get("rubio", 0.4),
+                return_score=True,
+                scale=processing_scale,
+            )
 
             if rb:
-                details['cayo'] = rb['scores']
+                details["cayo"] = rb["scores"]
                 debug_regions.append(
-                    (f"cayo {rb['scores']['score_final']:.4f}", rb['region'], (255, 128, 0))
+                    (
+                        f"cayo {rb['scores']['score_final']:.4f}",
+                        rb["region"],
+                        (255, 128, 0),
+                    )
                 )
-                if rb['mode']:
-                    candidates.append(('cayo', rb['scores']['score_final']))
-                    
+                if rb["mode"]:
+                    candidates.append(("cayo", rb["scores"]["score_final"]))
+
             else:
-                details['cayo'] = None
+                details["cayo"] = None
 
         else:
-            rb = cayoAnchor(img, threshold=thresholds.get('rubio', 0.4), return_score=False, scale=processing_scale)
+            rb = cayoAnchor(
+                img,
+                threshold=thresholds.get("rubio", 0.4),
+                return_score=False,
+                scale=processing_scale,
+            )
 
             if rb:
-                candidates.append(('cayo', 1.0))
+                candidates.append(("cayo", 1.0))
 
     # ------------------------
     # PICK BEST
@@ -475,23 +551,26 @@ def run_anchor_detectors(
     if candidates:
         ranked = sorted(candidates, key=lambda x: x[1], reverse=True)
         mode = ranked[0][0]
-        if len(ranked) > 1:
-            if (ranked[0][1] - ranked[1][1]) < _MODE_WIN_MARGIN:
-                mode = None
+        if len(ranked) > 1 and (ranked[0][1] - ranked[1][1]) < _MODE_WIN_MARGIN:
+            mode = None
 
     # ------------------------
     # BLACK-REGION OVERLAYS (centralized)
     # If a specific mode was detected, annotate only that mode's black regions.
     # Otherwise annotate all black-region areas for debugging.
     if debug:
-        label_map = {'fingerprint': 'blk_fp', 'keypad': 'blk_kp', 'cayo': 'blk_cayo'}
+        label_map = {"fingerprint": "blk_fp", "keypad": "blk_kp", "cayo": "blk_cayo"}
         if mode is not None:
-            label = label_map.get(mode, f'blk_{mode}')
+            label = label_map.get(mode, f"blk_{mode}")
             for r in get_black_area_regions(mode, processing_scale):
                 s = is_dark_uniform_region(img, r)
                 debug_regions.append((f"{label} {s:.3f}", r, (255, 0, 255)))
         else:
-            for m, label in [('fingerprint', 'blk_fp'), ('keypad', 'blk_kp'), ('cayo', 'blk_cayo')]:
+            for m, label in [
+                ("fingerprint", "blk_fp"),
+                ("keypad", "blk_kp"),
+                ("cayo", "blk_cayo"),
+            ]:
                 for r in get_black_area_regions(m, processing_scale):
                     s = is_dark_uniform_region(img, r)
                     debug_regions.append((f"{label} {s:.3f}", r, (255, 0, 255)))
@@ -506,13 +585,9 @@ def run_anchor_detectors(
     # RETURN
     # ------------------------
     if return_details:
-        return {
-            "mode": mode,
-            "scores": details
-        }
+        return {"mode": mode, "scores": details}
 
     return mode
-
 
 
 if __name__ == "__main__":
@@ -529,6 +604,8 @@ if __name__ == "__main__":
 
     # img = prepare_detection_image(0.5, img)
 
-    result = run_anchor_detectors(True, True, True, debug=True, processing_scale=0.5, return_details=True)
+    result = run_anchor_detectors(
+        True, True, True, debug=True, processing_scale=0.5, return_details=True
+    )
 
     print(result)

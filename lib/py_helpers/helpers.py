@@ -37,22 +37,43 @@ def resolve_dump_dir():
 
 
 def prepare_detection_image(scale=1.0, img=None):
-
     if img is None:
         img = np.array(ImageGrab.grab())
 
     h, w = img.shape[:2]
     aspect = w / h
 
-    # ultrawide -> crop centered 16:9 region
-    if aspect > 2.0:
-        target_w = int(h * (16 / 9))
+    # 16:9 aspect ratio
+    target_aspect = 16 / 9
+    target_w = int(h * target_aspect)
 
+    # ultrawide (wider than 16:9) -> crop centered 16:9 region
+    if aspect > target_aspect:
+        # For 21:9, 32:9, etc. - crop the sides
         x1 = (w - target_w) // 2
         x2 = x1 + target_w
-
         img = img[:, x1:x2]
+        
+    # 16:10 (taller than 16:9) -> add black borders to the sides
+    elif aspect < target_aspect:
+        # Calculate how much width we need to add to reach 16:9
+        new_w = int(h * target_aspect)
+        pad_total = new_w - w
+        
+        if pad_total > 0:
+            pad_left = pad_total // 2
+            # pad_right = pad_total - pad_left
+            
+            # Create black canvas (16:9)
+            canvas = np.zeros((h, new_w, img.shape[2]), dtype=img.dtype)
+            
+            # Place original image in the center
+            canvas[:, pad_left:pad_left + w] = img
+            
+            img = canvas
 
+    # If exactly 16:9, no changes needed
+    
     # normalize to virtual 1920x1080
     img = cv2.resize(img, (int(1920 * scale), int(1080 * scale)))
 

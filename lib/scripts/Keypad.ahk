@@ -92,7 +92,7 @@ class KeypadSolver {
     base_y2_imgSearch := 0.769
 
     __New(delay, updateGlobalStatus, prevFoundPixel, folderPath := "", highRes := false, engine :=
-        AHK_ENGINE) {
+        OPENCV_ENGINE) {
 
         this.delay := delay
         this.folder := folderPath != "" ? folderPath : folder
